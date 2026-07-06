@@ -11,7 +11,7 @@ const { Semaphore } = require('async-mutex');
 
 const { translate } = require('./utils');
 
-const MAX_CONCURRENT = 2;
+const MAX_CONCURRENT = 4;
 
 // Note: wordgard 的构建产物目录（CI 中会把 website 检出到 wordgard/website 内构建）
 const BUILD_DIR = path.resolve(__dirname, 'wordgard/website/output');
