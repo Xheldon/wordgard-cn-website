@@ -11,7 +11,9 @@ const { Semaphore } = require('async-mutex');
 
 const { translate } = require('./utils');
 
-const MAX_CONCURRENT = 4;
+// Note: 首次全量翻译时并发 4 在硅基流动侧触发了限流（约 1.3% 失败），调回 2 更稳；
+// 后续都是小增量（仅补译新增/上次失败的少量字符串），并发影响不大。
+const MAX_CONCURRENT = 2;
 
 // Note: wordgard 的构建产物目录（CI 中会把 website 检出到 wordgard/website 内构建）
 const BUILD_DIR = path.resolve(__dirname, 'wordgard/website/output');
