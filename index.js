@@ -21,8 +21,8 @@ const SITE = 'https://wordgard.xheldon.com';
 
 // Note: 谷歌统计 / 广告 ID —— 请替换为 wordgard 中文站【新建】的 ID。
 // 留空则不注入对应脚本（避免用无效 ID 拉起统计/广告）。
-const GA_MEASUREMENT_ID = ''; // 形如 G-XXXXXXXXXX（Google Analytics 衡量 ID）
-const ADSENSE_CLIENT = ''; // 形如 ca-pub-XXXXXXXXXXXXXXXX（Google AdSense 发布商 ID）
+const GA_MEASUREMENT_ID = 'G-2VX7Y13EBT'; // Google Analytics 衡量 ID
+const ADSENSE_CLIENT = 'ca-pub-5486286026923411'; // Google AdSense 发布商 ID
 
 // Note: 默认翻译配置：导航链接 + 正文的段落/列表项/标题/代码注释
 const defaultConfig = () => [
@@ -166,6 +166,12 @@ Promise.all(
         if (article) {
           article.insertBefore(add, article.firstChild);
         }
+      }
+
+      // Note: 页脚补一句，呼应上游的 “Contains 0% AI”
+      const footerContent = document.querySelector('footer .footer-content');
+      if (footerContent) {
+        footerContent.insertAdjacentHTML('beforeend', '<br>翻译包含 100% AI');
       }
 
       // Note: 字典文件路径，如 dict/docs/guide/index.json
