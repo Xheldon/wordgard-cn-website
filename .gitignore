@@ -1,0 +1,4 @@
+node_modules/**/*
+wordgard
+
+.DS_Store
