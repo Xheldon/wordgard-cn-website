@@ -14,7 +14,7 @@ jobs:
         with:
           ref: main
           persist-credentials: true
-      - name: 推送测试（persist-credentials: true，复现失败）
+      - name: "推送测试 persist-credentials true 复现失败"
         run: |
           git config --global user.name 'Xheldon[bot]'
           git config --global user.email 'c1006044256@gmail.com'
@@ -33,7 +33,7 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-      - name: 推送测试（persist-credentials: false，预期修复）
+      - name: "推送测试 persist-credentials false 预期修复"
         run: |
           git config --global user.name 'Xheldon[bot]'
           git config --global user.email 'c1006044256@gmail.com'
