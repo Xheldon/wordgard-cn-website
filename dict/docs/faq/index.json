@@ -1,0 +1,86 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Frequently Asked Questions": {
+    "_translate": "常见问题解答",
+    "_note": ""
+  },
+  "This is where I collect answers to questions, so that I can link to it instead of repeating myself. With luck, some people will even find the answer before asking the question.": {
+    "_translate": "此处是我收集问题答案的地方，以便我可以链接到这里，而无需重复自己。运气好的话，有些人甚至会在提问之前就找到答案。",
+    "_note": ""
+  },
+  "When will version 1.0 be released?": {
+    "_translate": "1.0 版本何时发布？",
+    "_note": ""
+  },
+  "When it is done. From experience with previous projects, I've found it very valuable to let people use the library for a while in order to find out what parts will cause trouble, and then if necessary make breaking changes to address that trouble. So don't hold your breath. This might take one or two years.": {
+    "_translate": "完成后。根据以往项目的经验，我发现让使用者先使用一段时间该库，以便发现哪些部分会引发问题，然后在必要时进行破坏性更改以解决这些问题，是非常有价值的。因此，请不要抱太大期望。这可能需要一到两年的时间。",
+    "_note": ""
+  },
+  "Why don't you take pull requests?": {
+    "_translate": "为什么不接受拉取请求？",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Several reasons:": {
+    "_translate": "原因有几个：",
+    "_note": ""
+  },
+  "I am a control freak who has a hard time accepting code without rewriting it to fit my precise idea of the tao of the system.": {
+    "_translate": "我是一个控制狂，很难接受不经过重写的代码，除非它能完全符合我对系统之道的精确构想。",
+    "_note": ""
+  },
+  "I do not enjoy reviewing code all that much. I resent the dynamic of people being able to dump a bunch of annoying work in my lap with the implication that I'm being rude or neglectful if I don't act on it, along with the emotional work of tactfully turning them down when I don't like what they did.": {
+    "_translate": "我并不太喜欢进行代码审查。我反感这种动态：人们可以将一堆令人烦恼的工作推到我身上，并暗示如果我不立即处理，就是粗鲁或疏忽；同时，当我对他们的工作不满意时，还得费心委婉地拒绝他们，这种情感劳动也让我感到疲惫。",
+    "_note": ""
+  },
+  "Not having PRs is an effective way to nip the problem of people submitting LLM-generated slop code in the bud.": {
+    "_translate": "不设立拉取请求（PR）是有效扼杀人们提交由大语言模型生成的低质量代码这一问题的萌芽之举。",
+    "_note": ""
+  },
+  "This is my zen garden. You are welcome to report bugs, suggest improvements, or rage at my horrible design taste. But if you want to have functionality that I don't feel like building and maintaining, you're going to have to do that in a module of your own.": {
+    "_translate": "这是我的禅意花园。欢迎您报告错误、提出改进建议，或对我糟糕的设计品味大发雷霆。但如果您希望拥有我不愿构建和维护的功能，那就请您自行开发一个模块来实现。",
+    "_note": ""
+  },
+  "Is the \"social expectation\" of support a threat?": {
+    "_translate": "“社会期望”的支持是否构成一种威胁？",
+    "_note": ""
+  },
+  "Don't you know TypeScript namespaces are bad for tree-shaking?": {
+    "_translate": "你不知道 TypeScript 命名空间不利于树摇吗？",
+    "_note": ""
+  },
+  "No. I phrase it this way on the front page because I want to make it clear to commercial users that expecting well-maintained open-source components without supporting maintainers is not a sustainable practice. But I will not go out of my way to shame companies that use my software without funding me. Unless they piss me off in some other way, of course.": {
+    "_translate": "不。我在首页这样表述，是为了向商业用户明确：期望获得维护良好的开源组件，却不支持其维护者，这种做法是不可持续的。但我不会特意去羞辱那些使用我的软件却未提供资金的公司，除非他们以其他方式惹恼了我。",
+    "_note": ""
+  },
+  "I do know, and even went so far as to add horrible hacks to the library's build system to fix up TypeScript's 2005-era style of output for these.": {
+    "_translate": "我确实知道，甚至不惜在库的构建系统中添加糟糕的变通方案，以修复这些针对 TypeScript 2005 年代风格输出的问题。",
+    "_note": ""
+  },
+  "That said, since dead code elimination in JavaScript is super messy, and the tools that library authors have to help it are ridiculously crude, I don't know how well other tools are handling this.": {
+    "_translate": "话虽如此，由于 JavaScript 中的死代码消除非常混乱，而库作者可用的辅助工具又极其粗糙，因此我不确定其他工具在处理这一问题时的表现如何。",
+    "_note": ""
+  },
+  "With that kludge, individual namespaces can be eliminated if not referenced, at least by Rollup. Combined with the fact that each namespace only wraps a coherent set of functionality that you'll usually need as a whole, if you need it, the library should tree-shake pretty well.": {
+    "_translate": "借助这一权宜之计，如果未被引用，各个命名空间至少可以被 Rollup 消除。再加上每个命名空间仅封装了一组连贯的功能，而这些功能通常作为一个整体被需要，因此，如果需要该库，它应该能很好地支持树摇优化。",
+    "_note": ""
+  }
+}

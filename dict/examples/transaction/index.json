@@ -1,0 +1,170 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Dispatching Transactions": {
+    "_translate": "示例：交易分发",
+    "_note": ""
+  },
+  "Document Changes": {
+    "_translate": "文档变更",
+    "_note": ""
+  },
+  "Dispatching a transaction is what you do when you want to change the editor content, move the selection, scroll something into view, change an extension's state, reconfigure, or affect the editor in some other way.": {
+    "_translate": "分发事务是指当您希望更改编辑器内容、移动选区、滚动显示某部分内容、更改扩展的状态、重新配置或以其他某种方式影响编辑器时所执行的操作。",
+    "_note": ""
+  },
+  "A very common thing to do is to modify the document. For example, say we are writing a function that inserts given word at the selection, you could write code like this:": {
+    "_translate": "一种非常常见的操作是修改文档。例如，假设我们正在编写一个函数，用于在选区处插入给定的单词，您可以编写如下代码：",
+    "_note": ""
+  },
+  "The transaction spec fields that accept an array of things, like changes and effects also accept a single value for convenience. So here we're providing a single change under changes.": {
+    "_translate": "接受数组的 <a href=\"../../docs/ref/#state.Transaction.Spec\">事务规范</a> 字段（例如 <a href=\"../../docs/ref/#state.Transaction.Spec.changes\"><code>changes</code></a> 和 <a href=\"../../docs/ref/#state.Transaction.Spec.effects\"><code>effects</code></a>）也为了方便而接受单个值。因此，这里我们在 <code>changes</code> 下提供了一个单独的变更。",
+    "_note": ""
+  },
+  "Selections have a replacementRange getter which tells you what range should be replaced when inserting over that selection. This exists because some custom selections might want to do something special there—for regular selections it will just return the selection's full range.": {
+    "_translate": "选择项具有一个 <a href=\"../../docs/ref/#state.GardSelection.replacementRange\"><code>replacementRange</code></a> 获取器，用于指示在覆盖该选择项插入内容时应替换的范围。此功能的存在是因为某些 <a href=\"../../docs/ref/#state.GardSelection.define\">自定义</a> 选择项可能希望在此处执行特殊操作——对于常规选择项，它将直接返回选择项的完整范围。",
+    "_note": ""
+  },
+  "So our change replaces that range with a single token, a text leaf holding our word. Because we don't know whether replacing the selection like that results in a valid document, the code also sets the fit flag. That will cause the ChangeSet.create call that builds the change set for the transaction to make sure it doesn't emit an invalid change. In situations where you know the change is valid, you can leave this off.": {
+    "_translate": "因此，我们的 <a href=\"../../docs/ref/#doc.ChangeSet.Change\">change</a> 将该范围替换为一个令牌，即一个包含我们单词的文本叶子节点。由于我们不知道像这样替换选区是否会产生有效的文档，代码还会设置 <a href=\"../../docs/ref/#doc.ChangeSet.Change.fit\"><code>fit</code></a> 标志。这将导致构建事务变更集的 <a href=\"../../docs/ref/#doc.ChangeSet.create\"><code>ChangeSet.create</code></a> 调用确保不会发出无效的变更。在已知变更有效的情况下，您可以省略此标志。",
+    "_note": ""
+  },
+  "Further parameters given to the transaction are scrollIntoView, which tells the editor that it should make sure the cursor is visible after the change, and userEvent, which provides a rough, if somewhat fuzzy, category for the change. The latter isn't necessary, but can help ofter code recognize some types of transactions, and treat them specially.": {
+    "_translate": "传递给事务的其他参数包括 <a href=\"../../docs/ref/#state.Transaction.Spec.scrollIntoView\"><code>scrollIntoView</code></a>，它指示编辑器在更改后确保光标可见；以及 <a href=\"../../docs/ref/#state.Transaction.Spec.userEvent\"><code>userEvent</code></a>，它为更改提供一个粗略（尽管有些模糊）的分类。后者并非必需，但可以帮助其他代码 <a href=\"../../docs/ref/#state.Transaction.isUserEvent\">识别</a> 某些类型的事务，并对它们进行特殊处理。",
+    "_note": ""
+  },
+  "And finally, we need to provide a new selection after the insertion. Because of the somewhat unpredictable nature of fitted changes, we cannot just put the cursor at from + word.length and know for sure that that'll be the end of the word—the fitting might cause the change to do more than just insert that word at precisely that position. So instead of passing a selection, the code passes in a function that, from the changes and the post-change situation, computes a new selection.": {
+    "_translate": "最后，我们需要在插入后提供一个新的选区。由于拟合变更具有某种不可预测性，我们不能简单地将光标置于 `<code>from + word.length</code>` 并确信那就是单词的末尾——拟合过程可能导致变更不仅仅是精确地在该位置插入该单词。因此，代码不是传递一个选区，而是传递一个函数，该函数根据变更和变更后的状态计算出一个新的选区。",
+    "_note": ""
+  },
+  "Many selection-manipulating functions expect a context to be passed in. This gives them information about the current document and the text direction in that document. An editor state counts as a context, but in the middle of creating a transaction, the new state is not available yet, so the selection-creation callback is passed a temporary context. GardSelection.near finds a cursor position near the given position. We can pass it the position after the change (using position mapping on the change set), and make it scan backwards to find a cursor position after the inserted word.": {
+    "_translate": "许多用于操作选区的函数都期望传入一个 <a href=\"../../docs/ref/#state.GardSelection.Context\">上下文</a>。这使它们能够获取当前文档及其文本方向的信息。编辑器状态可视为一种上下文，但在创建事务的过程中，新状态尚不可用，因此选区创建回调会接收一个临时上下文。<a href=\"../../docs/ref/#state.GardSelection.near\"><code>GardSelection.near</code></a> 用于查找给定位置附近的游标位置。我们可以将变更后的位置（通过对变更集进行位置映射获得）传递给它，并使其向后扫描，以找到插入单词之后的游标位置。",
+    "_note": ""
+  },
+  "This is often the trickiest part of a document-changing transaction—finding the appropriate new selection. The findInserted method on change sets can also be useful here.": {
+    "_translate": "这通常是文档变更事务中最棘手的部分——找到合适的新选区。变更集上的 <a href=\"../../docs/ref/#doc.ChangeSet.findInserted\"><code>findInserted</code></a> 方法在此处也可能很有用。",
+    "_note": ""
+  },
+  "Multiple changes can be passed as an array. This would, for example, wrap the entire document in a blockquote:": {
+    "_translate": "可以将多个更改作为数组传递。例如，这将把整个文档包装在引用块中：",
+    "_note": ""
+  },
+  "All changes provided in such an array are interpreted relative to the start document, not the document produced by the changes before them. So the second change here does not have to adjust the position of the end of the document for the token inserted by the first change.": {
+    "_translate": "此类数组中提供的所有更改均相对于起始文档进行解释，而非相对于此前更改生成的文档。因此，此处的第二个更改无需为第一个更改插入的标记调整文档末尾的位置。",
+    "_note": ""
+  },
+  "// Everything strong!": {
+    "_translate": "// 一切皆强！",
+    "_note": ""
+  },
+  "If you have already created a ChangeSet object, you can also just pass that in the changes field.": {
+    "_translate": "如果您已经创建了一个 <a href=\"../../docs/ref/#doc.ChangeSet\"><code>ChangeSet</code></a> 对象，也可以直接将其传入 <code>changes</code> 字段。",
+    "_note": ""
+  },
+  "// Remove all underlines from the selection": {
+    "_translate": "// 移除所选内容中的所有下划线",
+    "_note": ""
+  },
+  "Transaction Effects": {
+    "_translate": "交易影响",
+    "_note": ""
+  },
+  "To add or remove marks, you use a different change object form. Instead of an insert field, these use add to add a mark or remove to remove one.": {
+    "_translate": "要添加或删除标记，请使用不同的变更对象表单。这些表单不使用 <code>insert</code> 字段，而是使用 <code>add</code> 来添加标记，或使用 <code>remove</code> 来删除标记。",
+    "_note": ""
+  },
+  "This extension counts the number of transactions that have happened in an editor state, with a way to reset the number. That may not be a terribly useful thing to do, but it demonstrates a common pattern.": {
+    "_translate": "此扩展用于统计编辑器状态中发生的交易次数，并提供一种重置该计数的方法。这可能并非特别实用的功能，但它展示了一种常见的模式。",
+    "_note": ""
+  },
+  "Apart from document and selection changes, transactions can contain effects. Some of these, such as Wordgard.scrollIntoView are defined in the library, but you can also define your own.": {
+    "_translate": "除了文档和选区变更外，事务还可以包含<a href=\"../../docs/ref/#state.Transaction.Effect\"><em>效果</em></a>。其中一些（例如<a href=\"../../docs/ref/#editor.Wordgard.scrollIntoView\"><code>Wordgard.scrollIntoView</code></a>）已在库中定义，但您也可以定义自己的效果。",
+    "_note": ""
+  },
+  "Some types of effects contain document positions or some other document-dependent data. For those, you should define a mapping function, so that they can safely be transformed through changes. (This comes up when transaction specs are combined or transactions are extended.)": {
+    "_translate": "某些类型的影响包含文档位置或其他依赖于文档的数据。对于这些情况，您应定义一个映射函数，以便它们能够安全地通过变更进行转换。（当事务规范被组合或事务被<a href=\"#h-extenders\">扩展</a>时，就会出现这种情况。）",
+    "_note": ""
+  },
+  "Instances of an effect contain a value whose type is declared when the effect type is defined. Code that is interested in the effect will check the array of effects attached to a given transaction to see if its effect is in there, and if so, handle it. The is method both checks whether an effect is of the given type and, if it is, tells TypeScript what the type of its value field is.": {
+    "_translate": "效果的实例包含一个值，其类型在定义效果类型时声明。对效果感兴趣的代码会检查附加到给定事务的效果数组，以查看其中是否包含该效果，如果包含则进行处理。<a href=\"../../docs/ref/#state.Transaction.Effect.is\"><code>is</code> 方法</a> 既检查效果是否为给定类型，如果是，还会告知 TypeScript 其 <code>value</code> 字段的类型。",
+    "_note": ""
+  },
+  "Transaction Objects": {
+    "_translate": "交易对象",
+    "_note": ""
+  },
+  "Effects also provide a way to make non-document changes undoable. The history module provides a history.invertedEffects facet that can be used to provide inverted effects for a given transaction. These are stored in the history, and will be included in the transactions dispatched for undone (or redone again) changes.": {
+    "_translate": "效果还提供了一种使非文档更改可撤销的方法。历史记录模块提供了一个 <a href=\"../../docs/ref/#history.history.invertedEffects\"><code>history.invertedEffects</code></a> 方面，可用于为给定的事务提供反向效果。这些效果将存储在历史记录中，并包含在用于撤销（或重做）更改所分派的事务中。",
+    "_note": ""
+  },
+  "The dispatch method accepts either a transaction spec or a Transaction object. It is usually more convenient to pass it a spec as an object literal, but when you want to initialize an actual transaction object, you can use state.update.": {
+    "_translate": "<a href=\"../../docs/ref/#editor.Wordgard.dispatch\"><code>dispatch</code></a> 方法接受事务 <a href=\"../../docs/ref/#state.Transaction.Spec\">规范</a> 或 <a href=\"../../docs/ref/#state.Transaction\"><code>Transaction</code></a> 对象。通常，将规范作为对象字面量传递更为方便，但如果您需要初始化一个实际的事务对象，可以使用 <a href=\"../../docs/ref/#state.GardState.update\"><code>state.update</code></a>。",
+    "_note": ""
+  },
+  "Such transaction objects provide most of the same fields as their specs have, but normalized (for example changes always holds a change set, selection holds either null or a full selection, and so on). These are the objects that state field update functions and update listeners see.": {
+    "_translate": "此类事务对象提供了与其规范中大部分相同的字段，但经过规范化处理（例如 <a href=\"../../docs/ref/#state.Transaction.changes\"><code>changes</code></a> 始终包含一个变更集，<a href=\"../../docs/ref/#state.Transaction.selection\"><code>selection</code></a> 包含 null 或完整的选区，等等）。状态字段 <a href=\"../../docs/ref/#state.GardState.Field.Spec.update\">更新函数</a> 和 <a href=\"../../docs/ref/#editor.Wordgard.updateListener\">更新监听器</a> 所看到的正是这些对象。",
+    "_note": ""
+  },
+  "It is possible to work with transactions entirely outside of the editor component. This is especially useful for tests, but can also be used to run scripted or saved editing sessions entirely outside of the browser.": {
+    "_translate": "完全可以在编辑器组件之外处理事务。这在测试中尤其有用，但也可用于在浏览器之外运行脚本化或保存的编辑会话。",
+    "_note": ""
+  },
+  "Some helper functions or functional commands return transaction specs. It can be useful to combine multiple such specs into a single transaction. You can do this with Transaction.merge. The specs will be combined, creating a new spec containing the union of their changes, annotations, and effects.": {
+    "_translate": "某些辅助函数或<a href=\"../../docs/ref/#command.Command.Pure\">函数式命令</a>会返回事务规范。将多个此类规范合并为单个事务可能很有用。您可以使用<a href=\"../../docs/ref/#state.Transaction.merge\"><code>Transaction.merge</code></a>来实现这一点。这些规范将被合并，生成一个新的规范，其中包含它们变更、注释和效果的并集。",
+    "_note": ""
+  },
+  "// Inserts the B directly after the A": {
+    "_translate": "// 将 B 直接插入到 A 之后",
+    "_note": ""
+  },
+  "Extenders": {
+    "_translate": "扩展器",
+    "_note": ""
+  },
+  "By default, the changes in both specs refer to the initial document. If you, for some reason, have changes and effects that refer to the document produced by previous transaction specs, you can set the sequential flag to make sure they are interpreted correctly.": {
+    "_translate": "默认情况下，两个规范中的更改均指向初始文档。如果您因某种原因拥有指向由先前事务规范生成的文档的更改和效果，您可以设置 <a href=\"../../docs/ref/#state.Transaction.Spec.sequential\"><code>sequential</code> 标志</a>，以确保它们被正确解释。",
+    "_note": ""
+  },
+  "Wordgard allows you to register functions that may, for every transaction, add additional elements (changes, effects, annotations, etc).": {
+    "_translate": "Wordgard 允许您 <a href=\"../../docs/ref/#state.Transaction.extender\">注册</a> 函数，这些函数可以为每笔交易添加额外的元素（变更、效果、注释等）。",
+    "_note": ""
+  },
+  "This makes things like corrections and other extensions that preserve invariants possible. It also has less invasive uses, like making sure transactions get some specific annotation or effect that other code depends on.": {
+    "_translate": "这使得诸如<a href=\"../../docs/ref/#state.Correction\">修正</a>以及其他保持不变量的扩展成为可能。它还有一些侵入性较小的用途，例如确保事务获得其他代码所依赖的特定注释或效果。",
+    "_note": ""
+  },
+  "The existence of extenders is something that code that dispatches transactions must keep in mind. You cannot assume that, after your transaction, the editor state is exactly what your transaction spec produces. And you must be careful about embedding such expectations in the effects or annotations you include in the transaction.": {
+    "_translate": "扩展器的存在是负责分发事务的代码必须牢记的一点。您不能假设在事务执行后，编辑器状态恰好是您事务规范所产生的结果。此外，您在事务中包含的效果或注解中嵌入此类期望时，必须格外谨慎。",
+    "_note": ""
+  },
+  "A similar but less radical feature are transaction appenders. These can cause the editor to immediately dispatch additional transactions in response to other transactions. They are the mechanism used by, for example, input rules, which want their effect to follow the original input, but be separately undoable.": {
+    "_translate": "一个类似但更温和的功能是 <a href=\"../../docs/ref/#state.Transaction.appender\">事务追加器</a>。它们可以导致编辑器在响应其他事务时立即分派额外的事务。例如，<a href=\"../../docs/ref/#editor.InputRule\">输入规则</a> 就使用了这种机制，它们希望其效果紧随原始输入之后，但又能被单独撤销。",
+    "_note": ""
+  },
+  "This example defines an extender that makes sure the selection is never between positions 5 and 10, by moving it past that range whenever it would land in it.": {
+    "_translate": "此示例定义了一个扩展器，通过在选择落入该范围时将其移至该范围之外，确保选择永远不会位于位置 5 和 10 之间。",
+    "_note": ""
+  },
+  "This is obviously a powerful tool that can cause trouble when used carelessly. You'll want to think carefully about the situations in which you want your extender (or correction) to fire, and how it could block the user from doing something they should reasonably be able to do.": {
+    "_translate": "这显然是一个强大的工具，若使用不当可能会引发问题。您需要仔细考虑在哪些情况下希望您的扩展器（或修正器）被触发，以及它如何可能阻止用户执行他们本应合理能够完成的操作。",
+    "_note": ""
+  }
+}

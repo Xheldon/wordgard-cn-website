@@ -1,0 +1,206 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Styling Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/style/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><nav id="toc">
+  <ul><li>
+        <a href="#h-prefix-class">Prefix Class</a></li><li>
+        <a href="#h-color-scheme">Color Scheme</a></li><li>
+        <a href="#h-rule-notation">Rule Notation</a></li><li>
+        <a href="#h-dom-structure">DOM Structure</a></li></ul>
+</nav>
+
+<script>
+addEventListener("load", function() {
+  let items = document.querySelectorAll("nav#toc ul a")
+  let timeout = -1, current = null
+  function update() {
+    timeout = -1
+    let target = document.elementFromPoint(innerWidth / 2, innerHeight / 3).closest("section"), sub, ref
+    if (target) {
+      for (;;) {
+        let next = target.parentNode.closest("section")
+        if (!next) break
+        target = next
+      }
+      for (let subheader of target.querySelectorAll("h3[id], h4[id]")) {
+        if (subheader.getBoundingClientRect().top < 35) sub = subheader.id
+        else break
+      }
+      ref = target.querySelector("a[id], h2[id]")
+    }
+    let sectionLink = ref ? "#" + ref.id : null
+    let mainLink = sub ? "#" + sub : sectionLink
+    if (current != mainLink) {
+      current = mainLink
+      for (let i = 0; i < items.length; i++) {
+        items[i].parentNode.classList.toggle("current-section", items[i].href.endsWith(sectionLink))
+        items[i].classList.toggle("current-item", items[i].href.endsWith(mainLink))
+      }
+    }
+  }
+  update()
+  addEventListener("scroll", () => {
+    if (timeout == -1) timeout = setTimeout(update, 100)
+  })
+  addEventListener("hashchange", () => update())
+})
+</script><article><h1 id="h-example-styling">示例：样式</h1>
+<p data-x-en="Like everything else in the browser, the way a Wordgard editor looks is determined by CSS styling rules. In order to support styles being part of extensions, without the need arrange for loading separate CSS files for every extension, the library uses a CSS-in-JS system for automatically injecting styles bundled with the code they belong to.">与浏览器中的其他元素一样，Wordgard 编辑器的外观由 CSS 样式规则决定。为了支持将样式作为扩展的一部分，而无需为每个扩展单独加载 CSS 文件，该库采用 CSS-in-JS 系统，自动注入与其所属代码捆绑在一起的样式。</p>
+<p data-x-en="You can style the editor with regular CSS rules, as long as you keep in mind that the styles provided via extensions have an extra class selector added, which will make them more specific than your plain rules unless you add some specific selectors yourself.">您<em>可以</em>使用常规 CSS 规则为编辑器设置样式，但请记住，通过扩展提供的样式会额外添加一个类选择器，这使得它们的优先级高于您的普通规则，除非您自行添加一些特定的选择器。</p>
+<hr class="floral"><section><h2 id="h-prefix-class">前缀类</h2>
+<p data-x-en="There are two types of style packages in this system—those that should always apply, and those that should only apply when the theme they are part of is active. The former still need to be included in a configuration (because that's how the editor makes sure they get loaded), but they cannot be turned off and on by including or removing the extension.">本系统中有两种类型的样式包：一种是始终适用的样式包，另一种是仅在其所属的<em>主题</em>激活时才适用的样式包。前者仍需包含在配置文件中（因为这是编辑器确保其被加载的方式），但它们无法通过添加或移除扩展来开启或关闭。</p>
+<p data-x-en="The first type is defined with Wordgard.styles:">第一种类型使用 <a href="../../docs/ref/#editor.Wordgard.styles"><code>Wordgard.styles</code></a> 定义：</p>
+<pre><code class="language-javascript"><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">styles</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">styles</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">".my-widget"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">border</span><span class="tok-punctuation">:</span> <span class="tok-string">"2px solid purple"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">backgroundColor</span><span class="tok-punctuation">:</span> <span class="tok-string">"orange"</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="If you include that extension, a element with class my-widget inside an editor will get the given style. You should target elements and classes that are specific to your extension in such a set of styles, so that they don't interfere with anything else.">如果您包含该扩展，编辑器内具有 <code>my-widget</code> 类的元素将获得指定的样式。您应该在此类样式集中针对特定于您扩展的元素和类，以免干扰其他内容。</p>
+<p data-x-en="For sets of styles that should be explicitly opted into, you use Wordgard.theme:">对于需要显式选择加入的样式集，请使用
+<a href="../../docs/ref/#editor.Wordgard.theme"><code>Wordgard.theme</code></a>：</p>
+<pre><code class="language-javascript"><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">theme</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">theme</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"wg-content"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">lineHeight</span><span class="tok-punctuation">:</span> <span class="tok-string">"1.6"</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="Such a theme will only be active in editors that explicitly include it. This is useful, because you don't want all editors in the document to suddenly get a new line height when you use this theme in one editor.">此类主题仅会在明确包含它的编辑器中生效。这非常有用，因为您不希望文档中的所有编辑器在您于某个编辑器中使用此主题时，突然都获得新的行高。</p>
+<p data-x-en="The way this works is that there is a facet that controls which styles are loaded in the editor root (window, frame, or shadow root). When you define a set of styles or a theme, the returned extension includes a value for this facet.">其工作原理是：存在一个 <a href="../../docs/ref/#editor.Wordgard.styleModule">facet</a>，用于控制编辑器根节点（window、frame 或 shadow root）中加载哪些样式。当您定义一组样式或主题时，返回的扩展将包含该 facet 的值。</p>
+<p data-x-en="All rules in such modules are prefixed with an additional class name that is uniquely generated by the library. For regular style sets, this class is stable, and always present on the editor. Themes get their own class, which is only present on editors where the theme is active.">此类模块中的所有规则均带有由库唯一生成的额外类名前缀。对于常规样式集，该类是稳定的，并且始终存在于编辑器上。主题拥有其自身的类，该类仅存在于启用了该主题的编辑器上。</p>
+<p data-x-en="Because these scope classes end up on the editor's outer element, if your rules mention that element directly, you must tell the library where to insert the class selector by including a &amp; at the point where it should appear. For example, this extension styles the editor when it has a faint class.">由于这些作用域类最终会出现在编辑器的外部元素上，如果您的规则直接引用了该元素，则必须通过在应出现该位置包含 <code>&amp;</code> 来告知库插入类选择器。例如，此扩展在编辑器具有 <code>faint</code> 类时对其进行样式设置。</p>
+<pre><code class="language-javascript"><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">faintSupport</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">styles</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"&amp;.faint"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">opacity</span><span class="tok-punctuation">:</span> <span class="tok-string">"0.5"</span><span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre></section><hr class="floral"><section><h2 id="h-color-scheme">配色方案</h2>
+<p data-x-en="You can also use the special markers &amp;light and &amp;dark, which work similarly but only match editors that use a light or dark color scheme.">您还可以使用特殊标记 <code>&amp;light</code> 和 <code>&amp;dark</code>，它们的工作原理类似，但仅匹配使用浅色或深色 <a href="../../docs/ref/#editor.Wordgard.colorScheme">配色方案</a> 的编辑器。</p>
+<p data-x-en="By default, an editor uses a light color scheme. You can tell it to use a dark scheme with Wordgard.colorScheme.of(&quot;dark&quot;). But note that this just toggles which of &amp;light/&amp;dark rules are used. The default editor style does not contain rules that make the background dark or the text color light in a dark color scheme—you'll have to take care of that yourself, either by making sure the colors cascading from the editor's parent elements fit the scheme, or by directly providing the needed styles as an extension.">默认情况下，编辑器使用浅色配色方案。您可以使用 <code>Wordgard.colorScheme.of("dark")</code> 指示其使用深色方案。但请注意，这仅切换使用 <code>&amp;light</code> 或 <code>&amp;dark</code> 规则。默认编辑器样式并不包含在深色配色方案中将背景设为深色或将文本颜色设为浅色的规则——您必须自行处理，要么确保从编辑器父元素级联下来的颜色符合该方案，要么通过扩展直接提供所需的样式。</p>
+<p data-x-en="Or, if your page is already using the CSS prefers-color-scheme feature, you can configure your editor with Wordgard.colorScheme.of(&quot;auto&quot;) to make its color scheme automatically follow the preferred scheme.">或者，如果您的页面已经使用了 CSS
+<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/prefers-color-scheme"><code>prefers-color-scheme</code></a>
+功能，您可以将编辑器配置为
+<code>Wordgard.colorScheme.of("auto")</code>，使其颜色方案自动跟随首选方案。</p>
+</section><hr class="floral"><section><h2 id="h-rule-notation">规则表示法</h2>
+<p data-x-en="As you could see in the examples so far, styles are provided in some kind of bastardized JavaScript-object CSS notation. The object you give to Wordgard.styles or Wordgard.theme contains selectors as property names, and objects that define style properties as their values. The property names can use camel-case, which will be normalized to CSS dash notation (fontFamily → font-family). Property values should be strings.">正如您在迄今为止的示例中所见，样式是以某种变体的 JavaScript 对象 CSS 表示法提供的。您传递给 <a href="../../docs/ref/#editor.Wordgard.styles"><code>Wordgard.styles</code></a> 或 <a href="../../docs/ref/#editor.Wordgard.theme"><code>Wordgard.theme</code></a> 的对象包含作为属性名的选择器，以及定义样式属性的对象作为其值。属性名可以使用驼峰命名法，它将被规范化为 CSS 连字符表示法（<code>fontFamily</code> → <code>font-family</code>）。属性值应为字符串。</p>
+<p data-x-en="It is possible to nest rules by including properties with a &amp; marker inside of these properties, like this:">可以通过在这些属性中包含带有 <code>&amp;</code> 标记的属性来嵌套规则，如下所示：</p>
+<pre><code class="language-javascript"><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">myPanelStyle</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">styles</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"wg-panel.my-panel"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">borderBottom</span><span class="tok-punctuation">:</span> <span class="tok-string">"2px solid black"</span><span class="tok-punctuation">,</span>
+    <span class="tok-string">"&amp; p"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">padding</span><span class="tok-punctuation">:</span> <span class="tok-string">"0 10px"</span>
+    <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="This styles paragraphs inside my-panel panels with a small horizontal margin.">此样式为 `<code>my-panel</code>` 面板内的段落设置较小的水平边距。</p>
+<p data-x-en="You can also wrap some rules in some types of @ blocks, like this:">您还可以将某些规则包装在特定类型的 <code>@</code> 块中，如下所示：</p>
+<pre><code class="language-javascript"><span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">theme</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"@media screen and (min-width: 400px)"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-string">"wg-content"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">fontSize</span><span class="tok-punctuation">:</span> <span class="tok-string">"2rem"</span>
+    <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre></section><hr class="floral"><section><h2 id="h-dom-structure">DOM 结构</h2>
+<p data-x-en="The editor's outer element has a <wordgard-editor> tag name, though you'll usually want to target it with the &amp; selector in your rules. This is a vertical flexbox that holds the scroller element, panels, and tooltips.">编辑器的外部元素使用 <code>&lt;wordgard-editor&gt;</code> 标签名，不过您在规则中通常希望使用 <code>&amp;</code> 选择器来定位它。这是一个垂直弹性盒子，用于容纳 <a href="../../docs/ref/#editor.Wordgard.scrollDOM">滚动条元素</a>、<a href="../../docs/ref/#editor.Panel">面板</a> 和 <a href="../../docs/ref/#editor.Tooltip">工具提示</a>。</p>
+<p data-x-en="The scroller is a <wg-scroller> element. By default, it doesn't actually scroll, but styling this element is the way to make an editor that has its own scroll bar (for example via Wordgard.scrolling).">滚动器是一个 <code>&lt;wg-scroller&gt;</code> 元素。默认情况下，它实际上不会滚动，但对该元素进行样式设置是创建一个拥有独立滚动条的编辑器的方式（例如通过 <a href="../../docs/ref/#editor.Wordgard.scrolling"><code>Wordgard.scrolling</code></a>）。</p>
+<p data-x-en="Inside of that is the <wg-content> element that holds the actual editable document. This element has contenteditable enabled, as well as a number of editing-related attributes like role=&quot;textbox&quot;, and is the element that has focus when the editor content is focused.">其内部是 <a href="../../docs/ref/#editor.Wordgard.contentDOM"><code>&lt;wg-content&gt;</code></a> 元素，该元素承载实际的可编辑文档。此元素启用了 <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/contenteditable"><code>contenteditable</code></a> 属性，并包含多个与编辑相关的属性（例如 <code>role="textbox"</code>），当编辑器内容获得焦点时，该元素即为获得焦点的元素。</p>
+<p data-x-en="There's also a <wg-cursor-layer> element in the same parent as the content, which overlays it and is used to draw the custom cursor as a <wg-cursor> element.">在内容的同一父级中还有一个 `<code>&lt;wg-cursor-layer&gt;</code>` 元素，它覆盖在内容之上，并用于将自定义光标绘制为 `<code>&lt;wg-cursor&gt;</code>` 元素。</p>
+<p data-x-en="There are extensions for adding attributes to the editor's outer element and content element. These can be useful for adding classes to influence styling in specific circumstances, based on editor state.">存在用于向编辑器的 <a href="../../docs/ref/#editor.Wordgard.editorAttributes">外部</a> 元素和 <a href="../../docs/ref/#editor.Wordgard.contentAttributes">内容</a> 元素添加属性的扩展。这些扩展在根据编辑器状态添加类以影响特定情况下的样式时非常有用。</p>
+<p data-x-en="The editor content can be styled by targeting the elements used to draw it. There are some assumptions the editor makes about its content's layout though, which you should take care not to violate. For one thing, inline content is expected to render as inline elements (so don't set your textblocks to display: flex or something like that), and blocks should lay their content out in one direction, and if that direction isn't vertical, declare themselves to have row orientation.">可以通过针对用于绘制编辑器内容的元素 <a href="../../docs/ref/#doc.Node.Spec.shape">样式化</a> 来设置编辑器内容的样式。不过，编辑器对其内容的布局有一些假设，您应注意不要违反这些假设。首先，内联内容应渲染为内联元素（因此请勿将文本块设置为 <code>display: flex</code> 或类似样式），并且块应沿一个方向布局其内容；如果该方向不是垂直方向，则应声明自身具有 <a href="../../docs/ref/#doc.Plot.Type.orientation">行方向</a>。</p>
+<p data-x-en="The editor's own styles define a few CSS variables that may be useful in custom styling:">编辑器自身的样式定义了一些在自定义样式中可能很有用的 CSS 变量：</p>
+<ul>
+<li data-x-en="--wg-highlight-color is the color used for selected elements and focus rings. It is a bright blue by default."><code>--wg-highlight-color</code> 是用于选中元素和焦点环的颜色。默认值为亮蓝色。</li>
+<li data-x-en="--wg-dialog-font is a font style used in dialogs and tooltips."><code>--wg-dialog-font</code> 是一种用于对话框和工具提示的 <code>font</code> 样式。</li>
+<li data-x-en="--wg-border-color is the color used for borders around the editor and its interface elements."><code>--wg-border-color</code> 是用于编辑器及其界面元素边框的颜色。</li>
+<li data-x-en="--wg-panel-color is the background color of panels and tooltips."><code>--wg-panel-color</code> 是 <a href="../../docs/ref/#editor.Panel">面板</a> 和 <a href="../../docs/ref/#editor.Tooltip">工具提示</a> 的背景色。</li>
+</ul>
+</section>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

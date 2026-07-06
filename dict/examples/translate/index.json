@@ -1,0 +1,62 @@
+{
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Example: Translation": {
+    "_translate": "示例：翻译",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Or, if you include myPhrasesGerman in your configuration, it returns \"102 Wörter\".": {
+    "_translate": "或者，如果您在配置中包含 <code>myPhrasesGerman</code>，它将返回 <code>\"102 Wörter\"</code>。",
+    "_note": ""
+  },
+  "You can then call myPhrases.get(state, \"error\") to access a phrase. That method will replace $ placeholders with additional arguments it gets. So myPhrases.get(state, \"word_count\", 102) returns \"102 words\".": {
+    "_translate": "然后，您可以调用 <code>myPhrases.get(state, \"error\")</code> 来访问短语。该方法会将 <code>$</code> 占位符替换为它接收到的额外参数。因此，<code>myPhrases.get(state, \"word_count\", 102)</code> 将返回 <code>\"102 words\"</code>。",
+    "_note": ""
+  },
+  "You define a set like this:": {
+    "_translate": "您定义集合的方式如下：",
+    "_note": ""
+  },
+  "Sometimes references to such phrases need to be passed around. myPhrases.ref(\"error\") returns a function that, when called with an editor state, returns the value of the phrase.": {
+    "_translate": "有时需要传递对这些短语的引用。\n<code>myPhrases.ref(\"error\")</code> 返回一个函数，当传入编辑器状态时，该函数会返回短语的值。",
+    "_note": ""
+  },
+  "Wordgard comes with a simple system for translating text presented to the user. A phrase set is an object that collects a number of phrases, each tagged with a short string. If you make sure all the text you display to the user comes from such a set, extensions can provide alternative phrases.": {
+    "_translate": "Wordgard 附带一个简单的系统，用于翻译向用户呈现的文本。<a href=\"../../docs/ref/#phrases.PhraseSet\">短语集</a> 是一个对象，它收集多个短语，每个短语都标记有一个短字符串。如果您确保向用户显示的所有文本都来自这样的集合，扩展就可以提供替代短语。",
+    "_note": ""
+  },
+  "This system is intentionally so simple that it adds very little complexity to the core library. It does not have the kind of features that proper internationalization libraries have. This suffices for many situations, but if you're doing something that requires more advanced features, you might want to use a real internationalization library instead.": {
+    "_translate": "该系统故意设计得非常简单，因此为核心库增加的复杂性微乎其微。它不具备正规国际化库所拥有的功能。这足以满足许多场景的需求，但如果您需要更高级的功能，则建议使用真正的国际化库。",
+    "_note": ""
+  },
+  "The phrases export from \"wordgard/phrases\" holds the text used by the basic menu and dialogs. This is what a Dutch translation of those phrases might look like:": {
+    "_translate": "来自 <code>\"wordgard/phrases\"</code> 的 <code>phrases</code> 导出项包含基本菜单和对话框所使用的文本。这些短语的荷兰语翻译可能如下所示：",
+    "_note": ""
+  },
+  "Note that there are a few other phrase sets in the package, which depending on whether you use the image dialog, color picker, or table support, you may also need to translate.": {
+    "_translate": "请注意，该软件包中还包含其他几个短语集，具体取决于您使用的是<a href=\"../../docs/ref/#phrases.imagePhrases\">图像对话框</a>、<a href=\"../../docs/ref/#phrases.colorNames\">颜色选择器</a>还是<a href=\"../../docs/ref/#phrases.tablePhrases\">表格支持</a>，您可能还需要翻译这些内容。",
+    "_note": ""
+  },
+  "This is what our partially-translated editor looks like:": {
+    "_translate": "这就是我们部分翻译后的编辑器外观：",
+    "_note": ""
+  }
+}

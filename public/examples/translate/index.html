@@ -1,0 +1,153 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Translation Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><script type="importmap">{"imports":{"wordgard/doc":"./../../modules/doc.js","wordgard/state":"./../../modules/state.js","wordgard/editor":"./../../modules/editor.js","wordgard/command":"./../../modules/command.js","wordgard/history":"./../../modules/history.js","wordgard/types":"./../../modules/types.js","wordgard/schema":"./../../modules/schema.js","wordgard/table":"./../../modules/table.js","wordgard/collab":"./../../modules/collab.js","wordgard/phrases":"./../../modules/phrases.js","style-mod":"./../../modules/style-mod.js","@marijn/find-cluster-break":"./../../modules/find-cluster-break.js","crelt":"./../../modules/crelt.js"}}</script><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/translate/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><article><h1 id="h-example-translation">示例：翻译</h1>
+<p data-x-en="Wordgard comes with a simple system for translating text presented to the user. A phrase set is an object that collects a number of phrases, each tagged with a short string. If you make sure all the text you display to the user comes from such a set, extensions can provide alternative phrases.">Wordgard 附带一个简单的系统，用于翻译向用户呈现的文本。<a href="../../docs/ref/#phrases.PhraseSet">短语集</a> 是一个对象，它收集多个短语，每个短语都标记有一个短字符串。如果您确保向用户显示的所有文本都来自这样的集合，扩展就可以提供替代短语。</p>
+<p data-x-en="You define a set like this:">您定义集合的方式如下：</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">PhraseSet</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/phrases"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">myPhrases</span> <span class="tok-operator">=</span> <span class="tok-variableName">PhraseSet</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">error</span><span class="tok-punctuation">:</span> <span class="tok-string">"Catastrophic error"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">word_count</span><span class="tok-punctuation">:</span> <span class="tok-string">"$1 words"</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">myPhrasesGerman</span> <span class="tok-operator">=</span> <span class="tok-variableName">myPhrases</span><span class="tok-operator">.</span><span class="tok-propertyName">translate</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">error</span><span class="tok-punctuation">:</span> <span class="tok-string">"Katastrophaler Fehler"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">word_count</span><span class="tok-punctuation">:</span> <span class="tok-string">"$1 Wörter"</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="You can then call myPhrases.get(state, &quot;error&quot;) to access a phrase. That method will replace $ placeholders with additional arguments it gets. So myPhrases.get(state, &quot;word_count&quot;, 102) returns &quot;102 words&quot;.">然后，您可以调用 <code>myPhrases.get(state, "error")</code> 来访问短语。该方法会将 <code>$</code> 占位符替换为它接收到的额外参数。因此，<code>myPhrases.get(state, "word_count", 102)</code> 将返回 <code>"102 words"</code>。</p>
+<p data-x-en="Or, if you include myPhrasesGerman in your configuration, it returns &quot;102 Wörter&quot;.">或者，如果您在配置中包含 <code>myPhrasesGerman</code>，它将返回 <code>"102 Wörter"</code>。</p>
+<p data-x-en="Sometimes references to such phrases need to be passed around. myPhrases.ref(&quot;error&quot;) returns a function that, when called with an editor state, returns the value of the phrase.">有时需要传递对这些短语的引用。
+<code>myPhrases.ref("error")</code> 返回一个函数，当传入编辑器状态时，该函数会返回短语的值。</p>
+<p data-x-en="This system is intentionally so simple that it adds very little complexity to the core library. It does not have the kind of features that proper internationalization libraries have. This suffices for many situations, but if you're doing something that requires more advanced features, you might want to use a real internationalization library instead.">该系统故意设计得非常简单，因此为核心库增加的复杂性微乎其微。它不具备正规国际化库所拥有的功能。这足以满足许多场景的需求，但如果您需要更高级的功能，则建议使用真正的国际化库。</p>
+<hr class="floral"><p data-x-en="The phrases export from &quot;wordgard/phrases&quot; holds the text used by the basic menu and dialogs. This is what a Dutch translation of those phrases might look like:">来自 <code>"wordgard/phrases"</code> 的 <code>phrases</code> 导出项包含基本菜单和对话框所使用的文本。这些短语的荷兰语翻译可能如下所示：</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">phrases</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/phrases"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">dutchPhrases</span> <span class="tok-operator">=</span> <span class="tok-variableName">phrases</span><span class="tok-operator">.</span><span class="tok-propertyName">translate</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">dialog_close</span><span class="tok-punctuation">:</span> <span class="tok-string">"sluiten"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">overflow_more</span><span class="tok-punctuation">:</span> <span class="tok-string">"Meer"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">block_style</span><span class="tok-punctuation">:</span> <span class="tok-string">"Blok stijl"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_strong</span><span class="tok-punctuation">:</span> <span class="tok-string">"Sterke nadruk wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_em</span><span class="tok-punctuation">:</span> <span class="tok-string">"Nadruk wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_code</span><span class="tok-punctuation">:</span> <span class="tok-string">"Code wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_underline</span><span class="tok-punctuation">:</span> <span class="tok-string">"Understrepen wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_strikethrough</span><span class="tok-punctuation">:</span> <span class="tok-string">"Doorstrepen wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_super</span><span class="tok-punctuation">:</span> <span class="tok-string">"Superscript wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_sub</span><span class="tok-punctuation">:</span> <span class="tok-string">"Subscript wisselen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">link_target</span><span class="tok-punctuation">:</span> <span class="tok-string">"Link doel"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">create_link</span><span class="tok-punctuation">:</span> <span class="tok-string">"Link maken"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">text_color</span><span class="tok-punctuation">:</span> <span class="tok-string">"Tekstkleur"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">background_color</span><span class="tok-punctuation">:</span> <span class="tok-string">"Achtergrondkleur"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">undo</span><span class="tok-punctuation">:</span> <span class="tok-string">"Ongedaan maken"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">redo</span><span class="tok-punctuation">:</span> <span class="tok-string">"Herdoen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">paragraph</span><span class="tok-punctuation">:</span> <span class="tok-string">"Paragraaf"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">code_block</span><span class="tok-punctuation">:</span> <span class="tok-string">"Code blok"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_1</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 1"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_2</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 2"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_3</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 3"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_bullet_list</span><span class="tok-punctuation">:</span> <span class="tok-string">"Lijst aan/uitschakelen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_ordered_list</span><span class="tok-punctuation">:</span> <span class="tok-string">"Genummerde lijst aan/uitschakelen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">toggle_quote</span><span class="tok-punctuation">:</span> <span class="tok-string">"Citaat aan/uitschakelen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">alignment</span><span class="tok-punctuation">:</span> <span class="tok-string">"Uitlijning"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">align_start</span><span class="tok-punctuation">:</span> <span class="tok-string">"Aan blokstart uitlijnen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">align_end</span><span class="tok-punctuation">:</span> <span class="tok-string">"Aan blokeinde uitlijnen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">align_center</span><span class="tok-punctuation">:</span> <span class="tok-string">"Centreren"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">text_dir</span><span class="tok-punctuation">:</span> <span class="tok-string">"Tekstrichting"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">text_dir_ltr</span><span class="tok-punctuation">:</span> <span class="tok-string">"Links-naar-rechts tekst"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">text_dir_rtl</span><span class="tok-punctuation">:</span> <span class="tok-string">"Rechst-naar-links tekst"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">text_dir_auto</span><span class="tok-punctuation">:</span> <span class="tok-string">"Automatische tekstrichting"</span><span class="tok-punctuation">,</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="Note that there are a few other phrase sets in the package, which depending on whether you use the image dialog, color picker, or table support, you may also need to translate.">请注意，该软件包中还包含其他几个短语集，具体取决于您使用的是<a href="../../docs/ref/#phrases.imagePhrases">图像对话框</a>、<a href="../../docs/ref/#phrases.colorNames">颜色选择器</a>还是<a href="../../docs/ref/#phrases.tablePhrases">表格支持</a>，您可能还需要翻译这些内容。</p>
+<p data-x-en="This is what our partially-translated editor looks like:">这就是我们部分翻译后的编辑器外观：</p>
+<div id="editor"></div><script src="./phrases.js" type="module"></script>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

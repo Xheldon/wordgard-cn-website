@@ -1,0 +1,135 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Wordgard Examples</title>
+<link rel="stylesheet" href="./../style/site.css">
+<link rel="icon" href="./../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../"><img src="./../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../docs/">文档</a>
+  <a href="./../examples/" class="active">示例</a>
+  <a href="./../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><article>
+
+<figure class="float-right" style="margin-bottom: 0"><img src="./../img/examples.jpg" alt="" style="width: 400px"></figure>
+
+<h1>示例</h1>
+
+<p data-x-en="Here you can find explanations, usually with code included, that go through the recommended way to do various things with this library.">您可以在这里找到通常包含代码的说明，介绍使用本库执行各种操作的最佳实践。</p>
+
+<h2 class="hr" style="clear: right">基础</h2>
+
+<ul class="grid-list">
+  <li data-x-en="Basic Editor Setting up a simple Wordgard editor."><a href="basic/" class="blocklink">
+      <h3>基础编辑器</h3>
+      <p>设置一个简单的 Wordgard 编辑器。</p>
+    </a></li>
+  <li data-x-en="Configuration Configuring and reconfiguring your editor."><a href="config/" class="blocklink">
+      <h3>配置</h3>
+      <p>配置和重新配置您的编辑器。</p>
+    </a></li>
+  <li data-x-en="Transactions Changing the editor state programatically."><a href="transaction/" class="blocklink">
+      <h3>事务</h3>
+      <p>以编程方式更改编辑器状态。</p>
+    </a></li>
+  <li data-x-en="Styling How to style your editor or your extension."><a href="style/" class="blocklink">
+      <h3>样式</h3>
+      <p>如何为您的编辑器或扩展设置样式。</p>
+    </a></li>
+  <li data-x-en="Schema Customize the document schema and add your own elements."><a href="schema/" class="blocklink">
+      <h3>模式</h3>
+      <p>自定义文档模式并添加您自己的元素。</p>
+    </a></li>
+  <li data-x-en="Translation Providing translated text for the editor interface."><a href="translate/" class="blocklink">
+      <h3>翻译</h3>
+      <p>为编辑器界面提供翻译文本。</p>
+    </a></li>
+  <li data-x-en="Blame Tracking Shows how to use change descriptions to track who inserted what content."><a href="blame/" class="blocklink">
+      <h3>责任追踪</h3>
+      <p>展示如何使用变更描述来追踪谁插入了什么内容。</p>
+    </a></li>
+</ul>
+
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

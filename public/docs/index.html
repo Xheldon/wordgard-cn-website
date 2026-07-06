@@ -1,0 +1,138 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Wordgard Docs</title>
+<link rel="stylesheet" href="./../style/site.css">
+<link rel="icon" href="./../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/docs/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../"><img src="./../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../docs/" class="active">文档</a>
+  <a href="./../examples/">示例</a>
+  <a href="./../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><article>
+
+<figure class="float-right" style="margin-top: -80px"><img src="../img/bumblebee.jpg" alt="" style="width: 130px"></figure>
+
+<h1 style="margin-bottom: 50px">文档</h1>
+
+<ul class="grid-list" style="clear: both">
+  <li data-x-en="System Guide A description of the system, and a guide to accomplishing some common goals."><a href="guide/" class="blocklink">
+      <h3>系统指南</h3>
+      <p>系统说明以及实现一些常见目标的指南。</p>
+    </a></li>
+  <li data-x-en="Reference Manual A full listing and description of the public API exported by the library."><a href="ref/" class="blocklink">
+      <h3>参考手册</h3>
+      <p>库导出的公共 API 的完整列表和说明。</p>
+    </a></li>
+  <li data-x-en="FAQ A list of frequently asked questions, with answers."><a href="faq/" class="blocklink">
+      <h3>常见问题</h3>
+      <p>常见问题列表及其解答。</p>
+    </a></li>
+  <li data-x-en="Migrating from ProseMirror A summary of differences between Wordgard and ProseMirror."><a href="prosemirror/" class="blocklink">
+      <h3>从 ProseMirror 迁移</h3>
+      <p>Wordgard 与 ProseMirror 之间差异的摘要。</p>
+    </a></li>
+</ul>
+
+<hr class="floral">
+
+<h2 class="hr">其他资源</h2>
+
+<ul class="grid-list">
+  <li data-x-en="Project Announcement Blog post announcing Wordgard, with some background and motivation."><a href="https://marijnhaverbeke.nl/blog/wordgard-0.1.html" class="blocklink">
+      <h3>项目公告</h3>
+      <p>介绍 Wordgard 的博客文章，包含部分背景信息和开发动机。</p>
+    </a></li>
+  <li data-x-en="Forum A discussion board for asking questions and giving feedback."><a href="https://discuss.wordgard.net/" class="blocklink">
+      <h3>论坛</h3>
+      <p>用于提问和提供反馈的讨论板。</p>
+    </a></li>
+  <li data-x-en="Examples A collection of examples showing how to implement various use cases."><a href="../examples/" class="blocklink">
+      <h3>示例</h3>
+      <p>展示如何实现各种用例的示例集合。</p>
+    </a></li>
+</ul>
+
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

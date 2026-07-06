@@ -1,0 +1,34 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Try Wordgard": {
+    "_translate": "试用 Wordgard",
+    "_note": ""
+  },
+  "Write a program here to define an editor, then see what the result looks like. This can be useful to try things out or to share scripts to explain something or illustrate a bug report.": {
+    "_translate": "在此编写一个程序来定义编辑器，然后查看结果。这可用于尝试各种功能，或分享脚本以说明问题或演示错误报告。",
+    "_note": ""
+  },
+  "wordgard/* modules can be imported directly by name. Other imports should be URLs. You'll usually want your script to create an editor in document.body. Press Ctrl-Enter to run the current code, and see the result (boxed in an <iframe>) in the “Output” tab. When errors occur or things are logged to the console, you can find them in the “Log” tab.": {
+    "_translate": "<code>wordgard/*</code> 模块可以直接按名称导入。其他导入应使用 URL。通常，您的脚本会在 <code>document.body</code> 中创建一个编辑器。按 Ctrl-Enter 运行当前代码，并在“输出”选项卡中查看结果（显示在 <code>&lt;iframe&gt;</code> 框内）。当发生错误或内容被记录到控制台时，您可以在“日志”选项卡中找到它们。",
+    "_note": ""
+  }
+}

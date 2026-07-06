@@ -1,0 +1,114 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Basics": {
+    "_translate": "基础",
+    "_note": ""
+  },
+  "Here you can find explanations, usually with code included, that go through the recommended way to do various things with this library.": {
+    "_translate": "您可以在这里找到通常包含代码的说明，介绍使用本库执行各种操作的最佳实践。",
+    "_note": ""
+  },
+  "Basic Editor": {
+    "_translate": "基础编辑器",
+    "_note": ""
+  },
+  "Basic Editor Setting up a simple Wordgard editor.": {
+    "_translate": "<a href=\"basic/\" class=\"blocklink\">\n      <h3>基础编辑器</h3>\n      <p>设置一个简单的 Wordgard 编辑器。</p>\n    </a>",
+    "_note": ""
+  },
+  "Configuring and reconfiguring your editor.": {
+    "_translate": "配置和重新配置您的编辑器。",
+    "_note": ""
+  },
+  "Transactions Changing the editor state programatically.": {
+    "_translate": "<a href=\"transaction/\" class=\"blocklink\">\n      <h3>事务</h3>\n      <p>以编程方式更改编辑器状态。</p>\n    </a>",
+    "_note": ""
+  },
+  "Configuration": {
+    "_translate": "配置",
+    "_note": ""
+  },
+  "Setting up a simple Wordgard editor.": {
+    "_translate": "正在设置一个简单的 Wordgard 编辑器。",
+    "_note": ""
+  },
+  "Configuration Configuring and reconfiguring your editor.": {
+    "_translate": "<a href=\"config/\" class=\"blocklink\">\n      <h3>配置</h3>\n      <p>配置和重新配置您的编辑器。</p>\n    </a>",
+    "_note": ""
+  },
+  "Transactions": {
+    "_translate": "交易",
+    "_note": ""
+  },
+  "Changing the editor state programatically.": {
+    "_translate": "通过编程方式更改编辑器状态。",
+    "_note": ""
+  },
+  "Styling": {
+    "_translate": "样式",
+    "_note": ""
+  },
+  "How to style your editor or your extension.": {
+    "_translate": "如何自定义编辑器或扩展的样式。",
+    "_note": ""
+  },
+  "Styling How to style your editor or your extension.": {
+    "_translate": "<a href=\"style/\" class=\"blocklink\">\n      <h3>样式</h3>\n      <p>如何为您的编辑器或扩展设置样式。</p>\n    </a>",
+    "_note": ""
+  },
+  "Schema": {
+    "_translate": "模式",
+    "_note": ""
+  },
+  "Schema Customize the document schema and add your own elements.": {
+    "_translate": "<a href=\"schema/\" class=\"blocklink\">\n      <h3>模式</h3>\n      <p>自定义文档模式并添加您自己的元素。</p>\n    </a>",
+    "_note": ""
+  },
+  "Translation": {
+    "_translate": "翻译",
+    "_note": ""
+  },
+  "Providing translated text for the editor interface.": {
+    "_translate": "为编辑器界面提供翻译文本。",
+    "_note": ""
+  },
+  "Customize the document schema and add your own elements.": {
+    "_translate": "自定义文档架构并添加您自己的元素。",
+    "_note": ""
+  },
+  "Translation Providing translated text for the editor interface.": {
+    "_translate": "<a href=\"translate/\" class=\"blocklink\">\n      <h3>翻译</h3>\n      <p>为编辑器界面提供翻译文本。</p>\n    </a>",
+    "_note": ""
+  },
+  "Blame Tracking Shows how to use change descriptions to track who inserted what content.": {
+    "_translate": "<a href=\"blame/\" class=\"blocklink\">\n      <h3>责任追踪</h3>\n      <p>展示如何使用变更描述来追踪谁插入了什么内容。</p>\n    </a>",
+    "_note": ""
+  },
+  "Shows how to use change descriptions to track who inserted what content.": {
+    "_translate": "演示如何使用更改描述来跟踪谁插入了什么内容。",
+    "_note": ""
+  },
+  "Blame Tracking": {
+    "_translate": "责任追踪",
+    "_note": ""
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Documentation": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "System Guide": {
+    "_translate": "系统指南",
+    "_note": ""
+  },
+  "A description of the system, and a guide to accomplishing some common goals.": {
+    "_translate": "系统说明以及实现一些常见目标的指南。",
+    "_note": ""
+  },
+  "System Guide A description of the system, and a guide to accomplishing some common goals.": {
+    "_translate": "<a href=\"guide/\" class=\"blocklink\">\n      <h3>系统指南</h3>\n      <p>系统说明以及实现一些常见目标的指南。</p>\n    </a>",
+    "_note": ""
+  },
+  "Reference Manual": {
+    "_translate": "参考手册",
+    "_note": ""
+  },
+  "A full listing and description of the public API exported by the library.": {
+    "_translate": "库导出的公共 API 的完整列表和说明。",
+    "_note": ""
+  },
+  "Reference Manual A full listing and description of the public API exported by the library.": {
+    "_translate": "<a href=\"ref/\" class=\"blocklink\">\n      <h3>参考手册</h3>\n      <p>库导出的公共 API 的完整列表和说明。</p>\n    </a>",
+    "_note": ""
+  },
+  "FAQ": {
+    "_translate": "常见问题解答",
+    "_note": ""
+  },
+  "FAQ A list of frequently asked questions, with answers.": {
+    "_translate": "<a href=\"faq/\" class=\"blocklink\">\n      <h3>常见问题</h3>\n      <p>常见问题列表及其解答。</p>\n    </a>",
+    "_note": ""
+  },
+  "A list of frequently asked questions, with answers.": {
+    "_translate": "常见问题列表及其答案。",
+    "_note": ""
+  },
+  "Migrating from ProseMirror A summary of differences between Wordgard and ProseMirror.": {
+    "_translate": "<a href=\"prosemirror/\" class=\"blocklink\">\n      <h3>从 ProseMirror 迁移</h3>\n      <p>Wordgard 与 ProseMirror 之间差异的摘要。</p>\n    </a>",
+    "_note": ""
+  },
+  "Other resources": {
+    "_translate": "其他资源",
+    "_note": ""
+  },
+  "Project Announcement": {
+    "_translate": "项目公告",
+    "_note": ""
+  },
+  "Migrating from ProseMirror": {
+    "_translate": "从 ProseMirror 迁移",
+    "_note": ""
+  },
+  "A summary of differences between Wordgard and ProseMirror.": {
+    "_translate": "Wordgard 与 ProseMirror 之间差异的摘要。",
+    "_note": ""
+  },
+  "Project Announcement Blog post announcing Wordgard, with some background and motivation.": {
+    "_translate": "<a href=\"https://marijnhaverbeke.nl/blog/wordgard-0.1.html\" class=\"blocklink\">\n      <h3>项目公告</h3>\n      <p>介绍 Wordgard 的博客文章，包含部分背景信息和开发动机。</p>\n    </a>",
+    "_note": ""
+  },
+  "Forum": {
+    "_translate": "论坛",
+    "_note": ""
+  },
+  "Blog post announcing Wordgard, with some background and motivation.": {
+    "_translate": "发布一篇介绍 Wordgard 的博客文章，包含相关背景与开发动机。",
+    "_note": ""
+  },
+  "Forum A discussion board for asking questions and giving feedback.": {
+    "_translate": "<a href=\"https://discuss.wordgard.net/\" class=\"blocklink\">\n      <h3>论坛</h3>\n      <p>用于提问和提供反馈的讨论板。</p>\n    </a>",
+    "_note": ""
+  },
+  "A discussion board for asking questions and giving feedback.": {
+    "_translate": "一个用于提问和提供反馈的讨论区。",
+    "_note": ""
+  },
+  "A collection of examples showing how to implement various use cases.": {
+    "_translate": "展示如何实现各种用例的示例集。",
+    "_note": ""
+  },
+  "Examples A collection of examples showing how to implement various use cases.": {
+    "_translate": "<a href=\"../examples/\" class=\"blocklink\">\n      <h3>示例</h3>\n      <p>展示如何实现各种用例的示例集合。</p>\n    </a>",
+    "_note": ""
+  }
+}

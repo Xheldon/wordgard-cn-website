@@ -1,0 +1,154 @@
+{
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Example: Schema": {
+    "_translate": "示例：架构",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Configuring your Schema": {
+    "_translate": "配置您的架构",
+    "_note": ""
+  },
+  "Every Wordgard editor has a schema, which sets the set of content elements (node and mark types) that may occur in its document, and the relationships between those.": {
+    "_translate": "每个 Wordgard 编辑器都有一个 <a href=\"../../docs/ref/#doc.Schema\">模式</a>，它定义了文档中可能出现的元素集合（节点和标记类型）以及它们之间的关系。",
+    "_note": ""
+  },
+  "The easiest way to declare your editor's schema is to include one of the basic schema bundles (basicSchema, fullSchema, or inlineSchema) in your configuration, and then add additional elements as desired.": {
+    "_translate": "声明编辑器模式最简单的方法是在配置中包含一个基本模式包（<a href=\"../../docs/ref/#schema.basicSchema\"><code>basicSchema</code></a>、<a href=\"../../docs/ref/#schema.fullSchema\"><code>fullSchema</code></a>或<a href=\"../../docs/ref/#schema.inlineSchema\"><code>inlineSchema</code></a>），然后根据需要添加其他元素。",
+    "_note": ""
+  },
+  "Some of these support additional configuration, which you can only provide when adding them directly. In this case, we're setting the list types, which normally support block content in their items, to use items with inline content.": {
+    "_translate": "其中一些支持额外的配置，但只有在直接添加它们时才能提供。在这种情况下，我们将列表类型设置为使用包含内联内容的项，而这些列表类型通常支持在其项中包含块级内容。",
+    "_note": ""
+  },
+  "If you need to include a raw node or mark type in your configuration, you have to wrap it in GardState.schemaElement.": {
+    "_translate": "如果您需要在配置中包含原始节点或标记类型，则必须将其包裹在 <a href=\"../../docs/ref/#state.GardState.schemaElement\"><code>GardState.schemaElement</code></a> 中。",
+    "_note": ""
+  },
+  "// Do stuff with the schema": {
+    "_translate": "// 对模式执行操作",
+    "_note": ""
+  },
+  "In cases where you need to access the schema before creating the editor state, you can start by resolving a configuration, use the schema it defines, and then create a state with it.": {
+    "_translate": "在需要于创建编辑器状态之前访问模式的情况下，您可以先解析一个配置，使用该配置定义的模式，然后基于此创建状态。",
+    "_note": ""
+  },
+  "It is also possible to create a schema without a configuration, by directly calling Schema.define. Here you cannot provide editor extensions, but have to pass in the actual schema elements (either from \"wordgard/types\" or custom definitions).": {
+    "_translate": "也可以在不使用配置的情况下创建模式，方法是直接调用 <a href=\"../../docs/ref/#doc.Schema.define\"><code>Schema.define</code></a>。在此处，您无法提供编辑器扩展，而必须传入实际的模式元素（来自 <a href=\"../../docs/ref/#types\"><code>\"wordgard/types\"</code></a> 或自定义定义）。",
+    "_note": ""
+  },
+  "It is often important to be able to include dinosaurs in rich text documents. So in this example we'll create a custom leaf type for them.": {
+    "_translate": "在富文本文档中包含恐龙往往非常重要。因此，在本示例中，我们将为它们创建一个自定义叶子类型。",
+    "_note": ""
+  },
+  "Custom Element": {
+    "_translate": "自定义元素",
+    "_note": ""
+  },
+  "This is a simple inline leaf definition that takes one of a set of dinosaur names as parameter, and renders itself as a <document-dino data-name=\"Triceratops\"> element.": {
+    "_translate": "这是一个简单的内联叶子定义，它接受一组恐龙名称中的一个作为参数，并将自身渲染为 <code>&lt;document-dino data-name=\"Triceratops\"&gt;</code> 元素。",
+    "_note": ""
+  },
+  "This is mostly useful in scripts that aren't actually creating an editor, such as node scripts that work with Wordgard documents.": {
+    "_translate": "这主要适用于那些实际上并未创建编辑器的脚本，例如处理 Wordgard 文档的节点脚本。",
+    "_note": ""
+  },
+  "The user will need to insert dinosaurs, so let's add a simple insertion command.": {
+    "_translate": "用户需要插入恐龙，因此让我们添加一个简单的插入命令。",
+    "_note": ""
+  },
+  "We'll define a set of styles that actually make such an element like a dinosaur.": {
+    "_translate": "我们将定义一组样式，使该元素真正看起来像恐龙。",
+    "_note": ""
+  },
+  "That gives us the features we need. For convenience, we gather them up in a bundle function.": {
+    "_translate": "这为我们提供了所需的功能。为了方便起见，我们将它们封装在一个函数中。",
+    "_note": ""
+  },
+  "We'll make that command accessible through the menu. For submenus like this one, where we know in advance what content it should contain, it is often practical to just immediately provide the content directly in the definition.": {
+    "_translate": "我们将通过菜单使该命令可访问。对于像这样的子菜单，如果我们预先知道它应包含的内容，通常直接在定义中<a href=\"../../docs/ref/#command.Menu.Submenu.Spec.content\">提供</a>内容更为实用。",
+    "_note": ""
+  },
+  "List-Only Schema": {
+    "_translate": "仅列表模式",
+    "_note": ""
+  },
+  "Adding that to an editor makes it behave like this:": {
+    "_translate": "将其添加到编辑器中，使其行为如下：",
+    "_note": ""
+  },
+  "/* ... */": {
+    "_translate": "/* ... */",
+    "_note": ""
+  },
+  "Let's go through an example that changes the schema structure. For an outliner-style editor, we want to make it so that the top level of a document is always a list.": {
+    "_translate": "让我们通过一个更改架构结构的示例来说明。对于大纲式编辑器，我们希望确保文档的顶层始终是一个列表。",
+    "_note": ""
+  },
+  "We can use the existing list plot definitions, but must change their relationships. The default Doc plot allows content of type Node.Group.Content, which is a group used for generic block-level content. In our editor we want to narrow that to just BulletList.": {
+    "_translate": "我们可以使用现有的列表图定义，但必须更改它们的关系。默认的 <a href=\"../../docs/ref/#types.Doc\"><code>Doc</code></a> 图允许类型为 <a href=\"../../docs/ref/#doc.Node.Group.Content\"><code>Node.Group.Content</code></a> 的内容，这是一个用于通用块级内容的组。在我们的编辑器中，我们希望将其缩小为仅 <a href=\"../../docs/ref/#types.BulletList\"><code>BulletList</code></a>。",
+    "_note": ""
+  },
+  "That already works pretty well. Except that once you use backspace to merge two list items, it becomes very hard to start a new item, because the default enter command does not know how to behave in a schema like this.": {
+    "_translate": "这已经相当有效了。不过，一旦你使用退格键合并两个列表项，就很难开始新项，因为默认的 <a href=\"../../docs/ref/#command.enter\"><code>enter</code></a> 命令不知道在这种架构下该如何表现。",
+    "_note": ""
+  },
+  "Let's add a handler that makes it split a list item when used in an empty textblock that's in a top-level list item but not the first block of the item.": {
+    "_translate": "让我们添加一个处理程序，使其在用于顶级列表项中的空文本块（但不是该列表项的第一个块）时，能够拆分列表项。",
+    "_note": ""
+  },
+  "Inline Schema": {
+    "_translate": "内联模式",
+    "_note": ""
+  },
+  "With that tweak, we get a passable list-only editor.": {
+    "_translate": "经过这一调整，我们便获得了一个尚可用的仅列表编辑器。",
+    "_note": ""
+  },
+  "And there we go: inline rich text fields.": {
+    "_translate": "好了，这就是内联富文本字段。",
+    "_note": ""
+  },
+  "With a little bit of styling you can also make such an editor look like a rich-text enabled input field.": {
+    "_translate": "只需稍加样式，您就可以让此类编辑器看起来像一个支持富文本的输入框。",
+    "_note": ""
+  },
+  "Enter a title:": {
+    "_translate": "输入标题：<span id=\"title\"></span>",
+    "_note": ""
+  },
+  "It is possible to set up a Wordgard schema where the document is a single textblock, using inlineSchema or InlineDoc (or defining your own doc type).": {
+    "_translate": "可以设置一个 Wordgard 模式，其中文档为单个文本块，使用 <a href=\"../../docs/ref/#schema.inlineSchema\"><code>inlineSchema</code></a> 或 <a href=\"../../docs/ref/#types.InlineDoc\"><code>InlineDoc</code></a>（或定义您自己的文档类型）。",
+    "_note": ""
+  },
+  "Submit": {
+    "_translate": "<button id=\"submit\">提交</button>",
+    "_note": ""
+  },
+  "And a name:": {
+    "_translate": "以及一个名称：<span id=\"name\"></span>",
+    "_note": ""
+  },
+  "Even if the input is plain text, when you need to show widgets or other decorations in it as part of your editing interface it can be practical to use a Wordgard editor.": {
+    "_translate": "即使输入是纯文本，当您需要在其编辑界面中显示小部件或其他装饰元素时，使用 Wordgard 编辑器可能是实用的选择。",
+    "_note": ""
+  }
+}

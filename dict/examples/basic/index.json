@@ -1,0 +1,98 @@
+{
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Basic Editor": {
+    "_translate": "示例：基础编辑器",
+    "_note": ""
+  },
+  "This example discusses the most basic parts of the library interface, the ones you use to create an editor from pre-defined configuration elements, add it to a web page, and read out the changed document.": {
+    "_translate": "本示例介绍了库接口最基本的部分，即用于从预定义的配置元素创建编辑器、将其添加到网页以及读取更改后的文档的功能。",
+    "_note": ""
+  },
+  "Creating an Editor": {
+    "_translate": "创建编辑器",
+    "_note": ""
+  },
+  "To get a working editor, you'll need at least a document schema, and you'll usually want to also include the undo history and an extension to display a menu.": {
+    "_translate": "要获得一个可用的编辑器，您至少需要一个文档模式，并且通常还需要包含撤销历史记录以及一个用于显示菜单的扩展。",
+    "_note": ""
+  },
+  "This code sets up a simple editor and adds it to the element with the ID editor-parent.": {
+    "_translate": "此代码设置了一个简单的编辑器，并将其添加到 ID 为 <code>editor-parent</code> 的元素中。",
+    "_note": ""
+  },
+  "The doc option may also be a DOM element that contains the document structure, a document in JSON form, or an existing Wordgard document.": {
+    "_translate": "<code>doc</code> 选项也可以是一个包含文档结构的 DOM 元素、<a href=\"../../docs/ref/#doc.Node.Shared.toJSON\">JSON</a> 格式的文档，或现有的 Wordgard <a href=\"../../docs/ref/#doc.Plot.Doc\">文档</a>。",
+    "_note": ""
+  },
+  "The basicSchema extension (paragraphs, headings, emphasis, links) provides a good starting set of schema elements, allowing you to pick extra elements (for example lists) by including them in your configuration bit by bit. If you just want everything the \"wordgard/schema\" module provides in one bundle, you can include fullSchema.": {
+    "_translate": "<a href=\"../../docs/ref/#schema.basicSchema\"><code>basicSchema</code></a> 扩展（段落、标题、强调、链接）提供了一组良好的基础模式元素，允许您通过逐步在配置中包含它们来添加额外元素（例如 <a href=\"../../docs/ref/#schema.orderedList\">列表</a>）。如果您希望一次性获取 <a href=\"../docs/ref/#schema\">\"wordgard/schema\"</a> 模块提供的所有内容，您可以包含 <a href=\"../../docs/ref/#schema.fullSchema\"><code>fullSchema</code></a>。",
+    "_note": ""
+  },
+  "Wordgard.label adds an aria-label attribute to the editable element, so that screen readers can describe it. It's usually a good idea to include this in your configuration.": {
+    "_translate": "<a href=\"../../docs/ref/#editor.Wordgard.label\"><code>Wordgard.label</code></a> 会为可编辑元素添加\n<a href=\"https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-label\"><code>aria-label</code></a>\n属性，以便屏幕阅读器能够对其进行描述。通常建议在配置中包含此项。",
+    "_note": ""
+  },
+  "The editor configuration is derived from the tree (arrays with potentially more nested arrays in them) of extension you provide. Functions like basicSchema and history return collections of extensions that implement the features they provide. On initialization, the editor creates a full configuration from these and stores it in the editor state.": {
+    "_translate": "编辑器配置源自您提供的扩展树（其中可能包含更多嵌套数组的数组）。诸如 <a href=\"../../docs/ref/#schema.basicSchema\"><code>basicSchema</code></a> 和 <a href=\"../../docs/ref/#history.history\"><code>history</code></a> 之类的函数会返回实现其所提供功能的扩展集合。在初始化时，编辑器会根据这些扩展创建一个完整的 <a href=\"../../docs/ref/#state.GardState.Configuration\">配置</a>，并将其存储在编辑器状态中。",
+    "_note": ""
+  },
+  "An editor has two important DOM elements associated with it. The outer wrapper element is available through the dom property. If you don't pass a parent option you can manually place your editor by putting that somewhere in your page. Moving an editor around, even into another frame, is supported.": {
+    "_translate": "编辑器关联有两个重要的 DOM 元素。外部包装元素可通过 <a href=\"../../docs/ref/#editor.Wordgard.dom\"><code>dom</code></a> 属性访问。如果您未传递 <a href=\"../../docs/ref/#editor.Wordgard.Spec.parent\"><code>parent</code> 选项</a>，则可以通过将该元素放置在页面的任意位置来手动定位编辑器。支持移动编辑器，甚至将其移动到另一个框架中。",
+    "_note": ""
+  },
+  "The Editor State": {
+    "_translate": "编辑器状态",
+    "_note": ""
+  },
+  "To get the current content as HTML, you can do this:": {
+    "_translate": "要获取当前内容的 HTML 格式，您可以这样做：",
+    "_note": ""
+  },
+  "The editor's editable element containing the document itself is exposed through the contentDOM property. You generally don't need to interact with this (modifying its content directly doesn't work), but this is the element that will have focus when the user has focused the editor.": {
+    "_translate": "编辑器中包含文档本身的可编辑元素通过 <a href=\"../../docs/ref/#editor.Wordgard.contentDOM\"><code>contentDOM</code></a> 属性暴露。您通常不需要与此元素交互（直接修改其内容无效），但当用户聚焦编辑器时，该元素将获得焦点。",
+    "_note": ""
+  },
+  "Your editor's state is available under the editor object's state property. It holds most of the information about what is going on in the editor. The main thing you can get from it is the current shape of the document, under its doc property.": {
+    "_translate": "编辑器的状态可通过编辑器对象的 <a href=\"../../docs/ref/#editor.Wordgard.state\"><code>state</code></a> 属性访问。它包含了编辑器中正在发生的大多数信息。从中可以获取的主要信息是文档的当前结构，位于其 <a href=\"../../docs/ref/#state.GardState.doc\"><code>doc</code></a> 属性下。",
+    "_note": ""
+  },
+  "If you want to store your document as a JSON structure instead, use wg.state.doc.toJSON(). You can pass the resulting value in the doc field to Wordgard.create to create a new editor with that document.": {
+    "_translate": "如果您希望将文档存储为 JSON 结构，请使用 <code>wg.state.doc.toJSON()</code>。您可以将生成的值传递给 <a href=\"../../docs/ref/#editor.Wordgard.create\"><code>Wordgard.create</code></a> 的 <code>doc</code> 字段，以使用该文档创建一个新的编辑器。",
+    "_note": ""
+  },
+  "Loading a New Document": {
+    "_translate": "加载新文档",
+    "_note": ""
+  },
+  "If you want to show another document to your user, do not update your existing editor by replacing its document content. That will keep any auxilary state, such as the undo history, from the existing editing state.": {
+    "_translate": "如果您想向用户显示另一个文档，请勿通过替换现有编辑器中的文档内容来更新该编辑器。这样做会保留来自现有编辑状态的辅助状态，例如撤销历史记录。",
+    "_note": ""
+  },
+  "Instead, create a new editor with a fresh state. Since the document has to be redrawn anyway, there's not much extra cost saved by trying to preserve your old editor. Remove it its outer DOM element from your page and put a new editor in its place.": {
+    "_translate": "相反，请创建一个具有全新状态的新编辑器。由于文档无论如何都需要重绘，尝试保留旧编辑器并不会节省太多额外开销。请从页面中移除其<a href=\"../../docs/ref/#editor.Wordgard.dom\">外部 DOM 元素</a>，并在其位置放置一个新编辑器。",
+    "_note": ""
+  },
+  "As the user edits the document or other changes to the state occur, the editor creates new state objects to represent the new situation. The existing one is not modified, so holding on to one and expecting it to stay in sync with the editor does not work.": {
+    "_translate": "当用户编辑文档或发生其他状态变更时，编辑器会创建新的 <a href=\"../../docs/ref/#state.GardState\">状态</a> 对象来表示新情况。现有对象不会被修改，因此保留旧对象并期望其与编辑器保持同步是行不通的。",
+    "_note": ""
+  }
+}

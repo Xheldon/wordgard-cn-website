@@ -1,0 +1,314 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Migrating from ProseMirror": {
+    "_translate": "从 ProseMirror 迁移",
+    "_note": ""
+  },
+  "Wordgard is another iteration on the design of ProseMirror. It uses a lot of the same ideas, but often in a somewhat different way. This document provides a summary of the changes, to help people used to ProseMirror get started.": {
+    "_translate": "Wordgard 是 ProseMirror 设计的又一次迭代。它采用了许多相同的理念，但实现方式往往有所不同。本文档总结了这些变更，以帮助熟悉 ProseMirror 的用户快速上手。",
+    "_note": ""
+  },
+  "Wordgard's core is distributed as a single package (wordgard), but does consist of multiple separate modules, which are imported as, for example \"wordgard/state\". The mapping between the modules is roughly this:": {
+    "_translate": "Wordgard 的核心以单个软件包（<code>wordgard</code>）的形式分发，但由多个独立的模块组成，这些模块的导入方式例如为 <code>\"wordgard/state\"</code>。模块之间的映射大致如下：",
+    "_note": ""
+  },
+  "wordgard/doc: prosemirror-model, prosemirror-transform": {
+    "_translate": "<strong><code>wordgard/doc</code></strong>：<code>prosemirror-model</code>、<code>prosemirror-transform</code>",
+    "_note": ""
+  },
+  "This system was not in any way designed to provide a compatible interface. The naming and library structure have been designed from scratch, so any code that interacts with ProseMirror would have to be rewritten to work with Wordgard. But a lot of the underlying concepts are the same, so often the same solutions will still apply, and you can get away with just adapting what you have to Wordgard's interface.": {
+    "_translate": "本系统在设计之初并未旨在提供兼容接口。其命名规范和库结构均是从头构建的，因此任何与 ProseMirror 交互的代码都必须重写才能与 Wordgard 配合使用。不过，许多底层概念是相同的，因此通常相同的解决方案仍然适用，您只需将现有代码适配到 Wordgard 的接口即可。",
+    "_note": ""
+  },
+  "wordgard/command: prosemirror-commands": {
+    "_translate": "<strong><code>wordgard/command</code></strong>：<code>prosemirror-commands</code>",
+    "_note": ""
+  },
+  "wordgard/types: prosemirror-schema-basic, prosemirror-schema-list": {
+    "_translate": "<strong><code>wordgard/types</code></strong>：<code>prosemirror-schema-basic</code>、<code>prosemirror-schema-list</code>",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "wordgard/schema: ready-made extensions for schema elements": {
+    "_translate": "<strong><code>wordgard/schema</code></strong>：用于模式元素的现成扩展",
+    "_note": ""
+  },
+  "wordgard/collab: prosemirror-collab": {
+    "_translate": "<strong><code>wordgard/collab</code></strong>: <code>prosemirror-collab</code>",
+    "_note": ""
+  },
+  "Document Model": {
+    "_translate": "文档模型",
+    "_note": ""
+  },
+  "wordgard/editor: prosemirror-view, prosemirror-menu, prosemirror-keymap, prosemirror-inputrules": {
+    "_translate": "<strong><code>wordgard/editor</code></strong>：<code>prosemirror-view</code>、<code>prosemirror-menu</code>、<code>prosemirror-keymap</code>、<code>prosemirror-inputrules</code>",
+    "_note": ""
+  },
+  "Wordgard's document model resembles ProseMirror's in basic structure. You still define nodes and marks, and the way they can nest, and the document is still a tree of nodes, each with a set of marks.": {
+    "_translate": "Wordgard 的文档模型在基本结构上与 ProseMirror 相似。您仍然需要定义节点和标记，以及它们的嵌套方式，文档仍然是一个节点树，每个节点都带有一组标记。",
+    "_note": ""
+  },
+  "Wordgard introduces the term plot (for non-leaf nodes), and more strictly separates those from leaves (nodes that cannot have content). It also has the concept of a tag, which is either a full leaf node or the {type, parameter, marks} part of a plot. A plot object itself holds a tag and a content array. A node's content is direclty exposed as an array, and no longer requires going through accessor methods.": {
+    "_translate": "Wordgard 引入了术语 <em><a href=\"../ref/#doc.Plot\">plot</a></em>（用于非叶节点），并更严格地将其与 <em><a href=\"../ref/#doc.Leaf\">leaves</a></em>（无法包含内容的节点）区分开来。它还引入了 <em><a href=\"../ref/#doc.Node.Tag\">tag</a></em> 的概念，该概念既可以是完整的叶节点，也可以是 plot 的 <code>{type, parameter, marks}</code> 部分。plot 对象本身包含一个 <a href=\"../ref/#doc.Plot.Tag\">tag</a> 和一个内容数组。节点的 <a href=\"../ref/#doc.Plot.content\">content</a> 直接暴露为数组，不再需要通过访问器方法访问。",
+    "_note": ""
+  },
+  "There are three fundamental changes to the way document structure works:": {
+    "_translate": "文档结构的工作方式发生了三个根本性变化：",
+    "_note": ""
+  },
+  "wordgard/state: prosemirror-state": {
+    "_translate": "<strong><code>wordgard/state</code></strong>: <code>prosemirror-state</code>",
+    "_note": ""
+  },
+  "Whether marks may appear on a node is no longer controlled by the parent node, but by the mark itself.": {
+    "_translate": "节点上是否允许出现标记不再由父节点控制，而是由标记本身控制。",
+    "_note": ""
+  },
+  "wordgard/history: prosemirror-history": {
+    "_translate": "<strong><code>wordgard/history</code></strong>：<code>prosemirror-history</code>",
+    "_note": ""
+  },
+  "Instead of multiple attributes, nodes now have a single parameter value. Optional attributes are modeled with marks.": {
+    "_translate": "节点现在不再拥有多个属性，而是只有一个参数值。可选属性通过标记来建模。",
+    "_note": ""
+  },
+  "Positions": {
+    "_translate": "职位",
+    "_note": ""
+  },
+  "The document indexing system works the same as in ProseMirror. Nodes now have a length rather than size property indicating their total token count.": {
+    "_translate": "文档索引系统的工作方式与 ProseMirror 相同。节点现在具有 <a href=\"../ref/#doc.Node.Shared.length\"><code>length</code></a> 属性而非 <code>size</code> 属性，用于指示其总标记数。",
+    "_note": ""
+  },
+  "Resolved document positions are represented with the Pos class, with a separate but similar class for node positions. Their interface is similar, if a little less confusing, to ProseMirror ResolvedPos objects.": {
+    "_translate": "解析后的文档位置由 <a href=\"../ref/#doc.Pos\"><code>Pos</code></a> 类表示，同时还有一个独立但类似的类用于表示 <a href=\"../ref/#doc.Pos.Node\">节点位置</a>。它们的接口与 ProseMirror 的 <code>ResolvedPos</code> 对象相似，只是稍微不那么令人困惑。",
+    "_note": ""
+  },
+  "Schema Structure": {
+    "_translate": "架构结构",
+    "_note": ""
+  },
+  "Selection objects store raw positions instead of resolved positions as they did in ProseMirror, but the state does allow easy access to resolved selection bounds via its sel property.": {
+    "_translate": "<a href=\"../ref/#state.GardSelection\">Selection</a> 对象存储原始位置，而不是像 ProseMirror 中那样存储解析后的位置，但状态允许通过其 <a href=\"../ref/#state.GardState.sel\"><code>sel</code> 属性</a> 轻松访问解析后的选择边界。",
+    "_note": ""
+  },
+  "Wordgard schemas are less monolithic than ProseMirror ones. A node or mark type exists outside of a schema, and can be shared between schemas. Because extra attributes are modeled with marks, you can define them for node types without modifying the node type itself.": {
+    "_translate": "Wordgard 架构比 ProseMirror 的架构更不具单体性。节点或标记类型存在于架构之外，并可在不同架构之间共享。由于额外属性是通过标记来建模的，因此您可以为节点类型定义这些属性，而无需修改节点类型本身。",
+    "_note": ""
+  },
+  "The less complicated constraints on parent-child relations also mean that it is easier to write document-manipulating code that works on any schema, which is a very tricky exercise in ProseMirror.": {
+    "_translate": "父子关系上较为简单的约束也意味着，编写适用于任何模式的文档操作代码变得更加容易，而这在 ProseMirror 中是一项非常棘手的任务。",
+    "_note": ""
+  },
+  "A specific schema can modify the relationships between nodes and marks without redefining the node or mark itself. The effect is that these schema elements can be reused across schemas much easier, and it is more convenient to compose a schema out of existing node or mark implementations than it is in ProseMirror.": {
+    "_translate": "特定模式可以<a href=\"../ref/#doc.Schema.Override\">修改</a>节点与标记之间的关系，而无需重新定义节点或标记本身。其效果是，这些模式元素在不同模式间更容易复用，并且与 ProseMirror 相比，利用现有的节点或标记实现来组合模式也更加便捷。",
+    "_note": ""
+  },
+  "Node declarations try to be a little more declarative, by combining the serialization and parsing information in a single field, for simple nodes. Such a declaration returns a node type (or, if the type has no parameter, a tag), which can be used as part of a schema.": {
+    "_translate": "节点声明旨在更具声明性，通过将序列化和解析信息合并到单个字段中，以处理简单节点。此类声明返回一个节点类型（或者，如果该类型没有参数，则返回一个标签），该类型或标签可作为模式的一部分使用。",
+    "_note": ""
+  },
+  "Each type still has a string name that's used for JSON serialization and debug output, but plays less of a role in the API than it does in ProseMirror. You'll usually refer to node types via their object, rather than their string name.": {
+    "_translate": "每种类型仍然拥有一个用于 JSON 序列化和调试输出的字符串名称，但它在 API 中的作用不如在 ProseMirror 中那么重要。您通常通过对象而非字符串名称来引用节点类型。",
+    "_note": ""
+  },
+  "Configuration": {
+    "_translate": "配置",
+    "_note": ""
+  },
+  "Because facet-style configuration makes it easy to define extension points in such a way that extensions compose, and the precedence system allows control over extension precedence where needed, configuring an editor by dropping in different packaged extensions is a lot easier in this system.": {
+    "_translate": "由于面向切面的配置方式使得扩展点能够以可组合的方式进行定义，并且<a href=\"../ref/#state.GardState.prec\">优先级</a>系统允许在需要时控制扩展的优先级，因此在该系统中，通过引入不同的打包扩展来配置编辑器要容易得多。",
+    "_note": ""
+  },
+  "Wordgard inherits CodeMirror's extension system, based on facets almost completely unchanged. This means that instead of a limited set of editor and plugin props, extension points are now a first-class thing, and new ones can be defined in a couple of lines, both inside the library and in your own code.": {
+    "_translate": "Wordgard 继承了 <a href=\"https://codemirror.net\">CodeMirror</a> 的扩展系统，该系统基于 <a href=\"../ref/#state.GardState.Facet\">facets</a>，几乎完全未作改动。这意味着扩展点不再局限于有限的编辑器或插件属性，而是成为了一等公民；无论是库内部还是您自己的代码中，只需几行代码即可定义新的扩展点。",
+    "_note": ""
+  },
+  "An editor configuration is a tree of extensions which, unlike ProseMirror's flat array of plugins, allows a given extension bundle to include any number of sub-extensions, which are a finer-grained thing than ProseMirror plugins. Plugin state is now modeled with state fields, view plugins exist as their own thing, and props, replaced by facets, no longer need to be attached to a plugin to be declared.": {
+    "_translate": "编辑器配置是一个扩展树，与 ProseMirror 的扁平插件数组不同，它允许给定的扩展包包含任意数量的子扩展，这些子扩展是比 ProseMirror 插件更细粒度的单元。插件状态现在通过<a href=\"../ref/#state.GardState.Field\">状态字段</a>建模，<a href=\"../ref/#editor.Wordgard.Plugin\">视图插件</a>作为独立实体存在，而属性已被面（facets）取代，声明时不再需要附加到插件上。",
+    "_note": ""
+  },
+  "Schema construction is done at configuration time by combining the schema elements found in the configuration. This means that it is often possible to just drop in, say, a list extension in order to have list support in your schema.": {
+    "_translate": "架构的构建是在配置时通过将配置中发现的<a href=\"../ref/#state.GardState.schemaElement\">架构元素</a>组合而成的。这意味着，通常只需插入一个<a href=\"../ref/#schema.orderedList\">列表</a>扩展，即可在您的架构中启用列表支持。",
+    "_note": ""
+  },
+  "Other supporting extensions, such as menu item definitions or key bindings, can be included in the same extension bundle. In general, configuring Wordgard should be a lot less finicky than configuring ProseMirror, especially in cases where you're not changing many defaults.": {
+    "_translate": "其他支持性扩展，例如<a href=\"../ref/#command.Menu.Item\">菜单项</a>定义或键盘绑定，也可以包含在同一个扩展包中。总体而言，配置 Wordgard 应该比配置 ProseMirror 简单得多，尤其是在您不需要更改大量默认设置的情况下。",
+    "_note": ""
+  },
+  "Content expressions no longer exist. You can only provide a set of valid content node types, plus, for block-content plots, whether the plot may be empty or not. Any further restrictions on parent-child relations need to be handled above the document level, for example in a Correction.": {
+    "_translate": "内容表达式已不再存在。您只能提供一组有效的内容节点类型，此外，对于块内容图，还需指定该图是否可以为空。任何关于父子关系的进一步限制都需要在文档级别之上进行处理，例如在<a href=\"../ref/#state.Correction\"><code>Correction</code></a>中。",
+    "_note": ""
+  },
+  "A drop-in menu implementation is part of the core Wordgard library.": {
+    "_translate": "核心 Wordgard 库包含一个即插即用的<a href=\"../ref/#editor.menuBar\">菜单实现</a>。",
+    "_note": ""
+  },
+  "Transactions and Changes": {
+    "_translate": "交易与变更",
+    "_note": ""
+  },
+  "Wordgard's model of document changes is completely different from ProseMirror's step model. Transactions creation also works very differently, again inspired more by CodeMirror than by ProseMirror.": {
+    "_translate": "Wordgard 的文档变更模型与 ProseMirror 的步进模型完全不同。事务的创建机制也截然不同，其设计灵感更多来自 CodeMirror，而非 ProseMirror。",
+    "_note": ""
+  },
+  "Changes": {
+    "_translate": "变更",
+    "_note": ""
+  },
+  "Such change sets can be composed or transformed over each other. They are a lot easier to manipulate and inspect than sequences of ProseMirror steps were.": {
+    "_translate": "此类变更集可以相互组合或转换。与 ProseMirror 步骤序列相比，它们更易于操作和检查。",
+    "_note": ""
+  },
+  "A Wordgard document change represents a single pass over the document, replacing some ranges and keeping others intact, optionally adding or removing marks to the preserved ranges. It is stored in a 'delta' format, as a sequence of sections that cover the old document.": {
+    "_translate": "Wordgard 文档变更代表对文档的一次完整遍历，替换部分范围并保留其他范围，同时可选择为保留的范围添加或删除标记。它以“差异”格式存储，表现为覆盖旧文档的一系列段落。",
+    "_note": ""
+  },
+  "Position mapping works similar, except that mappings and changes are not separate, but represented by the same object. Change sets have a mapPos method that transforms a position before change to a position after the change.": {
+    "_translate": "位置映射的工作原理类似，不同之处在于映射和变更不再是分开的，而是由同一个 <a href=\"../ref/#doc.ChangeSet\">对象</a> 表示。变更集拥有一个 <a href=\"../ref/#doc.ChangeSet.mapPos\"><code>mapPos</code></a> 方法，可将变更前的位置转换为变更后的位置。",
+    "_note": ""
+  },
+  "Slices": {
+    "_translate": "切片",
+    "_note": ""
+  },
+  "When composing changes, for example to build up a transaction, all the separate changes are specified in the original document's index system. So there is no need, as there is in ProseMirror, to adjust for the offsets produced by the other changes. Conceptually, they all happen at once.": {
+    "_translate": "在组合变更（例如构建事务）时，所有单独的变更均基于原始文档的索引系统进行指定。因此，与 ProseMirror 不同，无需针对其他变更所产生的偏移量进行调整。从概念上讲，这些变更是同时发生的。",
+    "_note": ""
+  },
+  "Transactions": {
+    "_translate": "交易",
+    "_note": ""
+  },
+  "The array passed in the insert property of a change spec is an array of tokens.": {
+    "_translate": "在变更规范中，通过 <a href=\"../ref/#doc.ChangeSet.Change.insert\"><code>insert</code></a> 属性传入的数组是一个令牌数组。",
+    "_note": ""
+  },
+  "Slices in ProseMirror are sequences of nodes, which may be partial nodes, along with an open depth at the start and end of the slice. In Wordgard, where changes are modeled in terms of replaced tokens (which can be the start of a plot, end of a plot, leaf node, or text character), a slice is a sequence of tokens. This uses nodes (leaf or non-leaf) to stand for themselves, plot tags to stand for opening tokens, and a special value for plot end tokens.": {
+    "_translate": "在 ProseMirror 中，切片（Slices）是节点的序列，这些节点可能是部分节点，并且切片在起始和结束处具有开放深度。在 Wordgard 中，变更被建模为被替换的令牌（这些令牌可以是情节的开头、情节的结尾、叶节点或文本字符），因此<a href=\"../ref/#doc.Slice\">切片</a>是令牌的序列。此处使用节点（叶节点或非叶节点）代表其自身，使用情节<a href=\"../ref/#doc.Plot.Tag\">标签</a>代表开始令牌，并使用一个<a href=\"../ref/#doc.Plot.End\">特殊值</a>代表情节结束令牌。",
+    "_note": ""
+  },
+  "The editor object still has a dispatch method that is the way to update the editor state. Instead of a constructed transaction object, you'll generally just pass it a spec object.": {
+    "_translate": "<a href=\"../ref/#editor.Wordgard\">编辑器</a>对象仍然具有一个<a href=\"../ref/#editor.Wordgard.dispatch\"><code>dispatch</code>方法</a>，这是更新编辑器状态的方式。您通常只需向其传递一个规范对象，而不是构造的事务对象。",
+    "_note": ""
+  },
+  "ProseMirror transactions are mutable objects that use method chaining to accumulate the aspects that make up the transaction. Wordgard uses immutable objects created from a spec object instead.": {
+    "_translate": "ProseMirror 事务是可变对象，它们使用方法链来累积构成事务的各个部分。Wordgard 则使用从 <a href=\"../ref/#state.Transaction.Spec\">规范对象</a> 创建的不可变对象。",
+    "_note": ""
+  },
+  "Transactions still are objects that describe the entire change to the editor state. The new state is found by reading their state property instead of explicitly applying them. The state class is called GardState and is quite similar to ProseMirror's EditorState.": {
+    "_translate": "事务仍然是描述编辑器状态整体变更的对象。新状态通过读取其 <a href=\"../ref/#state.Transaction.state\"><code>state</code> 属性</a> 来获取，而不是显式地应用它们。该状态类称为 <a href=\"../ref/#state.GardState\"><code>GardState</code></a>，与 ProseMirror 的 <code>EditorState</code> 非常相似。",
+    "_note": ""
+  },
+  "What ProseMirror calls transaction metadata is called annotations instead in Wordgard. There is also a concept of effects, which are somewhat like annotations except that instead of describing the entire transaction, they represent specific effects the transaction has on the state, and can be mapped through changes.": {
+    "_translate": "ProseMirror 所称的事务元数据在 Wordgard 中被称为<a href=\"../ref/#state.Transaction.Annotation\">注解</a>。此外，还有一个<a href=\"../ref/#state.Transaction.Effect\">效果</a>的概念，它在某种程度上类似于注解，但不同之处在于，它不是描述整个事务，而是表示该事务对状态产生的特定影响，并且可以随变更进行<a href=\"../ref/#state.Transaction.Effect.map\">映射</a>。",
+    "_note": ""
+  },
+  "Input": {
+    "_translate": "输入",
+    "_note": ""
+  },
+  "The kludge around composition, where the editor has to take care not to touch the text node in which the browser is doing a composition, is still needed, but implemented in a somewhat less gnarly way.": {
+    "_translate": "针对组合操作的临时解决方案（即编辑器必须小心避免触碰浏览器正在进行组合操作的文本节点）仍然需要，但实现方式已变得相对不那么复杂。",
+    "_note": ""
+  },
+  "Due to improvements in browsers, or at least due to some really bad browsers finally becoming irrelevant, Wordgard makes heavier use of beforeinput and input events, and thus needs to do less funky things than ProseMirror does to read input. There's no more parsing of changed DOM structure.": {
+    "_translate": "得益于浏览器的改进，或者至少是因为一些表现极差的浏览器最终变得不再重要，Wordgard 更多地使用了 `<code>beforeinput</code>` 和 `<code>input</code>` 事件，因此在读取输入时，无需像 ProseMirror 那样采取一些奇特的处理方式。不再需要解析变更后的 DOM 结构。",
+    "_note": ""
+  },
+  "Cursor": {
+    "_translate": "光标",
+    "_note": ""
+  },
+  "Because the way ProseMirror leaves selection, both by mouse and by keyboard, to the browser's native implementation was an endless source of issues, Wordgard takes it over and handles it in the library instead. That means custom commands are bound to all the selection-related keys, and the library does its own bidirectional text handling.": {
+    "_translate": "由于 ProseMirror 将鼠标和键盘的选择操作完全交由浏览器的原生实现处理，这成为了无尽问题的根源，因此 Wordgard 接管了这一功能，并在库内部自行处理。这意味着所有与选择相关的按键都绑定了自定义命令，且该库会自行处理双向文本。",
+    "_note": ""
+  },
+  "The native (non-cursor) selection is left visible, because it seems to cause less touble.": {
+    "_translate": "原生（非光标）选区保持可见，因为它似乎引起的麻烦更少。",
+    "_note": ""
+  },
+  "Another common problem was the browser's native cursor not appearing in the correct place (or not appearing at all). To have control over this, Wordgard hides the native cursor and draws its own.": {
+    "_translate": "另一个常见问题是浏览器的原生光标未出现在正确位置（或根本未显示）。为了控制这一点，Wordgard 会隐藏原生光标并绘制自己的光标。",
+    "_note": ""
+  },
+  "Updates": {
+    "_translate": "更新",
+    "_note": ""
+  },
+  "One of the biggest mistake blunders in ProseMirror is that the editor view does not get access to the transaction objects when updating, just the state. Wordgard does not repeat this mistake, and makes updates take transactions, not just a new state.": {
+    "_translate": "ProseMirror 中最大的错误之一是，编辑器视图在更新时无法访问事务对象，只能访问状态。Wordgard 没有重蹈这一覆辙，而是让更新操作接收事务对象，而不仅仅是新的状态。",
+    "_note": ""
+  },
+  "This means that things like the DOM update logic and UI plugins can precisely observe what happened, and handle changes in a efficient and more effective way. The weird unexpected DOM redraws that are still a thing in ProseMirror should not occur. Only the precise DOM structure affected by the new transactions will be updated.": {
+    "_translate": "这意味着诸如 DOM 更新逻辑和 UI 插件等组件可以精确地观察发生的变化，并以更高效、更有效的方式处理变更。ProseMirror 中仍存在的奇怪且意外的 DOM 重绘问题将不再出现。只有受新事务影响的精确 DOM 结构才会被更新。",
+    "_note": ""
+  },
+  "Wordgard updates its DOM structure asynchronously, as opposed to ProseMirror's synchronous updates. It will implicitly eagerly update when you try to access this structure through methods like posAtCoords.": {
+    "_translate": "Wordgard 会异步更新其 DOM 结构，而 ProseMirror 则是同步更新。当您尝试通过诸如 <a href=\"../ref/#editor.Wordgard.posAtCoords\"><code>posAtCoords</code></a> 之类的方法访问该结构时，Wordgard 会隐式地进行急切更新。",
+    "_note": ""
+  },
+  "Editor": {
+    "_translate": "编辑",
+    "_note": ""
+  },
+  "Unlike ProseMirror commands, Wordgard commands allow extensions to register extra handlers to influence their behavior in specific circumstances.": {
+    "_translate": "与 ProseMirror 命令不同，Wordgard 命令允许扩展注册额外的 <a href=\"../ref/#command.Command.handler\">处理程序</a>，以便在特定情况下影响其行为。",
+    "_note": ""
+  },
+  "Key bindings are provided in your configuration as separate objects, rather than collected in maps. (The objects themselves count as extensions.)": {
+    "_translate": "<a href=\"../ref/#editor.KeyBinding\">键盘绑定</a> 在您的配置中作为独立的对象提供，而不是收集在映射中。（这些对象本身被视为扩展。）",
+    "_note": ""
+  },
+  "Decorations": {
+    "_translate": "装饰品",
+    "_note": ""
+  },
+  "The basic principle of decorations—that they are provided in sets and affect nodes they point at—is the same in Wordgard as it is in ProseMirror. Wordgard separates point decorations (those that affect a single point) from range decorations (affecting a range of content), using different data structures both both.": {
+    "_translate": "装饰的基本原理——即它们以集合形式提供并影响其所指向的节点——在 Wordgard 中与在 ProseMirror 中相同。Wordgard 将 <a href=\"../ref/#editor.Decoration.Point\">点</a> 装饰（影响单个点的装饰）与 <a href=\"../ref/#editor.Decoration.Range\">范围</a> 装饰（影响内容范围的装饰）区分开来，并针对两者使用不同的数据结构。",
+    "_note": ""
+  },
+  "Editor commands use a less arcane signature type than they did in ProseMirror. They are functions from an editor and an optional parameter to a boolean or transaction spec. When using them in menu items or key bindings, you can bind a parameter to a command.": {
+    "_translate": "编辑器 <a href=\"../ref/#command.Command\">命令</a> 使用的签名类型比 ProseMirror 中的更直观。它们是从编辑器和一个可选参数到布尔值或事务规范的函数。当在 <a href=\"../ref/#command.Menu.Button\">菜单项</a> 或 <a href=\"../ref/#editor.KeyBinding\">键盘绑定</a> 中使用它们时，您可以将参数 <a href=\"../ref/#command.Command.bind\">绑定</a> 到命令上。",
+    "_note": ""
+  },
+  "Additionally, Wordgard supports \"tag\" decorations, which affect a given node type throughout the document, not just at a given position. These replace node views, and allow some new things, like putting widgets next to the nodes or wrapping them in additional DOM structure.": {
+    "_translate": "此外，Wordgard 还支持 <a href=\"../ref/#editor.Decoration.Tag.shape\">“标签”装饰</a>，它们会影响整个文档中的特定节点类型，而不仅仅是某个特定位置。这些装饰会替换节点视图，并允许实现一些新功能，例如在节点旁边放置小部件，或将它们包裹在额外的 DOM 结构中。",
+    "_note": ""
+  },
+  "To specify the DOM structure of decorations (or also the default structure of more complicated node types), Wordgard uses the Elt abstraction, which is a bit like ProseMirror's DOMOutputSpec or JSX notation, in that it creates a JS object that describes a piece of DOM tree, without actually creating the DOM tree yet.": {
+    "_translate": "要指定装饰的 DOM 结构（或更复杂节点类型的默认结构），Wordgard 使用了 <a href=\"../ref/#doc.Elt\"><code>Elt</code></a> 抽象，它类似于 ProseMirror 的 <code>DOMOutputSpec</code> 或 JSX 语法，即创建一个描述 DOM 树片段的 JS 对象，而无需实际创建该 DOM 树。",
+    "_note": ""
+  },
+  "The editor component, EditorView in ProseMirror, is called Wordgard. It still renders the document to editable DOM, handles editing events, and supports document decorations.": {
+    "_translate": "在 ProseMirror 中，编辑器组件 <code>EditorView</code> 被称为 <a href=\"../ref/#editor.Wordgard\"><code>Wordgard</code></a>。它仍然将文档渲染为可编辑的 DOM，处理编辑事件，并支持文档装饰。",
+    "_note": ""
+  },
+  "Those data structures (PointSet and RangeSet) can also be used for non-decoration values, if you need to store something in a way that associates it with a document position and allows mapping through document changes.": {
+    "_translate": "这些数据结构（<a href=\"../ref/#editor.PointSet\"><code>PointSet</code></a> 和 <a href=\"../ref/#editor.RangeSet\"><code>RangeSet</code></a>）也可用于非装饰值，如果您需要以与文档位置关联的方式存储某些内容，并允许通过文档更改进行 <a href=\"../ref/#editor.PointSet.map\">映射</a>。",
+    "_note": ""
+  },
+  "Commands": {
+    "_translate": "命令",
+    "_note": ""
+  }
+}

@@ -1,0 +1,326 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Schema Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><script type="importmap">{"imports":{"wordgard/doc":"./../../modules/doc.js","wordgard/state":"./../../modules/state.js","wordgard/editor":"./../../modules/editor.js","wordgard/command":"./../../modules/command.js","wordgard/history":"./../../modules/history.js","wordgard/types":"./../../modules/types.js","wordgard/schema":"./../../modules/schema.js","wordgard/table":"./../../modules/table.js","wordgard/collab":"./../../modules/collab.js","wordgard/phrases":"./../../modules/phrases.js","style-mod":"./../../modules/style-mod.js","@marijn/find-cluster-break":"./../../modules/find-cluster-break.js","crelt":"./../../modules/crelt.js"}}</script><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/schema/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><nav id="toc">
+  <ul><li>
+        <a href="#h-configuring-your-schema">Configuring your Schema</a></li><li>
+        <a href="#h-custom-element">Custom Element</a></li><li>
+        <a href="#h-list-only-schema">List-Only Schema</a></li><li>
+        <a href="#h-inline-schema">Inline Schema</a></li></ul>
+</nav>
+
+<script>
+addEventListener("load", function() {
+  let items = document.querySelectorAll("nav#toc ul a")
+  let timeout = -1, current = null
+  function update() {
+    timeout = -1
+    let target = document.elementFromPoint(innerWidth / 2, innerHeight / 3).closest("section"), sub, ref
+    if (target) {
+      for (;;) {
+        let next = target.parentNode.closest("section")
+        if (!next) break
+        target = next
+      }
+      for (let subheader of target.querySelectorAll("h3[id], h4[id]")) {
+        if (subheader.getBoundingClientRect().top < 35) sub = subheader.id
+        else break
+      }
+      ref = target.querySelector("a[id], h2[id]")
+    }
+    let sectionLink = ref ? "#" + ref.id : null
+    let mainLink = sub ? "#" + sub : sectionLink
+    if (current != mainLink) {
+      current = mainLink
+      for (let i = 0; i < items.length; i++) {
+        items[i].parentNode.classList.toggle("current-section", items[i].href.endsWith(sectionLink))
+        items[i].classList.toggle("current-item", items[i].href.endsWith(mainLink))
+      }
+    }
+  }
+  update()
+  addEventListener("scroll", () => {
+    if (timeout == -1) timeout = setTimeout(update, 100)
+  })
+  addEventListener("hashchange", () => update())
+})
+</script><article><h1 id="h-example-schema">示例：架构</h1>
+<p data-x-en="Every Wordgard editor has a schema, which sets the set of content elements (node and mark types) that may occur in its document, and the relationships between those.">每个 Wordgard 编辑器都有一个 <a href="../../docs/ref/#doc.Schema">模式</a>，它定义了文档中可能出现的元素集合（节点和标记类型）以及它们之间的关系。</p>
+<hr class="floral"><section><h2 id="h-configuring-your-schema">配置您的架构</h2>
+<p data-x-en="The easiest way to declare your editor's schema is to include one of the basic schema bundles (basicSchema, fullSchema, or inlineSchema) in your configuration, and then add additional elements as desired.">声明编辑器模式最简单的方法是在配置中包含一个基本模式包（<a href="../../docs/ref/#schema.basicSchema"><code>basicSchema</code></a>、<a href="../../docs/ref/#schema.fullSchema"><code>fullSchema</code></a>或<a href="../../docs/ref/#schema.inlineSchema"><code>inlineSchema</code></a>），然后根据需要添加其他元素。</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">basicSchema</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">orderedList</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">bulletList</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/schema"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">doc</span><span class="tok-punctuation">:</span> <span class="tok-string">"&lt;ul&gt;&lt;li&gt;Item A&lt;/li&gt;&lt;li&gt;Item B&lt;/li&gt;&lt;/ul&gt;"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">config</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span>
+    <span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">orderedList</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">blockItems</span><span class="tok-punctuation">:</span> <span class="tok-bool">false</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">bulletList</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">blockItems</span><span class="tok-punctuation">:</span> <span class="tok-bool">false</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="Some of these support additional configuration, which you can only provide when adding them directly. In this case, we're setting the list types, which normally support block content in their items, to use items with inline content.">其中一些支持额外的配置，但只有在直接添加它们时才能提供。在这种情况下，我们将列表类型设置为使用包含内联内容的项，而这些列表类型通常支持在其项中包含块级内容。</p>
+<p data-x-en="If you need to include a raw node or mark type in your configuration, you have to wrap it in GardState.schemaElement.">如果您需要在配置中包含原始节点或标记类型，则必须将其包裹在 <a href="../../docs/ref/#state.GardState.schemaElement"><code>GardState.schemaElement</code></a> 中。</p>
+<p data-x-en="In cases where you need to access the schema before creating the editor state, you can start by resolving a configuration, use the schema it defines, and then create a state with it.">在需要于创建编辑器状态之前访问模式的情况下，您可以先解析一个配置，使用该配置定义的模式，然后基于此创建状态。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardState</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">basicSchema</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">alignment</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/schema"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Paragraph</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/types"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Leaf</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">config</span> <span class="tok-operator">=</span> <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">Configuration</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span>
+  <span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">alignment</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">schema</span> <span class="tok-operator">=</span> <span class="tok-variableName">config</span><span class="tok-operator">.</span><span class="tok-propertyName">schema</span><span class="tok-operator">!</span>
+
+<span class="tok-comment">// 对模式执行操作</span>
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">doc</span> <span class="tok-operator">=</span> <span class="tok-variableName">schema</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span>
+  <span class="tok-variableName">Paragraph</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span><span class="tok-variableName">Leaf</span><span class="tok-operator">.</span><span class="tok-propertyName">text</span><span class="tok-punctuation">(</span><span class="tok-string">"hi"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">doc</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">config</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="It is also possible to create a schema without a configuration, by directly calling Schema.define. Here you cannot provide editor extensions, but have to pass in the actual schema elements (either from &quot;wordgard/types&quot; or custom definitions).">也可以在不使用配置的情况下创建模式，方法是直接调用 <a href="../../docs/ref/#doc.Schema.define"><code>Schema.define</code></a>。在此处，您无法提供编辑器扩展，而必须传入实际的模式元素（来自 <a href="../../docs/ref/#types"><code>"wordgard/types"</code></a> 或自定义定义）。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Schema</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Doc</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">Paragraph</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">Strong</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/types"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">schema</span> <span class="tok-operator">=</span> <span class="tok-variableName">Schema</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span>
+  <span class="tok-variableName">Doc</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">Paragraph</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">Strong</span>
+<span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="This is mostly useful in scripts that aren't actually creating an editor, such as node scripts that work with Wordgard documents.">这主要适用于那些实际上并未创建编辑器的脚本，例如处理 Wordgard 文档的节点脚本。</p>
+</section><hr class="floral"><section><h2 id="h-custom-element">自定义元素</h2>
+<p data-x-en="It is often important to be able to include dinosaurs in rich text documents. So in this example we'll create a custom leaf type for them.">在富文本文档中包含恐龙往往非常重要。因此，在本示例中，我们将为它们创建一个自定义叶子类型。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Leaf</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">ValidationError</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">parse</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">dinoNames</span> <span class="tok-operator">=</span> <span class="tok-punctuation">[</span><span class="tok-string">"Brontosaurus"</span><span class="tok-punctuation">,</span> <span class="tok-string">"Pterodactyl"</span><span class="tok-punctuation">,</span> <span class="tok-string">"Stegosaurus"</span><span class="tok-punctuation">,</span>
+                   <span class="tok-string">"Triceratops"</span><span class="tok-punctuation">,</span> <span class="tok-string">"Tyrannosaurus"</span><span class="tok-punctuation">]</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">Dino</span> <span class="tok-operator">=</span> <span class="tok-variableName">Leaf</span><span class="tok-operator">.</span><span class="tok-propertyName">Type</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span>&lt;<span class="tok-typeName">string</span>&gt;<span class="tok-punctuation">(</span><span class="tok-string">"Dino"</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">inline</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">validate</span><span class="tok-punctuation">:</span> <span class="tok-variableName tok-definition">type</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">dinoNames</span><span class="tok-operator">.</span><span class="tok-propertyName">includes</span><span class="tok-punctuation">(</span><span class="tok-variableName">type</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">throw</span> <span class="tok-keyword">new</span> <span class="tok-className">ValidationError</span><span class="tok-punctuation">(</span><span class="tok-string2">`Unknown dinosaur type: </span><span class="tok-punctuation">${</span><span class="tok-variableName">type</span><span class="tok-punctuation">}</span><span class="tok-string2">`</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">shape</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">element</span><span class="tok-punctuation">:</span> <span class="tok-string">"document-dino"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">attributes</span><span class="tok-punctuation">:</span> <span class="tok-variableName tok-definition">type</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-string">"data-name"</span><span class="tok-punctuation">:</span> <span class="tok-variableName">type</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">readElement</span><span class="tok-punctuation">:</span> <span class="tok-variableName tok-definition">elt</span> <span class="tok-punctuation">=&gt;</span>
+      <span class="tok-variableName">elt</span><span class="tok-operator">.</span><span class="tok-propertyName">getAttribute</span><span class="tok-punctuation">(</span><span class="tok-string">"data-name"</span><span class="tok-punctuation">)</span> <span class="tok-operator">??</span> <span class="tok-variableName">parse</span><span class="tok-operator">.</span><span class="tok-propertyName">Reject</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">selectable</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">,</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="This is a simple inline leaf definition that takes one of a set of dinosaur names as parameter, and renders itself as a <document-dino data-name=&quot;Triceratops&quot;> element.">这是一个简单的内联叶子定义，它接受一组恐龙名称中的一个作为参数，并将自身渲染为 <code>&lt;document-dino data-name="Triceratops"&gt;</code> 元素。</p>
+<p data-x-en="We'll define a set of styles that actually make such an element like a dinosaur.">我们将定义一组样式，使该元素真正看起来像恐龙。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">dinoStyles</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">styles</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"document-dino"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">display</span><span class="tok-punctuation">:</span> <span class="tok-string">"inline-block"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">height</span><span class="tok-punctuation">:</span> <span class="tok-string">"40px"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">width</span><span class="tok-punctuation">:</span> <span class="tok-string">"40px"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">border</span><span class="tok-punctuation">:</span> <span class="tok-string">"1px solid #0ae"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">borderRadius</span><span class="tok-punctuation">:</span> <span class="tok-string">"4px"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">backgroundColor</span><span class="tok-punctuation">:</span> <span class="tok-string">"#ddf6ff"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">verticalAlign</span><span class="tok-punctuation">:</span> <span class="tok-string">"bottom"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">backgroundSize</span><span class="tok-punctuation">:</span> <span class="tok-string">"contain"</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">...</span><span class="tok-variableName">dinoNames</span><span class="tok-operator">.</span><span class="tok-propertyName">reduce</span>&lt;<span class="tok-typeName">any</span>&gt;<span class="tok-punctuation">(</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">s</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">name</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+      <span class="tok-variableName">s</span><span class="tok-punctuation">[</span><span class="tok-string2">`&amp;[data-name=</span><span class="tok-punctuation">${</span><span class="tok-variableName">name</span><span class="tok-punctuation">}</span><span class="tok-string2">]`</span><span class="tok-punctuation">]</span> <span class="tok-operator">=</span> <span class="tok-punctuation">{</span>
+        <span class="tok-propertyName tok-definition">backgroundImage</span><span class="tok-punctuation">:</span> <span class="tok-string2">`url(dino/</span><span class="tok-punctuation">${</span><span class="tok-variableName">name</span><span class="tok-punctuation">}</span><span class="tok-string2">.png)`</span>
+      <span class="tok-punctuation">}</span>
+      <span class="tok-keyword">return</span> <span class="tok-variableName">s</span>
+    <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">{</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The user will need to insert dinosaurs, so let's add a simple insertion command.">用户需要插入恐龙，因此让我们添加一个简单的插入命令。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardSelection</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Command</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/command"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">insertDino</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Command</span>&lt;<span class="tok-typeName">string</span>&gt; <span class="tok-operator">=</span> <span class="tok-punctuation">(</span>
+  <span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName tok-definition">name</span><span class="tok-punctuation">:</span> <span class="tok-typeName">string</span>
+<span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-punctuation">{</span><span class="tok-propertyName">from</span><span class="tok-punctuation">,</span> <span class="tok-propertyName">to</span><span class="tok-punctuation">}</span> <span class="tok-operator">=</span> <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">replacementRange</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">changes</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">from</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">to</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">insert</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span><span class="tok-variableName">Dino</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">name</span><span class="tok-punctuation">)</span><span class="tok-punctuation">]</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">fit</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">scrollIntoView</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">userEvent</span><span class="tok-punctuation">:</span> <span class="tok-string">"insert.dino"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">selection</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">cx</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">changes</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+      <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">found</span> <span class="tok-operator">=</span> <span class="tok-variableName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">findInserted</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">tag</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">tag</span><span class="tok-operator">.</span><span class="tok-propertyName">type</span> <span class="tok-operator">==</span> <span class="tok-variableName">Dino</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">return</span> <span class="tok-variableName">found</span> <span class="tok-operator">==</span> <span class="tok-keyword">null</span> <span class="tok-operator">?</span> <span class="tok-keyword">null</span> <span class="tok-operator">:</span> <span class="tok-variableName">GardSelection</span><span class="tok-operator">.</span><span class="tok-propertyName">cursor</span><span class="tok-punctuation">(</span><span class="tok-variableName">found</span> <span class="tok-operator">+</span> <span class="tok-number">1</span><span class="tok-punctuation">)</span>
+    <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="We'll make that command accessible through the menu. For submenus like this one, where we know in advance what content it should contain, it is often practical to just immediately provide the content directly in the definition.">我们将通过菜单使该命令可访问。对于像这样的子菜单，如果我们预先知道它应包含的内容，通常直接在定义中<a href="../../docs/ref/#command.Menu.Submenu.Spec.content">提供</a>内容更为实用。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Menu</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/command"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">dinoMenu</span> <span class="tok-operator">=</span> <span class="tok-variableName">Menu</span><span class="tok-operator">.</span><span class="tok-propertyName">Submenu</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">label</span><span class="tok-punctuation">:</span> <span class="tok-variableName">dinoIcon</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">description</span><span class="tok-punctuation">:</span> <span class="tok-string">"Insert Dino"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">parent</span><span class="tok-punctuation">:</span> <span class="tok-variableName">Menu</span><span class="tok-operator">.</span><span class="tok-propertyName">Group</span><span class="tok-operator">.</span><span class="tok-propertyName">insert</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">rank</span><span class="tok-punctuation">:</span> <span class="tok-number">90</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">content</span><span class="tok-punctuation">:</span> <span class="tok-variableName">dinoNames</span><span class="tok-operator">.</span><span class="tok-propertyName">map</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">name</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">Menu</span><span class="tok-operator">.</span><span class="tok-propertyName">Button</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">label</span><span class="tok-punctuation">:</span> <span class="tok-variableName">name</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">bind</span><span class="tok-punctuation">(</span><span class="tok-variableName">insertDino</span><span class="tok-punctuation">,</span> <span class="tok-variableName">name</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="That gives us the features we need. For convenience, we gather them up in a bundle function.">这为我们提供了所需的功能。为了方便起见，我们将它们封装在一个函数中。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardState</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">dino</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">:</span> <span class="tok-typeName">GardState</span><span class="tok-operator">.</span><span class="tok-typeName">Extension</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">[</span>
+    <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Dino</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">dinoMenu</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">dinoStyles</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="Adding that to an editor makes it behave like this:">将其添加到编辑器中，使其行为如下：</p>
+<div id="dino-editor"></div></section><hr class="floral"><section><h2 id="h-list-only-schema">仅列表模式</h2>
+<p data-x-en="Let's go through an example that changes the schema structure. For an outliner-style editor, we want to make it so that the top level of a document is always a list.">让我们通过一个更改架构结构的示例来说明。对于大纲式编辑器，我们希望确保文档的顶层始终是一个列表。</p>
+<p data-x-en="We can use the existing list plot definitions, but must change their relationships. The default Doc plot allows content of type Node.Group.Content, which is a group used for generic block-level content. In our editor we want to narrow that to just BulletList.">我们可以使用现有的列表图定义，但必须更改它们的关系。默认的 <a href="../../docs/ref/#types.Doc"><code>Doc</code></a> 图允许类型为 <a href="../../docs/ref/#doc.Node.Group.Content"><code>Node.Group.Content</code></a> 的内容，这是一个用于通用块级内容的组。在我们的编辑器中，我们希望将其缩小为仅 <a href="../../docs/ref/#types.BulletList"><code>BulletList</code></a>。</p>
+<pre><code class="language-javascript"><span class="tok-labelName">config</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span>
+  <span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">bulletList</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span>
+    <span class="tok-variableName">Schema</span><span class="tok-operator">.</span><span class="tok-propertyName">Override</span><span class="tok-operator">.</span><span class="tok-propertyName">plotContent</span><span class="tok-punctuation">(</span><span class="tok-variableName">Doc</span><span class="tok-punctuation">,</span> <span class="tok-variableName">BulletList</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-comment">/* ... */</span>
+<span class="tok-punctuation">]</span>
+</code></pre><p data-x-en="That already works pretty well. Except that once you use backspace to merge two list items, it becomes very hard to start a new item, because the default enter command does not know how to behave in a schema like this.">这已经相当有效了。不过，一旦你使用退格键合并两个列表项，就很难开始新项，因为默认的 <a href="../../docs/ref/#command.enter"><code>enter</code></a> 命令不知道在这种架构下该如何表现。</p>
+<p data-x-en="Let's add a handler that makes it split a list item when used in an empty textblock that's in a top-level list item but not the first block of the item.">让我们添加一个处理程序，使其在用于顶级列表项中的空文本块（但不是该列表项的第一个块）时，能够拆分列表项。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Plot</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">ListItem</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/types"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Command</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">enter</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/command"</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">splitOnEnter</span> <span class="tok-operator">=</span> <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">handler</span><span class="tok-punctuation">(</span><span class="tok-variableName">enter</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-punctuation">{</span><span class="tok-propertyName">sel</span><span class="tok-punctuation">}</span> <span class="tok-operator">=</span> <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">sel</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">isCursor</span> <span class="tok-operator">||</span> <span class="tok-variableName">sel</span><span class="tok-operator">.</span><span class="tok-propertyName">head</span><span class="tok-operator">.</span><span class="tok-propertyName">depth</span> <span class="tok-operator">&gt;</span> <span class="tok-number">3</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">return</span> <span class="tok-bool">false</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">block</span> <span class="tok-operator">=</span> <span class="tok-variableName">sel</span><span class="tok-operator">.</span><span class="tok-propertyName">head</span><span class="tok-operator">.</span><span class="tok-propertyName">textblockParent</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">block</span> <span class="tok-operator">||</span> <span class="tok-variableName">block</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-operator">.</span><span class="tok-propertyName">contentLength</span> <span class="tok-operator">||</span> <span class="tok-variableName">block</span><span class="tok-operator">.</span><span class="tok-propertyName">index</span> <span class="tok-operator">==</span> <span class="tok-number">0</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">return</span> <span class="tok-bool">false</span>
+
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">changes</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">from</span><span class="tok-punctuation">:</span> <span class="tok-variableName">block</span><span class="tok-operator">.</span><span class="tok-propertyName">before</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">insert</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span><span class="tok-variableName">Plot</span><span class="tok-operator">.</span><span class="tok-propertyName">End</span><span class="tok-punctuation">,</span> <span class="tok-variableName">ListItem</span><span class="tok-punctuation">]</span><span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="With that tweak, we get a passable list-only editor.">经过这一调整，我们便获得了一个尚可用的仅列表编辑器。</p>
+<div id="outliner-editor"></div></section><hr class="floral"><section><h2 id="h-inline-schema">内联模式</h2>
+<p data-x-en="It is possible to set up a Wordgard schema where the document is a single textblock, using inlineSchema or InlineDoc (or defining your own doc type).">可以设置一个 Wordgard 模式，其中文档为单个文本块，使用 <a href="../../docs/ref/#schema.inlineSchema"><code>inlineSchema</code></a> 或 <a href="../../docs/ref/#types.InlineDoc"><code>InlineDoc</code></a>（或定义您自己的文档类型）。</p>
+<p data-x-en="With a little bit of styling you can also make such an editor look like a rich-text enabled input field.">只需稍加样式，您就可以让此类编辑器看起来像一个支持富文本的输入框。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">inlineEditor</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">theme</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"&amp;"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">display</span><span class="tok-punctuation">:</span> <span class="tok-string">"inline-flex"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">borderRadius</span><span class="tok-punctuation">:</span> <span class="tok-string">"4px"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">width</span><span class="tok-punctuation">:</span> <span class="tok-string">"10em"</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-string">"wg-scroller"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">overflowX</span><span class="tok-punctuation">:</span> <span class="tok-string">"auto"</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-string">"wg-content"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">whiteSpace</span><span class="tok-punctuation">:</span> <span class="tok-string">"pre"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">padding</span><span class="tok-punctuation">:</span> <span class="tok-string">"4px 6px"</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="And there we go: inline rich text fields.">好了，这就是内联富文本字段。</p>
+<div style="border: 1px solid silver; padding: 0 20px">
+  <p data-x-en="Enter a title:">输入标题：<span id="title"></span></p>
+  <p data-x-en="And a name:">以及一个名称：<span id="name"></span></p>
+  <p data-x-en="Submit"><button id="submit">提交</button></p>
+</div><p data-x-en="Even if the input is plain text, when you need to show widgets or other decorations in it as part of your editing interface it can be practical to use a Wordgard editor.">即使输入是纯文本，当您需要在其编辑界面中显示小部件或其他装饰元素时，使用 Wordgard 编辑器可能是实用的选择。</p>
+</section><script src="./dino.js" type="module"></script>
+<script src="./outliner.js" type="module"></script>
+<script src="./inline.js" type="module"></script>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

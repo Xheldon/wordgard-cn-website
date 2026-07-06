@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Configuration Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/config/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><nav id="toc">
+  <ul><li>
+        <a href="#h-the-role-of-configuration">The Role of Configuration</a></li><li>
+        <a href="#h-facets">Facets</a></li><li>
+        <a href="#h-configuration-structure">Configuration Structure</a></li><li>
+        <a href="#h-precedence">Precedence</a></li><li>
+        <a href="#h-reconfiguration">Reconfiguration</a></li></ul>
+</nav>
+
+<script>
+addEventListener("load", function() {
+  let items = document.querySelectorAll("nav#toc ul a")
+  let timeout = -1, current = null
+  function update() {
+    timeout = -1
+    let target = document.elementFromPoint(innerWidth / 2, innerHeight / 3).closest("section"), sub, ref
+    if (target) {
+      for (;;) {
+        let next = target.parentNode.closest("section")
+        if (!next) break
+        target = next
+      }
+      for (let subheader of target.querySelectorAll("h3[id], h4[id]")) {
+        if (subheader.getBoundingClientRect().top < 35) sub = subheader.id
+        else break
+      }
+      ref = target.querySelector("a[id], h2[id]")
+    }
+    let sectionLink = ref ? "#" + ref.id : null
+    let mainLink = sub ? "#" + sub : sectionLink
+    if (current != mainLink) {
+      current = mainLink
+      for (let i = 0; i < items.length; i++) {
+        items[i].parentNode.classList.toggle("current-section", items[i].href.endsWith(sectionLink))
+        items[i].classList.toggle("current-item", items[i].href.endsWith(mainLink))
+      }
+    }
+  }
+  update()
+  addEventListener("scroll", () => {
+    if (timeout == -1) timeout = setTimeout(update, 100)
+  })
+  addEventListener("hashchange", () => update())
+})
+</script><article><h1 id="h-example-configuration">示例：配置</h1>
+<p data-x-en="This example discusses the way configuration of a Wordgard editor works, and shows some common usage patterns.">本示例讨论 Wordgard 编辑器的配置方式，并展示一些常见的使用模式。</p>
+<hr class="floral"><section><h2 id="h-the-role-of-configuration">配置的作用</h2>
+<p data-x-en="Almost all configuration is optional. The editor will refuse to initialize without a schema, but if you pass in a document node in the doc field, you can omit the config field entirely.">几乎所有配置都是可选的。编辑器在没有模式的情况下将拒绝初始化，但如果您在 <a href="../../docs/ref/#state.GardState.Spec.doc"><code>doc</code> 字段</a> 中传入一个文档节点，则可以完全省略 <a href="../../docs/ref/#state.GardState.Spec.config"><code>config</code> 字段</a>。</p>
+<p data-x-en="But such an editor will not have a menu, undo history, or any of the extensions included in the schema element extensions, such as input rules or element-specific key bindings.">但是，这样的编辑器将没有菜单、撤销历史记录，也不包含模式元素扩展中的任何扩展，例如<a href="../../docs/ref/#editor.InputRule">输入规则</a>或特定于元素的<a href="../../docs/ref/#editor.KeyBinding">键盘绑定</a>。</p>
+<p data-x-en="A design principle of this library is that the core just provides a platform for editing, and most of the actual editing behavior is implemented in extensions. A given setup can decide for which parts it wants to use the features provided by the library, and for which parts it wants to use its own custom implementation or a 3rd-party package.">该库的一项设计原则是，核心仅提供编辑平台，而大部分实际的编辑行为由扩展实现。特定的配置可以决定哪些部分使用库提供的功能，哪些部分使用其自定义实现或第三方包。</p>
+<p data-x-en="Configuration lives in the editor state. The parts that affect the UI component do so via the state—the editor will, whenever the state is updated, synchronize itself to changes in configuration.">配置存储在<a href="../../docs/ref/#state.GardState.config">编辑器状态</a>中。影响 UI 组件的部分通过状态实现——每当状态更新时，编辑器都会自动同步配置的变化。</p>
+</section><hr class="floral"><section><h2 id="h-facets">方面</h2>
+<p data-x-en="Most extensions work, directly or indirectly, though facets. Many of these are defined in the core library, but you can also define your own.">大多数扩展通过<a href="../../docs/ref/#state.GardState.Facet">facets</a>直接或间接地工作。其中许多是在核心库中定义的，但您也可以定义自己的扩展。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">saveCheck</span> <span class="tok-operator">=</span> <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">Facet</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span>&lt;
+  <span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-typeName">string</span> <span class="tok-operator">|</span> <span class="tok-keyword">null</span>
+&gt;<span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">save</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">problems</span> <span class="tok-operator">=</span> <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">facet</span><span class="tok-punctuation">(</span><span class="tok-variableName">saveCheck</span><span class="tok-punctuation">)</span>
+    <span class="tok-operator">.</span><span class="tok-propertyName">map</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">ch</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">ch</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span><span class="tok-operator">.</span><span class="tok-propertyName">filter</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">x</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">x</span> <span class="tok-operator">!=</span> <span class="tok-keyword">null</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">problems</span><span class="tok-operator">.</span><span class="tok-propertyName">length</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-variableName">Dialog</span><span class="tok-operator">.</span><span class="tok-propertyName">show</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">label</span><span class="tok-punctuation">:</span> <span class="tok-string">"Cannot save: "</span> <span class="tok-operator">+</span> <span class="tok-variableName">problems</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">submitLabel</span><span class="tok-punctuation">:</span> <span class="tok-string">"Too bad"</span>
+    <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span> <span class="tok-keyword">else</span> <span class="tok-punctuation">{</span>
+    <span class="tok-variableName">makeSaveRequest</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="That code defines a facet that holds functions that check whether the editor content is in a state where it can be saved. The save function calls these functions. When any of them return a string, it reports that it cannot save. Otherwise, it saves the document.">该代码定义了一个包含函数的 facet，这些函数用于检查编辑器内容是否处于可保存状态。<code>save</code> 函数会调用这些函数。如果其中任何一个函数返回字符串，则报告无法保存；否则，将保存文档。</p>
+<p data-x-en="To register a save check, you'd add an extension like saveCheck.of(wg => { ... }) to your configuration.">要注册保存检查，您需要在配置中添加一个扩展，例如 <code>saveCheck.of(wg =&gt; { ... })</code>。</p>
+<p data-x-en="It is possible for facet sources to be dynamic, computed from some other aspect of the state. This allows them to also be useful for controlling things that don't stay the same over the editor's lifetime, such as open panels.">Facet 源可以是<a href="../../docs/ref/#state.GardState.Facet.compute">动态</a>的，即从状态的其他方面计算得出。这使得它们也能用于控制那些在编辑器生命周期中不会保持不变的内容，例如打开的<a href="../../docs/ref/#editor.Panel.show">面板</a>。</p>
+</section><hr class="floral"><section><h2 id="h-configuration-structure">配置结构</h2>
+<p data-x-en="The config field takes a GardState.Extension value. This is a recursive type that's either an object with an extension property, or an array of extensions. You generally don't care which of these you are dealing with. The value of a function that returns an extension can be included in your extension, and it'll just work."><a href="../../docs/ref/#state.GardState.Spec.config"><code>config</code> 字段</a> 接受一个 <a href="../../docs/ref/#state.GardState.Extension"><code>GardState.Extension</code></a> 值。这是一种递归类型，它要么是一个包含 <code>extension</code> 属性的对象，要么是一个扩展数组。通常您无需关心具体处理的是哪一种。返回扩展的函数的值可以包含在您的扩展中，并且能够直接正常工作。</p>
+<p data-x-en="A typical pattern is for a given feature, for example the undo history, to be exported as a function that combines all the smaller extensions that go into the implementation of the feature.">一种典型模式是，对于某个特定功能（例如 <a href="../../docs/ref/#history.history">撤销历史</a>），将其导出为一个函数，该函数组合了实现该功能所需的所有较小扩展。</p>
+<p data-x-en="So a configuration like this...">因此，像这样的配置……</p>
+<pre><code class="language-javascript"><span class="tok-labelName">config</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span><span class="tok-variableName">history</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span> <span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">]</span>
+</code></pre><p data-x-en="... will actually expand into a big tree that might look something like this:">...实际上会扩展成一棵大树，可能看起来像这样：</p>
+<pre><code class="language-javascript"><span class="tok-labelName">config</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span>
+  <span class="tok-punctuation">[</span>                                  <span class="tok-comment">// 历史记录()</span>
+    <span class="tok-variableName">historyStateField</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">historyConfig</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">config</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">handler</span><span class="tok-punctuation">(</span><span class="tok-variableName">undoCmd</span><span class="tok-punctuation">,</span> <span class="tok-variableName">undo</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">handler</span><span class="tok-punctuation">(</span><span class="tok-variableName">redoCmd</span><span class="tok-punctuation">,</span> <span class="tok-variableName">redo</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">undoButton</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">redoButton</span>
+  <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+  <span class="tok-punctuation">[</span>                                  <span class="tok-comment">// 基础模式</span>
+    <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Doc</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">[</span>                                <span class="tok-comment">// 基本标记()</span>
+      <span class="tok-punctuation">[</span>                              <span class="tok-comment">// 加粗()</span>
+        <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Strong</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">strong</span><span class="tok-operator">.</span><span class="tok-propertyName">button</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">strong</span><span class="tok-operator">.</span><span class="tok-propertyName">keyBinding</span><span class="tok-punctuation">,</span>
+      <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+      <span class="tok-punctuation">[</span>                              <span class="tok-comment">// 强调()</span>
+        <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Emphasis</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">emphasis</span><span class="tok-operator">.</span><span class="tok-propertyName">button</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">emphasis</span><span class="tok-operator">.</span><span class="tok-propertyName">keyBinding</span>
+      <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+      <span class="tok-punctuation">[</span>                              <span class="tok-comment">// link()</span>
+        <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Link</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">link</span><span class="tok-operator">.</span><span class="tok-propertyName">button</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">link</span><span class="tok-operator">.</span><span class="tok-propertyName">keyBinding</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">link</span><span class="tok-operator">.</span><span class="tok-propertyName">tooltip</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">link</span><span class="tok-operator">.</span><span class="tok-propertyName">pasteOver</span>
+      <span class="tok-punctuation">]</span>
+    <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">[</span>                                <span class="tok-comment">// 段落()</span>
+      <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Paragraph</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">paragraph</span><span class="tok-operator">.</span><span class="tok-propertyName">button</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">paragraph</span><span class="tok-operator">.</span><span class="tok-propertyName">keyBinding</span>
+    <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">[</span>                                <span class="tok-comment">// heading()</span>
+      <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Heading</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">heading</span><span class="tok-operator">.</span><span class="tok-propertyName">button1</span><span class="tok-punctuation">,</span> <span class="tok-variableName">heading</span><span class="tok-operator">.</span><span class="tok-propertyName">button2</span><span class="tok-punctuation">,</span> <span class="tok-variableName">heading</span><span class="tok-operator">.</span><span class="tok-propertyName">button3</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">heading</span><span class="tok-operator">.</span><span class="tok-propertyName">keyBindings</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">heading</span><span class="tok-operator">.</span><span class="tok-propertyName">createOnHash</span>
+    <span class="tok-punctuation">]</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">LineBreak</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">]</span>
+</code></pre><p data-x-en="You generally don't need to know about all those inner extensions unless you want to fine-tune your configuration to omit or replace some of them. In that case, instead of using the bundle function, you'd include the parts that you want one by one. Making this possible is the reason that many such inner extensions (at least those that can meaningfully be used in isolation) are also exported.">通常，您无需了解所有这些内部扩展，除非您希望微调配置以省略或替换其中某些扩展。在这种情况下，您不会使用 bundle 函数，而是逐个包含您需要的部分。正是为了实现这一点，许多此类内部扩展（至少那些可以独立有意义使用的扩展）也被导出。</p>
+<p data-x-en="When a given extension appears multiple times in the configuration tree, only the occurence with the highest precedence is used. So as long as extensions define their inner elements as constants, if you use two extensions that both include the same sub-extension, your configuration will deduplicate it during resolution.">当某个扩展在配置树中出现多次时，仅使用优先级最高的那次出现。因此，只要扩展将其内部元素定义为常量，如果您使用了两个都包含相同子扩展的扩展，您的配置在解析过程中将对其进行去重。</p>
+</section><hr class="floral"><section><h2 id="h-precedence">优先级</h2>
+<p data-x-en="For many types of extensions, if they occur multiple times in a configuration, their relative precedence determines how they behave. For example, key bindings or event handlers get a chance to handle a key in order of precedence, wrapping decorations wrap their target so that the one with the lower precedence wraps the one with higher precedence.">对于许多类型的扩展，如果它们在配置中多次出现，其相对优先级将决定它们的行为。例如，<a href="../../docs/ref/#editor.KeyBinding">键盘绑定</a>或<a href="../../docs/ref/#editor.Wordgard.domEventHandler">事件处理器</a>会按照优先级顺序获得处理按键的机会；<a href="../../docs/ref/#editor.Decoration.Point.wrapper">包装装饰</a>会包裹其目标，使得优先级较低的装饰包裹优先级较高的装饰。</p>
+<p data-x-en="You can control relative precedence by changing the order of extensions in your extension tree or by assigning an explicit precedence to the extension. For example, in this configuration the key binding that logs A will be the first to handle Ctrl-Space (if its handler would return false, the one that logs B would get a chance to handle the key).">您可以通过更改扩展树中扩展的顺序，或为扩展分配显式的 <a href="../../docs/ref/#state.GardState.prec">优先级</a> 来控制相对优先级。例如，在此配置中，记录 <code>A</code> 的按键绑定将首先处理 Ctrl-Space（如果其处理程序返回 false，则记录 <code>B</code> 的处理程序将有机会处理该按键）。</p>
+<pre><code class="language-javascript"><span class="tok-punctuation">[</span>
+  <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Ctrl-Space"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span> <span class="tok-variableName">console</span><span class="tok-operator">.</span><span class="tok-propertyName">log</span><span class="tok-punctuation">(</span><span class="tok-string">"A"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">;</span> <span class="tok-keyword">return</span> <span class="tok-bool">true</span> <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Ctrl-Space"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span> <span class="tok-variableName">console</span><span class="tok-operator">.</span><span class="tok-propertyName">log</span><span class="tok-punctuation">(</span><span class="tok-string">"B"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">;</span> <span class="tok-keyword">return</span> <span class="tok-bool">true</span> <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">]</span>
+</code></pre><p data-x-en="If, however, you'd wrap the second binding in GardState.prec.high (or the first in GardState.prec.low), the order would be reversed.">然而，如果您将第二个绑定包装在 <a href="../../docs/ref/#state.GardState.prec.high"><code>GardState.prec.high</code></a>（或将第一个包装在 <a href="../../docs/ref/#state.GardState.prec.low"><code>GardState.prec.low</code></a>）中，顺序将会反转。</p>
+</section><hr class="floral"><section><h2 id="h-reconfiguration">重构</h2>
+<p data-x-en="When your editor configuration may change over the lifetime of an editor, one straightforward pattern is to have a function that creates a configuration based on some parameters, and, when the configuration needs to change, use that with GardState.reconfigure to update your configuration.">当编辑器的配置在其生命周期内可能发生变化时，一种直接的模式是创建一个根据某些参数生成配置的函数，并在需要更改配置时，使用该函数配合 <a href="../../docs/ref/#state.GardState.reconfigure"><code>GardState.reconfigure</code></a> 来更新您的配置。</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">menuBar</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">basicSchema</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/schema"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardState</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">config</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">withMenu</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">[</span><span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span> <span class="tok-variableName">withMenu</span> <span class="tok-operator">?</span> <span class="tok-variableName">menuBar</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-operator">:</span> <span class="tok-punctuation">[</span><span class="tok-punctuation">]</span><span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">config</span><span class="tok-punctuation">:</span> <span class="tok-variableName">config</span><span class="tok-punctuation">(</span><span class="tok-bool">true</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+
+<span class="tok-comment">// 当我们不再需要菜单时</span>
+<span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">effects</span><span class="tok-punctuation">:</span> <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">reconfigure</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">config</span><span class="tok-punctuation">(</span><span class="tok-bool">false</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="Reconfiguring a state does not reset anything it doesn't need to. Any state fields that are present in both the old and the new configuration stay unchanged, as do facet output values that are not affected by the changes.">重新配置状态不会重置任何不需要重置的内容。在旧配置和新配置中都存在的任何<a href="../../docs/ref/#state.GardState.Field">状态字段</a>将保持不变，不受更改影响的方面输出值也保持不变。</p>
+<p data-x-en="In cases where the code that needs to change configuration controls only a part of the configuration, and shouldn't reconfigure the entire editor (because it's just an editor extension, not the owner of the editor), you have two options.">在需要更改配置控制的代码仅涉及配置的一部分，且不应重新配置整个编辑器（因为它只是一个编辑器扩展，而非编辑器的所有者）的情况下，您有两个选择。</p>
+<p data-x-en="If you just need to inject some extensions, for example when you are implementing a command that, after it takes effect, needs some support extensions to be active, you can use GardState.appendConfig as an effect in the transaction you dispatch. You'll want to first check whether your extension is already active, to prevent appending it again and again.">如果您仅需注入某些扩展（例如，在实现一个命令时，该命令生效后需要某些支持扩展处于激活状态），您可以在分派的交易中将 <a href="../../docs/ref/#state.GardState.appendConfig"><code>GardState.appendConfig</code></a> 用作效果。您应首先检查您的扩展是否已激活，以避免重复追加。</p>
+<p data-x-en="A more fine-grained mechanism is to use an extension compartment. A compartment wraps part of the initial configuration, and that part can be replaced with a different set of extensions when necessary.">更细粒度的机制是使用扩展<a href="../../docs/ref/#state.GardState.Compartment">区室</a>。区室封装了初始配置的一部分，在必要时，该部分可以被替换为一组不同的扩展。</p>
+<p data-x-en="This code defines an extension that switches the editor background to pink when you press Ctrl-Space, and back again to the default when you press it again.">此代码定义了一个扩展，当您按下 Ctrl-Space 时，会将编辑器背景切换为粉红色，再次按下时则恢复为默认背景。</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">KeyBinding</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardState</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">theme</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">theme</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"&amp;"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">backgroundColor</span><span class="tok-punctuation">:</span> <span class="tok-string">"pink"</span><span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">pinkCompartment</span> <span class="tok-operator">=</span> <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">Compartment</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">toggle</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">current</span> <span class="tok-operator">=</span> <span class="tok-variableName">pinkCompartment</span><span class="tok-operator">.</span><span class="tok-propertyName">get</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">empty</span> <span class="tok-operator">=</span> <span class="tok-variableName">Array</span><span class="tok-operator">.</span><span class="tok-propertyName">isArray</span><span class="tok-punctuation">(</span><span class="tok-variableName">current</span><span class="tok-punctuation">)</span> <span class="tok-operator">&amp;&amp;</span> <span class="tok-operator">!</span><span class="tok-variableName">current</span><span class="tok-operator">.</span><span class="tok-propertyName">length</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">effects</span><span class="tok-punctuation">:</span> <span class="tok-variableName">pinkCompartment</span><span class="tok-operator">.</span><span class="tok-propertyName">reconfigure</span><span class="tok-punctuation">(</span><span class="tok-variableName">empty</span> <span class="tok-operator">?</span> <span class="tok-variableName">theme</span> <span class="tok-operator">:</span> <span class="tok-punctuation">[</span><span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span>
+
+<span class="tok-keyword">export</span> <span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">togglePink</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">[</span>
+    <span class="tok-variableName">pinkCompartment</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span><span class="tok-punctuation">]</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Ctrl-Space"</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-variableName">toggle</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="It uses Compartment.get to figure out whether the theme is active, and reconfigure to dispatch an effect that updates the editor configuration.">它使用 <a href="../../docs/ref/#state.GardState.Compartment.get"><code>Compartment.get</code></a> 来判断主题是否处于活动状态，并使用 <a href="../../docs/ref/#state.GardState.Compartment.reconfigure"><code>reconfigure</code></a> 来分发一个更新编辑器配置的效果。</p>
+</section>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

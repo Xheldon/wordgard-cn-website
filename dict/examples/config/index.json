@@ -1,0 +1,182 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Configuration": {
+    "_translate": "示例：配置",
+    "_note": ""
+  },
+  "The Role of Configuration": {
+    "_translate": "配置的作用",
+    "_note": ""
+  },
+  "This example discusses the way configuration of a Wordgard editor works, and shows some common usage patterns.": {
+    "_translate": "本示例讨论 Wordgard 编辑器的配置方式，并展示一些常见的使用模式。",
+    "_note": ""
+  },
+  "But such an editor will not have a menu, undo history, or any of the extensions included in the schema element extensions, such as input rules or element-specific key bindings.": {
+    "_translate": "但是，这样的编辑器将没有菜单、撤销历史记录，也不包含模式元素扩展中的任何扩展，例如<a href=\"../../docs/ref/#editor.InputRule\">输入规则</a>或特定于元素的<a href=\"../../docs/ref/#editor.KeyBinding\">键盘绑定</a>。",
+    "_note": ""
+  },
+  "Almost all configuration is optional. The editor will refuse to initialize without a schema, but if you pass in a document node in the doc field, you can omit the config field entirely.": {
+    "_translate": "几乎所有配置都是可选的。编辑器在没有模式的情况下将拒绝初始化，但如果您在 <a href=\"../../docs/ref/#state.GardState.Spec.doc\"><code>doc</code> 字段</a> 中传入一个文档节点，则可以完全省略 <a href=\"../../docs/ref/#state.GardState.Spec.config\"><code>config</code> 字段</a>。",
+    "_note": ""
+  },
+  "Facets": {
+    "_translate": "方面",
+    "_note": ""
+  },
+  "A design principle of this library is that the core just provides a platform for editing, and most of the actual editing behavior is implemented in extensions. A given setup can decide for which parts it wants to use the features provided by the library, and for which parts it wants to use its own custom implementation or a 3rd-party package.": {
+    "_translate": "该库的一项设计原则是，核心仅提供编辑平台，而大部分实际的编辑行为由扩展实现。特定的配置可以决定哪些部分使用库提供的功能，哪些部分使用其自定义实现或第三方包。",
+    "_note": ""
+  },
+  "Configuration lives in the editor state. The parts that affect the UI component do so via the state—the editor will, whenever the state is updated, synchronize itself to changes in configuration.": {
+    "_translate": "配置存储在<a href=\"../../docs/ref/#state.GardState.config\">编辑器状态</a>中。影响 UI 组件的部分通过状态实现——每当状态更新时，编辑器都会自动同步配置的变化。",
+    "_note": ""
+  },
+  "Most extensions work, directly or indirectly, though facets. Many of these are defined in the core library, but you can also define your own.": {
+    "_translate": "大多数扩展通过<a href=\"../../docs/ref/#state.GardState.Facet\">facets</a>直接或间接地工作。其中许多是在核心库中定义的，但您也可以定义自己的扩展。",
+    "_note": ""
+  },
+  "That code defines a facet that holds functions that check whether the editor content is in a state where it can be saved. The save function calls these functions. When any of them return a string, it reports that it cannot save. Otherwise, it saves the document.": {
+    "_translate": "该代码定义了一个包含函数的 facet，这些函数用于检查编辑器内容是否处于可保存状态。<code>save</code> 函数会调用这些函数。如果其中任何一个函数返回字符串，则报告无法保存；否则，将保存文档。",
+    "_note": ""
+  },
+  "To register a save check, you'd add an extension like saveCheck.of(wg => { ... }) to your configuration.": {
+    "_translate": "要注册保存检查，您需要在配置中添加一个扩展，例如 <code>saveCheck.of(wg =&gt; { ... })</code>。",
+    "_note": ""
+  },
+  "Configuration Structure": {
+    "_translate": "配置结构",
+    "_note": ""
+  },
+  "A typical pattern is for a given feature, for example the undo history, to be exported as a function that combines all the smaller extensions that go into the implementation of the feature.": {
+    "_translate": "一种典型模式是，对于某个特定功能（例如 <a href=\"../../docs/ref/#history.history\">撤销历史</a>），将其导出为一个函数，该函数组合了实现该功能所需的所有较小扩展。",
+    "_note": ""
+  },
+  "It is possible for facet sources to be dynamic, computed from some other aspect of the state. This allows them to also be useful for controlling things that don't stay the same over the editor's lifetime, such as open panels.": {
+    "_translate": "Facet 源可以是<a href=\"../../docs/ref/#state.GardState.Facet.compute\">动态</a>的，即从状态的其他方面计算得出。这使得它们也能用于控制那些在编辑器生命周期中不会保持不变的内容，例如打开的<a href=\"../../docs/ref/#editor.Panel.show\">面板</a>。",
+    "_note": ""
+  },
+  "The config field takes a GardState.Extension value. This is a recursive type that's either an object with an extension property, or an array of extensions. You generally don't care which of these you are dealing with. The value of a function that returns an extension can be included in your extension, and it'll just work.": {
+    "_translate": "<a href=\"../../docs/ref/#state.GardState.Spec.config\"><code>config</code> 字段</a> 接受一个 <a href=\"../../docs/ref/#state.GardState.Extension\"><code>GardState.Extension</code></a> 值。这是一种递归类型，它要么是一个包含 <code>extension</code> 属性的对象，要么是一个扩展数组。通常您无需关心具体处理的是哪一种。返回扩展的函数的值可以包含在您的扩展中，并且能够直接正常工作。",
+    "_note": ""
+  },
+  "So a configuration like this...": {
+    "_translate": "因此，像这样的配置……",
+    "_note": ""
+  },
+  "... will actually expand into a big tree that might look something like this:": {
+    "_translate": "...实际上会扩展成一棵大树，可能看起来像这样：",
+    "_note": ""
+  },
+  "// history()": {
+    "_translate": "// 历史记录()",
+    "_note": ""
+  },
+  "// basicSchema": {
+    "_translate": "// 基础模式",
+    "_note": ""
+  },
+  "// basicMarks()": {
+    "_translate": "// 基本标记()",
+    "_note": ""
+  },
+  "// strong()": {
+    "_translate": "// 加粗()",
+    "_note": ""
+  },
+  "// emphasis()": {
+    "_translate": "// 强调()",
+    "_note": ""
+  },
+  "// link()": {
+    "_translate": "// link()",
+    "_note": ""
+  },
+  "// paragraph()": {
+    "_translate": "// 段落()",
+    "_note": ""
+  },
+  "// heading()": {
+    "_translate": "// heading()",
+    "_note": ""
+  },
+  "Precedence": {
+    "_translate": "优先级",
+    "_note": ""
+  },
+  "When a given extension appears multiple times in the configuration tree, only the occurence with the highest precedence is used. So as long as extensions define their inner elements as constants, if you use two extensions that both include the same sub-extension, your configuration will deduplicate it during resolution.": {
+    "_translate": "当某个扩展在配置树中出现多次时，仅使用优先级最高的那次出现。因此，只要扩展将其内部元素定义为常量，如果您使用了两个都包含相同子扩展的扩展，您的配置在解析过程中将对其进行去重。",
+    "_note": ""
+  },
+  "You generally don't need to know about all those inner extensions unless you want to fine-tune your configuration to omit or replace some of them. In that case, instead of using the bundle function, you'd include the parts that you want one by one. Making this possible is the reason that many such inner extensions (at least those that can meaningfully be used in isolation) are also exported.": {
+    "_translate": "通常，您无需了解所有这些内部扩展，除非您希望微调配置以省略或替换其中某些扩展。在这种情况下，您不会使用 bundle 函数，而是逐个包含您需要的部分。正是为了实现这一点，许多此类内部扩展（至少那些可以独立有意义使用的扩展）也被导出。",
+    "_note": ""
+  },
+  "For many types of extensions, if they occur multiple times in a configuration, their relative precedence determines how they behave. For example, key bindings or event handlers get a chance to handle a key in order of precedence, wrapping decorations wrap their target so that the one with the lower precedence wraps the one with higher precedence.": {
+    "_translate": "对于许多类型的扩展，如果它们在配置中多次出现，其相对优先级将决定它们的行为。例如，<a href=\"../../docs/ref/#editor.KeyBinding\">键盘绑定</a>或<a href=\"../../docs/ref/#editor.Wordgard.domEventHandler\">事件处理器</a>会按照优先级顺序获得处理按键的机会；<a href=\"../../docs/ref/#editor.Decoration.Point.wrapper\">包装装饰</a>会包裹其目标，使得优先级较低的装饰包裹优先级较高的装饰。",
+    "_note": ""
+  },
+  "Reconfiguration": {
+    "_translate": "重构",
+    "_note": ""
+  },
+  "You can control relative precedence by changing the order of extensions in your extension tree or by assigning an explicit precedence to the extension. For example, in this configuration the key binding that logs A will be the first to handle Ctrl-Space (if its handler would return false, the one that logs B would get a chance to handle the key).": {
+    "_translate": "您可以通过更改扩展树中扩展的顺序，或为扩展分配显式的 <a href=\"../../docs/ref/#state.GardState.prec\">优先级</a> 来控制相对优先级。例如，在此配置中，记录 <code>A</code> 的按键绑定将首先处理 Ctrl-Space（如果其处理程序返回 false，则记录 <code>B</code> 的处理程序将有机会处理该按键）。",
+    "_note": ""
+  },
+  "If, however, you'd wrap the second binding in GardState.prec.high (or the first in GardState.prec.low), the order would be reversed.": {
+    "_translate": "然而，如果您将第二个绑定包装在 <a href=\"../../docs/ref/#state.GardState.prec.high\"><code>GardState.prec.high</code></a>（或将第一个包装在 <a href=\"../../docs/ref/#state.GardState.prec.low\"><code>GardState.prec.low</code></a>）中，顺序将会反转。",
+    "_note": ""
+  },
+  "// When we don't want a menu any more": {
+    "_translate": "// 当我们不再需要菜单时",
+    "_note": ""
+  },
+  "If you just need to inject some extensions, for example when you are implementing a command that, after it takes effect, needs some support extensions to be active, you can use GardState.appendConfig as an effect in the transaction you dispatch. You'll want to first check whether your extension is already active, to prevent appending it again and again.": {
+    "_translate": "如果您仅需注入某些扩展（例如，在实现一个命令时，该命令生效后需要某些支持扩展处于激活状态），您可以在分派的交易中将 <a href=\"../../docs/ref/#state.GardState.appendConfig\"><code>GardState.appendConfig</code></a> 用作效果。您应首先检查您的扩展是否已激活，以避免重复追加。",
+    "_note": ""
+  },
+  "When your editor configuration may change over the lifetime of an editor, one straightforward pattern is to have a function that creates a configuration based on some parameters, and, when the configuration needs to change, use that with GardState.reconfigure to update your configuration.": {
+    "_translate": "当编辑器的配置在其生命周期内可能发生变化时，一种直接的模式是创建一个根据某些参数生成配置的函数，并在需要更改配置时，使用该函数配合 <a href=\"../../docs/ref/#state.GardState.reconfigure\"><code>GardState.reconfigure</code></a> 来更新您的配置。",
+    "_note": ""
+  },
+  "In cases where the code that needs to change configuration controls only a part of the configuration, and shouldn't reconfigure the entire editor (because it's just an editor extension, not the owner of the editor), you have two options.": {
+    "_translate": "在需要更改配置控制的代码仅涉及配置的一部分，且不应重新配置整个编辑器（因为它只是一个编辑器扩展，而非编辑器的所有者）的情况下，您有两个选择。",
+    "_note": ""
+  },
+  "Reconfiguring a state does not reset anything it doesn't need to. Any state fields that are present in both the old and the new configuration stay unchanged, as do facet output values that are not affected by the changes.": {
+    "_translate": "重新配置状态不会重置任何不需要重置的内容。在旧配置和新配置中都存在的任何<a href=\"../../docs/ref/#state.GardState.Field\">状态字段</a>将保持不变，不受更改影响的方面输出值也保持不变。",
+    "_note": ""
+  },
+  "A more fine-grained mechanism is to use an extension compartment. A compartment wraps part of the initial configuration, and that part can be replaced with a different set of extensions when necessary.": {
+    "_translate": "更细粒度的机制是使用扩展<a href=\"../../docs/ref/#state.GardState.Compartment\">区室</a>。区室封装了初始配置的一部分，在必要时，该部分可以被替换为一组不同的扩展。",
+    "_note": ""
+  },
+  "This code defines an extension that switches the editor background to pink when you press Ctrl-Space, and back again to the default when you press it again.": {
+    "_translate": "此代码定义了一个扩展，当您按下 Ctrl-Space 时，会将编辑器背景切换为粉红色，再次按下时则恢复为默认背景。",
+    "_note": ""
+  },
+  "It uses Compartment.get to figure out whether the theme is active, and reconfigure to dispatch an effect that updates the editor configuration.": {
+    "_translate": "它使用 <a href=\"../../docs/ref/#state.GardState.Compartment.get\"><code>Compartment.get</code></a> 来判断主题是否处于活动状态，并使用 <a href=\"../../docs/ref/#state.GardState.Compartment.reconfigure\"><code>reconfigure</code></a> 来分发一个更新编辑器配置的效果。",
+    "_note": ""
+  }
+}

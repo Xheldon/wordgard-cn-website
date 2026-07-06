@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Basic Editor Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/basic/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><nav id="toc">
+  <ul><li>
+        <a href="#h-creating-an-editor">Creating an Editor</a></li><li>
+        <a href="#h-the-editor-state">The Editor State</a></li><li>
+        <a href="#h-loading-a-new-document">Loading a New Document</a></li></ul>
+</nav>
+
+<script>
+addEventListener("load", function() {
+  let items = document.querySelectorAll("nav#toc ul a")
+  let timeout = -1, current = null
+  function update() {
+    timeout = -1
+    let target = document.elementFromPoint(innerWidth / 2, innerHeight / 3).closest("section"), sub, ref
+    if (target) {
+      for (;;) {
+        let next = target.parentNode.closest("section")
+        if (!next) break
+        target = next
+      }
+      for (let subheader of target.querySelectorAll("h3[id], h4[id]")) {
+        if (subheader.getBoundingClientRect().top < 35) sub = subheader.id
+        else break
+      }
+      ref = target.querySelector("a[id], h2[id]")
+    }
+    let sectionLink = ref ? "#" + ref.id : null
+    let mainLink = sub ? "#" + sub : sectionLink
+    if (current != mainLink) {
+      current = mainLink
+      for (let i = 0; i < items.length; i++) {
+        items[i].parentNode.classList.toggle("current-section", items[i].href.endsWith(sectionLink))
+        items[i].classList.toggle("current-item", items[i].href.endsWith(mainLink))
+      }
+    }
+  }
+  update()
+  addEventListener("scroll", () => {
+    if (timeout == -1) timeout = setTimeout(update, 100)
+  })
+  addEventListener("hashchange", () => update())
+})
+</script><article><h1 id="h-example-basic-editor">示例：基础编辑器</h1>
+<p data-x-en="This example discusses the most basic parts of the library interface, the ones you use to create an editor from pre-defined configuration elements, add it to a web page, and read out the changed document.">本示例介绍了库接口最基本的部分，即用于从预定义的配置元素创建编辑器、将其添加到网页以及读取更改后的文档的功能。</p>
+<hr class="floral"><section><h2 id="h-creating-an-editor">创建编辑器</h2>
+<p data-x-en="To get a working editor, you'll need at least a document schema, and you'll usually want to also include the undo history and an extension to display a menu.">要获得一个可用的编辑器，您至少需要一个文档模式，并且通常还需要包含撤销历史记录以及一个用于显示菜单的扩展。</p>
+<p data-x-en="The basicSchema extension (paragraphs, headings, emphasis, links) provides a good starting set of schema elements, allowing you to pick extra elements (for example lists) by including them in your configuration bit by bit. If you just want everything the &quot;wordgard/schema&quot; module provides in one bundle, you can include fullSchema."><a href="../../docs/ref/#schema.basicSchema"><code>basicSchema</code></a> 扩展（段落、标题、强调、链接）提供了一组良好的基础模式元素，允许您通过逐步在配置中包含它们来添加额外元素（例如 <a href="../../docs/ref/#schema.orderedList">列表</a>）。如果您希望一次性获取 <a href="../docs/ref/#schema">"wordgard/schema"</a> 模块提供的所有内容，您可以包含 <a href="../../docs/ref/#schema.fullSchema"><code>fullSchema</code></a>。</p>
+<p data-x-en="This code sets up a simple editor and adds it to the element with the ID editor-parent.">此代码设置了一个简单的编辑器，并将其添加到 ID 为 <code>editor-parent</code> 的元素中。</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">menuBar</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">basicSchema</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">orderedList</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/schema"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">history</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/history"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">parent</span><span class="tok-punctuation">:</span> <span class="tok-variableName">document</span><span class="tok-operator">.</span><span class="tok-propertyName">querySelector</span><span class="tok-punctuation">(</span><span class="tok-string">"#editor-parent"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">doc</span><span class="tok-punctuation">:</span> <span class="tok-string2">`&lt;p&gt;A starting document.&lt;/p&gt;`</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">config</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span>
+    <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">label</span><span class="tok-punctuation">(</span><span class="tok-string">"Demo editor"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">basicSchema</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">orderedList</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">history</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">menuBar</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The doc option may also be a DOM element that contains the document structure, a document in JSON form, or an existing Wordgard document."><code>doc</code> 选项也可以是一个包含文档结构的 DOM 元素、<a href="../../docs/ref/#doc.Node.Shared.toJSON">JSON</a> 格式的文档，或现有的 Wordgard <a href="../../docs/ref/#doc.Plot.Doc">文档</a>。</p>
+<p data-x-en="The editor configuration is derived from the tree (arrays with potentially more nested arrays in them) of extension you provide. Functions like basicSchema and history return collections of extensions that implement the features they provide. On initialization, the editor creates a full configuration from these and stores it in the editor state.">编辑器配置源自您提供的扩展树（其中可能包含更多嵌套数组的数组）。诸如 <a href="../../docs/ref/#schema.basicSchema"><code>basicSchema</code></a> 和 <a href="../../docs/ref/#history.history"><code>history</code></a> 之类的函数会返回实现其所提供功能的扩展集合。在初始化时，编辑器会根据这些扩展创建一个完整的 <a href="../../docs/ref/#state.GardState.Configuration">配置</a>，并将其存储在编辑器状态中。</p>
+<p data-x-en="Wordgard.label adds an aria-label attribute to the editable element, so that screen readers can describe it. It's usually a good idea to include this in your configuration."><a href="../../docs/ref/#editor.Wordgard.label"><code>Wordgard.label</code></a> 会为可编辑元素添加
+<a href="https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-label"><code>aria-label</code></a>
+属性，以便屏幕阅读器能够对其进行描述。通常建议在配置中包含此项。</p>
+<p data-x-en="An editor has two important DOM elements associated with it. The outer wrapper element is available through the dom property. If you don't pass a parent option you can manually place your editor by putting that somewhere in your page. Moving an editor around, even into another frame, is supported.">编辑器关联有两个重要的 DOM 元素。外部包装元素可通过 <a href="../../docs/ref/#editor.Wordgard.dom"><code>dom</code></a> 属性访问。如果您未传递 <a href="../../docs/ref/#editor.Wordgard.Spec.parent"><code>parent</code> 选项</a>，则可以通过将该元素放置在页面的任意位置来手动定位编辑器。支持移动编辑器，甚至将其移动到另一个框架中。</p>
+<p data-x-en="The editor's editable element containing the document itself is exposed through the contentDOM property. You generally don't need to interact with this (modifying its content directly doesn't work), but this is the element that will have focus when the user has focused the editor.">编辑器中包含文档本身的可编辑元素通过 <a href="../../docs/ref/#editor.Wordgard.contentDOM"><code>contentDOM</code></a> 属性暴露。您通常不需要与此元素交互（直接修改其内容无效），但当用户聚焦编辑器时，该元素将获得焦点。</p>
+</section><hr class="floral"><section><h2 id="h-the-editor-state">编辑器状态</h2>
+<p data-x-en="Your editor's state is available under the editor object's state property. It holds most of the information about what is going on in the editor. The main thing you can get from it is the current shape of the document, under its doc property.">编辑器的状态可通过编辑器对象的 <a href="../../docs/ref/#editor.Wordgard.state"><code>state</code></a> 属性访问。它包含了编辑器中正在发生的大多数信息。从中可以获取的主要信息是文档的当前结构，位于其 <a href="../../docs/ref/#state.GardState.doc"><code>doc</code></a> 属性下。</p>
+<p data-x-en="To get the current content as HTML, you can do this:">要获取当前内容的 HTML 格式，您可以这样做：</p>
+<pre><code class="language-javascript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">serialize</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-variableName">console</span><span class="tok-operator">.</span><span class="tok-propertyName">log</span><span class="tok-punctuation">(</span><span class="tok-variableName">serialize</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-punctuation">)</span><span class="tok-operator">.</span><span class="tok-propertyName">toHTML</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="If you want to store your document as a JSON structure instead, use wg.state.doc.toJSON(). You can pass the resulting value in the doc field to Wordgard.create to create a new editor with that document.">如果您希望将文档存储为 JSON 结构，请使用 <code>wg.state.doc.toJSON()</code>。您可以将生成的值传递给 <a href="../../docs/ref/#editor.Wordgard.create"><code>Wordgard.create</code></a> 的 <code>doc</code> 字段，以使用该文档创建一个新的编辑器。</p>
+<p data-x-en="As the user edits the document or other changes to the state occur, the editor creates new state objects to represent the new situation. The existing one is not modified, so holding on to one and expecting it to stay in sync with the editor does not work.">当用户编辑文档或发生其他状态变更时，编辑器会创建新的 <a href="../../docs/ref/#state.GardState">状态</a> 对象来表示新情况。现有对象不会被修改，因此保留旧对象并期望其与编辑器保持同步是行不通的。</p>
+</section><hr class="floral"><section><h2 id="h-loading-a-new-document">加载新文档</h2>
+<p data-x-en="If you want to show another document to your user, do not update your existing editor by replacing its document content. That will keep any auxilary state, such as the undo history, from the existing editing state.">如果您想向用户显示另一个文档，请勿通过替换现有编辑器中的文档内容来更新该编辑器。这样做会保留来自现有编辑状态的辅助状态，例如撤销历史记录。</p>
+<p data-x-en="Instead, create a new editor with a fresh state. Since the document has to be redrawn anyway, there's not much extra cost saved by trying to preserve your old editor. Remove it its outer DOM element from your page and put a new editor in its place.">相反，请创建一个具有全新状态的新编辑器。由于文档无论如何都需要重绘，尝试保留旧编辑器并不会节省太多额外开销。请从页面中移除其<a href="../../docs/ref/#editor.Wordgard.dom">外部 DOM 元素</a>，并在其位置放置一个新编辑器。</p>
+</section>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

@@ -1,0 +1,94 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Origin Tracking": {
+    "_translate": "示例：原产地追踪",
+    "_note": ""
+  },
+  "Blame Map": {
+    "_translate": "责任归属图",
+    "_note": ""
+  },
+  "// Unchanged range: copy sections": {
+    "_translate": "// 未更改范围：复制部分",
+    "_note": ""
+  },
+  "In this example, we'll build a feature that, for all content added to the editor, tracks an origin. For simplicity, our origins will simply be one of three colors (that we display as background for the content), but it could be something like a user reference.": {
+    "_translate": "在本示例中，我们将构建一个功能，用于追踪添加到编辑器中的所有内容的来源。为简化起见，我们的来源将仅为三种颜色之一（我们将其作为内容的背景色显示），但它也可以是用户引用之类的信息。",
+    "_note": ""
+  },
+  "// Merge adjacent sections with the same color": {
+    "_translate": "// 合并颜色相同的相邻部分",
+    "_note": ""
+  },
+  "We'll define a data structure that, for each part of the document, know who (which color) inserted it. This will be represented by two arrays: an array of numbers, indicating the end of each section, and an array of strings, for the colors. Because the sections cover the whole document, we don't need to store their start positions. The first one starts at 0, and the others at the end of the section before them.": {
+    "_translate": "我们将定义一种数据结构，用于记录文档中每个部分是由谁（即哪种颜色）插入的。该结构由两个数组表示：一个数字数组，指示每个部分的结束位置；一个字符串数组，存储对应的颜色。由于这些部分覆盖了整个文档，因此无需存储它们的起始位置。第一个部分从 0 开始，其余部分则从前一部分的结束位置开始。",
+    "_note": ""
+  },
+  "// Replaced range: assign current color": {
+    "_translate": "// 替换范围：分配当前颜色",
+    "_note": ""
+  },
+  "State Field": {
+    "_translate": "州字段",
+    "_note": ""
+  },
+  "To be able to change the active color, we define a setColor effect and make the state update logic check whether it is present.": {
+    "_translate": "为了能够更改活动颜色，我们定义了一个 <code>setColor</code> 效果，并使状态更新逻辑检查该效果是否存在。",
+    "_note": ""
+  },
+  "A change set's iterGaps method tells you precisely what parts of the document are left intact by the changes (passed to the first callback) and what parts were replaced (given to the second callback). The blame map's update method uses that to copy sections that overlap with unchanged ranges over to the new set, and fill in any inserted content with the current active color.": {
+    "_translate": "变更集的 <a href=\"../../docs/ref/#doc.ChangeSet.iterGaps\"><code>iterGaps</code> 方法</a> 会精确告知您文档的哪些部分在变更后保持不变（传递给第一个回调），哪些部分被替换（传递给第二个回调）。责任图的 <code>update</code> 方法利用这一信息，将与未变更范围重叠的片段复制到新集合中，并用当前激活的颜色填充任何插入的内容。",
+    "_note": ""
+  },
+  "That gives us a way to track blame information across document changes. To keep such information with the editor, we'll want to keep it in a state field. The BlameState class is the object we'll store in that state. It holds the current active color, the blame map, and a set of decorations the display that blame map.": {
+    "_translate": "这为我们提供了一种在文档变更中追踪责任信息的方法。为了在编辑器中保留此类信息，我们需要将其存储在一个状态字段中。<code>BlameState</code> 类就是我们将存储在该状态中的对象。它包含当前激活的颜色、责任映射以及一组用于显示该责任映射的装饰。",
+    "_note": ""
+  },
+  "The state field's create method just throws an error. Because we need to initialize the active color, we will use its init method to override this with a custom initializer.": {
+    "_translate": "状态字段的 <code>create</code> 方法仅会抛出错误。由于我们需要初始化活动颜色，我们将使用其 <a href=\"../../docs/ref/#state.GardState.Field.init\"><code>init</code> 方法</a> 来用自定义初始化器覆盖此行为。",
+    "_note": ""
+  },
+  "Result": {
+    "_translate": "结果",
+    "_note": ""
+  },
+  "The state field defines toJSON and fromJSON functions, so that it can be serialized as part of the state with toJSON. This demo doesn't actually use that, but being able to preserve blame information across sessions sounds useful.": {
+    "_translate": "state 字段定义了 <code>toJSON</code> 和 <code>fromJSON</code> 函数，以便它可以通过 <a href=\"../../docs/ref/#state.GardState.toJSON\"><code>toJSON</code></a> 作为 state 的一部分进行序列化。此演示实际上并未使用该功能，但能够跨会话保留归责信息听起来很有用。",
+    "_note": ""
+  },
+  "Finally, the blameTracking function returns the extension that enables this feature. It takes the active color it should start with as an option, and initializes the state field accordingly.": {
+    "_translate": "最后，<code>blameTracking</code> 函数返回启用此功能的扩展。它将应开始的激活颜色作为选项传入，并相应地初始化状态字段。",
+    "_note": ""
+  },
+  "The blameDeco function converts a blame map to a set of attribute decorations. Because the range decoration object for a given color will be needed a lot, we make sure to create those only once per color.": {
+    "_translate": "<code>blameDeco</code> 函数将 blame 映射转换为一组属性装饰。由于对于给定颜色，<a href=\"../../docs/ref/#editor.Decoration.Range\">范围装饰</a>对象将被频繁使用，我们确保每种颜色仅创建一次这些对象。",
+    "_note": ""
+  },
+  "This is what the result looks like:": {
+    "_translate": "结果如下所示：",
+    "_note": ""
+  },
+  "Select your color: Red Green Blue": {
+    "_translate": "选择您的颜色：<select id=\"colors\">\n  <option value=\"#fcc\">红色</option>\n  <option value=\"#cfc\">绿色</option>\n  <option value=\"#ccf\">蓝色</option>\n</select>",
+    "_note": ""
+  }
+}

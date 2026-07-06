@@ -1,0 +1,154 @@
+{
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Its main distinguishing feature is a powerful programming interface that makes the library a good foundation for customized editors—even complex, demanding ones.": {
+    "_translate": "其主要区别在于强大的编程接口，这使得该库成为定制编辑器（即使是复杂且要求苛刻的编辑器）的良好基础。",
+    "_note": ""
+  },
+  "Wordgard provides a set of tools for building content editors. It is not a free-form HTML editor, but one where you control precisely what kind of content you support.": {
+    "_translate": "Wordgard 提供了一套用于构建内容编辑器的工具。它不是一个自由形式的 HTML 编辑器，而是一个让您能够精确控制所支持内容类型的编辑器。",
+    "_note": ""
+  },
+  "Features": {
+    "_translate": "功能",
+    "_note": ""
+  },
+  "Schema-Based": {
+    "_translate": "基于模式",
+    "_note": ""
+  },
+  "Schema-Based Precisely define the structure of your documents. Create custom document elements.": {
+    "_translate": "<a class=\"blocklink\" href=\"docs/guide/#h-the-schema\">\n    <h3>基于模式</h3>\n    <p>精确定义文档的结构。创建自定义文档元素。</p>\n  </a>",
+    "_note": ""
+  },
+  "Precisely define the structure of your documents. Create custom document elements.": {
+    "_translate": "精确定义您的文档结构。创建自定义文档元素。",
+    "_note": ""
+  },
+  "Deluxe API The editor's programming interface has been obsessively designed for generality and versatility.": {
+    "_translate": "<a class=\"blocklink\" href=\"docs/ref/\">\n    <h3>Deluxe API</h3>\n    <p>编辑器的编程接口经过精心打磨，旨在实现高度的通用性与多功能性。</p>\n  </a>",
+    "_note": ""
+  },
+  "Deluxe API": {
+    "_translate": "豪华版 API",
+    "_note": ""
+  },
+  "The editor's programming interface has been obsessively designed for generality and versatility.": {
+    "_translate": "编辑器的编程接口经过精心设计，力求具备高度的通用性和多功能性。",
+    "_note": ""
+  },
+  "Modular Most editor features are implemented as extensions, which means you can replace or modify them when they don't work for you.": {
+    "_translate": "<a class=\"blocklink\" href=\"docs/ref/\">\n    <h3>模块化</h3>\n    <p>大多数编辑器功能均以扩展形式实现，这意味着当它们无法满足您的需求时，您可以替换或修改它们。</p>\n  </a>",
+    "_note": ""
+  },
+  "Modular": {
+    "_translate": "模块化",
+    "_note": ""
+  },
+  "Most editor features are implemented as extensions, which means you can replace or modify them when they don't work for you.": {
+    "_translate": "大多数编辑器功能均以扩展形式实现，这意味着当它们无法满足您的需求时，您可以替换或修改它们。",
+    "_note": ""
+  },
+  "Semantic Rich Text Editor System": {
+    "_translate": "语义富文本编辑器系统",
+    "_note": ""
+  },
+  "Accessible": {
+    "_translate": "无障碍",
+    "_note": ""
+  },
+  "Accessible Works for screen reader users, keyboard-only users, and mobile devices. Support for UI inter­nationalization.": {
+    "_translate": "<h3>无障碍</h3>\n    <p>适用于屏幕阅读器用户、仅使用键盘的用户以及移动设备。支持用户界面国际化。</p>",
+    "_note": ""
+  },
+  "Wordgard [wɜrd-gɑrd] noun A garden for cultivating words. Open-source JavaScript library implementing an in-browser rich-text editor.": {
+    "_translate": "<strong>Wordgard</strong> <span style=\"opacity: 70%; font-size:\n90%\">[wɜrd-gɑrd] <span style=\"font-variant-caps:\nsmall-caps\">名词</span></span> 培育词语的花园。\n一个开源 JavaScript 库，实现了浏览器内的富文本编辑器。",
+    "_note": ""
+  },
+  "Works for screen reader users, keyboard-only users, and mobile devices. Support for UI inter­nationalization.": {
+    "_translate": "适用于屏幕阅读器用户、仅使用键盘的用户以及移动设备。支持用户界面国际化。",
+    "_note": ""
+  },
+  "Right-to-Left Writing Direction-aware in both the content and the interface. Supports bidirectional content and right-to-left documents.": {
+    "_translate": "<a href=\"docs/ref/#state.GardState.textLTR\" class=\"blocklink\">\n    <h3>从右向左书写</h3>\n    <p>内容和界面均支持方向感知。支持双向内容以及从右向左的文档。</p>\n  </a>",
+    "_note": ""
+  },
+  "Right-to-Left Writing": {
+    "_translate": "从右向左书写",
+    "_note": ""
+  },
+  "Structured Content": {
+    "_translate": "结构化内容",
+    "_note": ""
+  },
+  "Document trees can include tables, nesting lists, captioned figures, and custom structure.": {
+    "_translate": "文档树可以包含表格、嵌套列表、带标题的图形以及自定义结构。",
+    "_note": ""
+  },
+  "Direction-aware in both the content and the interface. Supports bidirectional content and right-to-left documents.": {
+    "_translate": "内容和界面均支持方向感知。支持双向内容以及从右到左的文档。",
+    "_note": ""
+  },
+  "Structured Content Document trees can include tables, nesting lists, captioned figures, and custom structure.": {
+    "_translate": "<a class=\"blocklink\" href=\"docs/ref/#tables\">\n    <h3>结构化内容</h3>\n    <p>文档树可以包含表格、嵌套列表、带标题的图形以及自定义结构。</p>\n  </a>",
+    "_note": ""
+  },
+  "Functional": {
+    "_translate": "功能性的",
+    "_note": ""
+  },
+  "Functional A large part of the system is written in functional style for clarity and testability.": {
+    "_translate": "<a class=\"blocklink\" href=\"docs/guide/#h-editor-state\">\n    <h3>函数式</h3>\n    <p>系统的大部分代码采用函数式风格编写，以确保清晰性和可测试性。</p>\n  </a>",
+    "_note": ""
+  },
+  "A large part of the system is written in functional style for clarity and testability.": {
+    "_translate": "该系统的大部分代码采用函数式风格编写，以提高清晰度和可测试性。",
+    "_note": ""
+  },
+  "Support for multiple users editing the same document at the same time, merging concurrent edits.": {
+    "_translate": "支持多用户同时编辑同一文档，并合并并发编辑内容。",
+    "_note": ""
+  },
+  "About": {
+    "_translate": "关于",
+    "_note": ""
+  },
+  "Collaborative Editing": {
+    "_translate": "协同编辑",
+    "_note": ""
+  },
+  "Collaborative Editing Support for multiple users editing the same document at the same time, merging concurrent edits.": {
+    "_translate": "<a href=\"docs/ref/#collab\" class=\"blocklink\">\n    <h3>协同编辑</h3>\n    <p>支持多名用户同时编辑同一文档，并合并并发编辑。</p>\n  </a>",
+    "_note": ""
+  },
+  "Wordgard is open source under a permissive license (MIT). It is being developed on code.haverbeke.berlin. Bug reports are very welcome. Pull requests are not accepted.": {
+    "_translate": "Wordgard 在宽松的许可证下开源（<a href=\"https://code.haverbeke.berlin/wordgard/wordgard/src/branch/main/LICENSE\">MIT</a>）。它正在 <a href=\"https://code.haverbeke.berlin/wordgard/wordgard\">code.haverbeke.berlin</a> 上开发。非常欢迎提交错误报告。拉取请求 <a href=\"docs/faq/#h-why-dont-you-take-pull-requests\">不予接受</a>。",
+    "_note": ""
+  },
+  "Discussing the project or asking questions is best done on the forum. Bugs should be reported through the issue tracker.": {
+    "_translate": "讨论项目或提出问题最好在<a href=\"https://discuss.wordgard.net/\">论坛</a>上进行。错误应通过<a href=\"https://code.haverbeke.berlin/wordgard/wordgard/issues\">问题跟踪器</a>报告。",
+    "_note": ""
+  },
+  "If you are using Wordgard commercially, there is a social (but no legal) expectation that you help fund its maintenance. Start here.": {
+    "_translate": "<em>如果您将 Wordgard 用于商业用途，则存在一种<em>社会</em>（但非法律）期望，即您应资助其维护工作。<a href=\"http://marijnhaverbeke.nl/fund/\">从这里开始</a></em>。",
+    "_note": ""
+  }
+}
