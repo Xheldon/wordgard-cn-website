@@ -20,7 +20,9 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: main
-          persist-credentials: true
+          # Note: 必须 false。否则 checkout 会把默认 GITHUB_TOKEN（新仓库默认只读）
+          # 写入 git 的 http extraheader，推送时会盖过 URL 里的 GIT_TOKEN(PAT)导致 403。
+          persist-credentials: false
 
       - name: 设置 Node 环境
         uses: actions/setup-node@v4
