@@ -3447,8 +3447,8 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Find the next normal cursor position after or before this selection's head. Normal cursor positions are:">查找此选区头部之后或之前的下一个正常光标位置。正常光标位置包括：</p>
 <ul>
-<li data-x-en="Any inline position, except one directly inside of an inline plot that doesn't have cursorInsideBounds set."><p>任何内联位置，但直接位于未设置 <a href="#doc.Plot.Spec.cursorInsideBounds"><code>cursorInsideBounds</code></a> 的内联绘图中的位置除外。</p></li>
-<li data-x-en="Positions between two cursor barriers, if not already an inline position. Cursor barriers are the sides of the document, any block leaves, or plots that are isolating, whitespace-preserving, or explicitly defined as a cursor barrier."><p>两个光标屏障之间的位置，如果尚未是内联位置。光标屏障是指文档的两侧、任何块级叶子节点，或是被定义为<a href="#doc.Plot.Spec.isolating">隔离</a>、<a href="#doc.Plot.Spec.preserveWhitespace">保留空白</a>或显式指定为<a href="#doc.Plot.Spec.cursorBarrier">光标屏障</a>的绘图。</p></li>
+<li data-x-en="Any inline position, except one directly inside of an inline plot that doesn't have cursorInsideBounds set.">任何内联位置，但直接位于未设置 <a href="#doc.Plot.Spec.cursorInsideBounds"><code>cursorInsideBounds</code></a> 的内联图表中的位置除外。</li>
+<li data-x-en="Positions between two cursor barriers, if not already an inline position. Cursor barriers are the sides of the document, any block leaves, or plots that are isolating, whitespace-preserving, or explicitly defined as a cursor barrier.">两个光标屏障之间的位置，如果尚未为内联位置。光标屏障是指文档的两侧、任何块级叶子节点，或是被标记为<a href="#doc.Plot.Spec.isolating">隔离</a>、<a href="#doc.Plot.Spec.preserveWhitespace">保留空白</a>或显式定义为<a href="#doc.Plot.Spec.cursorBarrier">光标屏障</a>的绘图。</li>
 </ul>
 </div>
 <pre class="refcode">  <a href="#state.GardSelection.normalCursorAtBound" class="def" id="state.GardSelection.normalCursorAtBound">normalCursorAtBound</a>(
@@ -5540,9 +5540,9 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="A command is a function that takes an editor and an additional parameter, and either...">命令是一个函数，它接收一个编辑器和一个附加参数，然后要么……</p>
 <ul>
-<li data-x-en="returns false to indicate that it does not apply to the current editor state"><p>返回 <code>false</code> 以表示它不适用于当前的编辑器状态</p></li>
-<li data-x-en="performs its action as a side effect and returns true"><p>作为副作用执行其操作并返回 <code>true</code></p></li>
-<li data-x-en="returns a transaction spec that should be dispatched as its effect"><p>返回一个应作为其效果分派的<a href="#state.Transaction.Spec">事务规范</a></p></li>
+<li data-x-en="returns false to indicate that it does not apply to the current editor state">返回 <code>false</code> 以表示其不适用于当前的编辑器状态。</li>
+<li data-x-en="performs its action as a side effect and returns true">作为副作用执行其操作并返回 <code>true</code></li>
+<li data-x-en="returns a transaction spec that should be dispatched as its effect">返回一个应作为其效果分派的<a href="#state.Transaction.Spec">事务规范</a>。</li>
 </ul>
 <p data-x-en="This formulation is chosen to cover both side-effecting commands (whose effect may not even directly affect the editor—a command may just open a dialog or change some editor-external state) and commands implemented as pure functions from state to transaction.">此公式的选用旨在涵盖具有副作用的命令（其影响甚至可能不直接作用于编辑器——命令可能仅打开对话框或更改某些编辑器外部状态）<em>以及</em>实现为从状态到事务的纯函数的<a href="#command.Command.Pure">命令</a>。</p>
 <p data-x-en="Extensions can register additional handlers for a command, which will be called in order of precedence (until one returns true) when the command is dispatched. Commands are recognized by function identity. So, for example, the enter command is both the tag used to indicate invocation of an enter press and the function that implements the default behavior for this action.">扩展可以为命令注册额外的处理程序，当命令被<a href="#command.Command.dispatch">分发</a>时，这些处理程序将按优先级顺序调用（直到其中一个返回 true）。命令通过函数身份进行识别。因此，例如，<code>enter</code>命令既是用于指示触发回车键按下的标签，也是实现此操作默认行为的函数。</p>

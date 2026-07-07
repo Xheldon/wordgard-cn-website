@@ -966,5 +966,17 @@
   "Menu groups just group a set of items, and make it easier to organize bigger menus (like the top-level menu) or factor out some parts into a smaller menu (such as a selection tooltip menu). The library defines a few: the top-level menu, a commands group for generic commands, inline and block groups for inline-level and block-level document manipulation, and an insert group for buttons that insert various types of nodes.": {
     "_translate": "<a href=\"../ref/#command.Menu.Group\">菜单组</a>仅用于将一组项目归类，从而更易于组织大型菜单（如顶级菜单），或将某些部分提取到较小的菜单中（例如选择提示菜单）。该库定义了几个组：<a href=\"../ref/#command.Menu.Group.top\">顶级菜单</a>、用于通用命令的<a href=\"../ref/#command.Menu.Group.commands\">命令组</a>、用于行内级和块级文档操作的<a href=\"../ref/#command.Menu.Group.inline\">行内</a>和<a href=\"../ref/#command.Menu.Group.block\">块级</a>组，以及用于插入各种类型节点的按钮的<a href=\"../ref/#command.Menu.Group.insert\">插入组</a>。",
     "_note": ""
+  },
+  "Facets provide a convenience method for registering a dynamic facet that uses a field's value.": {
+    "_translate": "Facets 提供了一个<a href=\"../ref/#state.GardState.Facet.from\">便捷方法</a>，用于注册使用字段值的动态 facet。",
+    "_note": ""
+  },
+  "Another important property of a mark type is whether it is spanning. Some types of marks, such as image alt text, refer to a specific node, and have nothing to do with the nodes around that. Others, like strong emphasis, conceptually apply to a stretch of content. When adjacent nodes all have the Strong mark, the <strong> element should wrap them all, rather than each individually. Text nodes can only have spanning marks, because they are not really individual nodes in the sense of other nodes, but rather stretches of characters that happen to be grouped because they are adjacent to each other.": {
+    "_translate": "标记类型的另一个重要属性是它是否为<a href=\"../ref/#doc.Mark.Spec.spanning\">跨节点</a>的。某些类型的标记（如图像的替代文本）仅引用特定节点，与周围的节点无关；而另一些标记（如强强调）则在概念上适用于一段内容。当相邻节点都具有<a href=\"../ref/#types.Strong\"><code>Strong</code></a>标记时，<code>&lt;strong&gt;</code>元素应包裹所有这些节点，而不是分别包裹每个节点。文本节点只能拥有跨节点标记，因为它们并非像其他节点那样是真正的独立节点，而只是因彼此相邻而被分组的一段字符。",
+    "_note": ""
+  },
+  "The way you use these is that you first define your own compartment, and include that, with some extension in it, in your configuration using compartment.of(...). You can then dispatch a transaction with the effect created by compartment.reconfigure(...) to reconfigure your compartment.": {
+    "_translate": "使用这些功能的方法是：首先 <a href=\"../ref/#state.GardState.Compartment.define\">定义</a> 您自己的区室，然后使用 <a href=\"../ref/#state.GardState.Compartment.of\"><code>compartment.of</code></a><code>(...)</code> 将其（包含某些扩展）纳入您的配置中。之后，您可以发送一个由 <a href=\"../ref/#state.GardState.Compartment.reconfigure\"><code>compartment.reconfigure</code></a><code>(...)</code> 创建的效果所触发的交易，以重新配置您的区室。",
+    "_note": ""
   }
 }
