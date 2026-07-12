@@ -166,5 +166,9 @@
   "This is obviously a powerful tool that can cause trouble when used carelessly. You'll want to think carefully about the situations in which you want your extender (or correction) to fire, and how it could block the user from doing something they should reasonably be able to do.": {
     "_translate": "这显然是一个强大的工具，若使用不当可能会引发问题。您需要仔细考虑在哪些情况下希望您的扩展器（或修正器）被触发，以及它如何可能阻止用户执行他们本应合理能够完成的操作。",
     "_note": ""
+  },
+  "Further parameters given to the transaction are scrollIntoView, which tells the editor that it should make sure the cursor is visible after the change, and userEvent, which provides a rough, if somewhat fuzzy, category for the change. The latter isn't necessary, but can help other code recognize some types of transactions, and treat them specially.": {
+    "_translate": "传递给事务的其他参数包括 <a href=\"../../docs/ref/#state.Transaction.Spec.scrollIntoView\"><code>scrollIntoView</code></a>，它指示编辑器在更改后确保光标可见；以及 <a href=\"../../docs/ref/#state.Transaction.Spec.userEvent\"><code>userEvent</code></a>，它为更改提供一个粗略（尽管有些模糊）的分类。后者并非必需，但可以帮助其他代码 <a href=\"../../docs/ref/#state.Transaction.isUserEvent\">识别</a> 某些类型的事务，并对它们进行特殊处理。",
+    "_note": ""
   }
 }

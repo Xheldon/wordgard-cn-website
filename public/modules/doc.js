@@ -142,20 +142,18 @@ class Slice {
         return `<${this.content.join()}>`;
     }
     toJSON() {
-        return this.content.map(e => e.tokenType == Token.Type.Node ? { node: e.toJSON() }
-            : e.tokenType == Token.Type.Open ? { open: e.toJSON() } : { close: true });
+        return this.content.map(e => e.tokenType == Token.Type.Close ? "." : e.toJSON());
     }
     static fromJSON(schema, json) {
         if (!Array.isArray(json))
             throw new ValidationError("Invalid slice JSON");
         return new Slice(json.map(value => {
-            if (value.open)
-                return schema.tagFromJSON(value.open);
-            if (value.close)
+            if (value === ".")
                 return Token.End;
-            if (value.node)
-                return schema.nodeFromJSON(value.node);
-            throw new ValidationError("Invalid slice JSON");
+            if (!value || typeof value.type != "string")
+                throw new ValidationError("Invalid slice JSON");
+            let type = schema.getNode(value.type);
+            return type?.isLeaf || ("content" in value) ? schema.nodeFromJSON(value) : schema.tagFromJSON(value);
         }));
     }
 }
@@ -1097,6 +1095,7 @@ class BaseType {
     get isInline() { return (this.flags & 1) > 0; }
     get isBlock() { return (this.flags & 1) == 0; }
     get isAtom() { return (this.flags & 4) > 0; }
+    get isSelectable() { return (this.flags & 32) > 0; }
 }
 class BaseTag {
     param;
@@ -1236,7 +1235,6 @@ class Leaf extends BaseTag {
         }
         get isLeaf() { return true; }
         get isPlot() { return false; }
-        get isSelectable() { return (this.flags & 32) > 0; }
     }
     Leaf.Type = Type;
     Leaf.Text = Leaf.Type.new("Text", 1, {
@@ -1343,8 +1341,7 @@ class Plot {
     }
     toJSON() {
         let result = this.tag.toJSON();
-        if (this.content.length)
-            result.content = this.content.map(c => c.toJSON());
+        result.content = this.content.map(c => c.toJSON());
         return result;
     }
     mark(mark) { return this.tag.mark(mark); }
@@ -2022,6 +2019,9 @@ function compareModifications(a, b) {
 function compareModification(a, b) {
     return isAdd(a) ? isAdd(b) && a.add.eq(b.add) : isRemove(b) && a.remove.eq(b.remove);
 }
+function isNatNum(value) {
+    return typeof value == "number" && Math.floor(value) == value && value >= 0;
+}
 const applyCache = /*@__PURE__*/(() => new WeakMap())();
 class ChangeSet {
     sections;
@@ -2096,35 +2096,45 @@ class ChangeSet {
         return newDoc;
     }
     toJSON() {
-        return this.data.map((data, i) => {
-            let length = this.sections[i << 1], type = this.sections[(i << 1) + 1];
-            return type >= 0 ? { length, replacement: data.toJSON() }
-                : data ? { length, modifications: data.map(modificationToJSON) }
-                    : { length };
-        });
+        let result = [];
+        for (let i = 0; i < this.data.length; i++) {
+            let len = this.sections[i << 1], ins = this.sections[(i << 1) + 1];
+            if (ins == -1)
+                result.push(len);
+            else if (ins == -2)
+                result.push([len, this.data[i].map(modificationToJSON)]);
+            else
+                result.push([len, this.data[i].toJSON()]);
+        }
+        return result;
     }
     static fromJSON(schema, json) {
         if (!Array.isArray(json))
             throw new ValidationError("Invalid ChangeSet JSON");
         let sections = [], data = [];
         for (let elt of json) {
-            let { length } = elt;
-            if (typeof length != "number")
-                throw new ValidationError("Invalid ChangeSet JSON");
-            if (elt.replacement) {
-                let slice = Slice.fromJSON(schema, elt.replacement);
-                sections.push(length, slice.length);
-                data.push(slice);
+            if (isNatNum(elt)) {
+                sections.push(elt, -1);
+                data.push(null);
             }
             else {
-                sections.push(length, -1);
-                data.push(!Array.isArray(elt.modification) ? null :
-                    elt.modification.map((m) => modificationFromJSON(schema, m)));
+                if (!Array.isArray(elt) || elt.length != 2 || !isNatNum(elt[0]) || !Array.isArray(elt[1]))
+                    throw new ValidationError("Invalid ChangeSet JSON");
+                let [len, val] = elt;
+                if (val.length && typeof val[0] == "object" && ("add" in val[0] || "remove" in val[0])) {
+                    sections.push(len, -2);
+                    data.push(val.map(m => modificationFromJSON(schema, m)));
+                }
+                else {
+                    let slice = Slice.fromJSON(schema, val);
+                    sections.push(len, slice.length);
+                    data.push(slice);
+                }
             }
         }
         return new ChangeSet(sections, data);
     }
-    transform(other, doc, before = false) {
+    transform(doc, other, before = false) {
         let { set, fix } = transform(this, other, doc, before, true);
         return fix ? set.compose(fix) : set;
     }
@@ -2437,7 +2447,7 @@ function createChangeSet(doc, spec, mayCorrect = true) {
 }
 function transform(setA, setB, doc, before, fit) {
     if (setA.length != doc.length || setB.length != doc.length)
-        throw new ValidationError("Mapping a change that doesn't match the start document");
+        throw new ValidationError("Transforming a change that doesn't match the start document");
     let sections = [], data = [];
     let fitter = fit ? new ChangeFitter(doc, false) : null;
     let a = new SectionIter(setA.sections, setA.data), b = new SectionIter(setB.sections, setB.data), pos = 0;

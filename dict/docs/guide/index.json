@@ -978,5 +978,21 @@
   "The way you use these is that you first define your own compartment, and include that, with some extension in it, in your configuration using compartment.of(...). You can then dispatch a transaction with the effect created by compartment.reconfigure(...) to reconfigure your compartment.": {
     "_translate": "使用这些功能的方法是：首先 <a href=\"../ref/#state.GardState.Compartment.define\">定义</a> 您自己的区室，然后使用 <a href=\"../ref/#state.GardState.Compartment.of\"><code>compartment.of</code></a><code>(...)</code> 将其（包含某些扩展）纳入您的配置中。之后，您可以发送一个由 <a href=\"../ref/#state.GardState.Compartment.reconfigure\"><code>compartment.reconfigure</code></a><code>(...)</code> 创建的效果所触发的交易，以重新配置您的区室。",
     "_note": ""
+  },
+  "An attribute shape that just stores the parameter in the attribute as-is can indicate this with value: 0. When a more involved transformation is necessary, it is again possible to define custom functions to create and parse the attribute.": {
+    "_translate": "仅将参数原样存储在属性中的<a href=\"../ref/#doc.Shape.Attribute\">属性形状</a>可以通过<code>value: 0</code>来指示这一点。当需要更复杂的转换时，同样可以定义自定义函数来创建和解析该属性。",
+    "_note": ""
+  },
+  "Transactions are created with a Transaction.Spec object, which allows you to provide these fields in a straightforward object literal.": {
+    "_translate": "事务是通过 <a href=\"../ref/#state.Transaction.Spec\"><code>Transaction.Spec</code></a> 对象创建的，该对象允许您以简单的对象字面量形式提供这些字段。",
+    "_note": ""
+  },
+  "To avoid layout thrashing (the thing where the browser needs to compute its document layout again and again because code alternates between reading layout information and modifying the DOM), plugins that need access to the document layout to update themselves should use the scheduleDOMRead and scheduleDOMWrite methods.": {
+    "_translate": "为避免布局抖动（即浏览器因代码在读取布局信息与修改 DOM 之间交替切换而不得不反复计算文档布局），需要访问文档布局以进行自我更新的插件应使用 <a href=\"../ref/#editor.Wordgard.scheduleDOMRead\"><code>scheduleDOMRead</code></a> 和 <a href=\"../ref/#editor.Wordgard.scheduleDOMWrite\"><code>scheduleDOMWrite</code></a> 方法。",
+    "_note": ""
+  },
+  "For these reasons, Wordgard intentionally defines a simpler, looser document model. In cases where you do want to enforce additional constraints, corrections are the abstraction to support this. They allow you to register observer functions that look at nodes of a given type every time they change or are introduced, and optionally return an extension to the transaction to \"fix\" the node.": {
+    "_translate": "出于这些原因，Wordgard 有意定义了一个更简单、更宽松的文档模型。在需要强制执行额外约束的情况下，<a href=\"../ref/#state.Correction\">修正（corrections）</a> 是支持此功能的抽象机制。它们允许您注册观察者函数，每当特定类型的节点发生变化或被引入时进行检查，并可选择返回一个事务扩展来“修复”该节点。",
+    "_note": ""
   }
 }

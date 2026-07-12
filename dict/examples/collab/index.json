@@ -1,0 +1,210 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Collaborative Editing": {
+    "_translate": "示例：协同编辑",
+    "_note": ""
+  },
+  "Real-time collaborative editing is a technique where multiple people on different machines can edit the same document at the same time. Changes are propagated to other participants over the network and show up in their views of the document as soon as they arrive.": {
+    "_translate": "实时协同编辑是一种允许多个用户在不同机器上同时编辑同一文档的技术。更改通过网络传播给其他参与者，并在到达后立即显示在他们的文档视图中。",
+    "_note": ""
+  },
+  "Here's a toy collaborative editing setup that lives within this page. It shares updates between the editors over an asynchronous text channel, to simulate a networked situation.": {
+    "_translate": "这是一个位于本页面内的玩具协作编辑环境。它通过异步文本通道在编辑器之间共享更新，以模拟网络环境。",
+    "_note": ""
+  },
+  "The main difficulty with this style of editing is the handling of conflicting edits—since communication isn't instantaneous, it is possible for people to make changes at the same time, which have to be reconciled in some way when synchronizing everybody up again.": {
+    "_translate": "这种编辑方式的主要难点在于处理冲突的编辑——由于通信并非即时，人们可能同时做出更改，因此在重新同步所有人时，必须以某种方式解决这些冲突。",
+    "_note": ""
+  },
+  "Wordgard comes with functionality for collaborative editing based on operational transformation with a central authority (server) that assigns a definite order to the changes. This example goes through the process of wiring up a collaborative editing server.": {
+    "_translate": "Wordgard 提供基于操作转换（Operational Transformation）的协同编辑功能，该功能由一个中央权威（服务器）负责为变更分配确定的顺序。本示例将介绍如何搭建协同编辑服务器的完整流程。",
+    "_note": ""
+  },
+  "The code is intentionally kept simple. It hardly does any input validation or error checking, and doesn't handle things like reconnection. A real implementation, especially on the server side, will be quite a bit more complicated.": {
+    "_translate": "代码被有意保持简单。它几乎不进行任何输入验证或错误检查，也不处理重连等情况。真正的实现，尤其是在服务器端，将会复杂得多。",
+    "_note": ""
+  },
+  "(The plan is to eventually include such a server in the Wordgard distribution, but this is not done yet.)": {
+    "_translate": "（计划最终将此类服务器纳入 Wordgard 发行版，但尚未完成。）<!-- FIXME -->",
+    "_note": ""
+  },
+  "Algorithm": {
+    "_translate": "算法",
+    "_note": ""
+  },
+  "Other approaches to collaborative editing exist (notably those based on CRDTs), with different trade-offs. This example describes the one bundled with Wordgard, but what works best will depend on your use case.": {
+    "_translate": "还存在其他协同编辑方法（尤其是基于<a href=\"https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type\">CRDTs</a>的方法），它们具有不同的权衡。本示例描述的是随 Wordgard 捆绑的方法，但最佳方案将取决于您的具体用例。",
+    "_note": ""
+  },
+  "Operational transformation works by defining a way for two changes A and B, which both expect to start from doc D, to be transformed over each other, giving transformed changes A' and B', which can be applied to the document produced by the other step so that applying B' after A and applying A' after B both produce the exact same document.": {
+    "_translate": "操作转换通过定义一种方法，使两个均期望从文档 D 开始的变更 A 和 B 能够相互转换，从而生成转换后的变更 A' 和 B'。这些转换后的变更可应用于由对方步骤生成的文档，使得在 A 之后应用 B' 与在 B 之后应用 A' 均能产生完全相同的文档。",
+    "_note": ""
+  },
+  "Wordgard change sets support this via transform. That primitive can be used to reconcile steps made concurrently by different editors to the same document, in such a way that everybody eventually ends up with the same document.": {
+    "_translate": "Wordgard 变更集通过 <a href=\"../../docs/ref/#doc.ChangeSet.transform\"><code>transform</code></a> 支持此功能。该原语可用于协调不同编辑器对同一文档并发执行的步骤，确保最终所有用户都获得相同的文档。",
+    "_note": ""
+  },
+  "Because doing this in a completely distributed way is hard, we rely on a central process, the server, to coordinate the exchange of changes between clients. Clients tell the server what changes they made. The server determines a single ordering for those changes, and then sends them back to all clients, which apply the changes made by others in such a way that, though they may have initially made their own changes in a different order, everybody ends up with the same document.": {
+    "_translate": "由于完全以分布式方式实现这一点十分困难，我们依赖一个中央进程（即服务器）来协调客户端之间的变更交换。客户端向服务器告知其所做的变更。服务器为这些变更确定一个统一的顺序，然后将其发送回所有客户端；各客户端以特定方式应用他人所做的变更，使得尽管它们最初可能以不同的顺序执行了自己的变更，但最终所有客户端都能获得相同的文档。",
+    "_note": ""
+  },
+  "More specifically:": {
+    "_translate": "更具体地说：",
+    "_note": ""
+  },
+  "The server has a current document, as well as a version number assigned to that document. It also keeps at least a recent history of changes.": {
+    "_translate": "服务器拥有一个<em>当前</em>文档，并为该文档分配了一个版本号。此外，它还保留至少最近的历史变更记录。",
+    "_note": ""
+  },
+  "Clients track the last server document version they synchronized with, as well as the changes they made on top of that. When they have local changes, they try to send those to the server, along with the document version they last synced with and a unique client ID.": {
+    "_translate": "<p>客户端会跟踪其上次同步的服务器文档版本，以及在此基础上所做的更改。当存在 <a href=\"../../docs/ref/#collab.collab.sendableUpdate\">本地更改</a> 时，客户端会尝试将这些更改连同上次同步的文档版本和唯一的客户端 ID 一起发送到服务器。</p>",
+    "_note": ""
+  },
+  "When the server receives changes that start from its current document version, it can simply accept them as-is, adding them to its list of changes, updating its document and version, and sending them out.": {
+    "_translate": "当服务器接收到从其当前文档版本开始的变化时，它可以原样接受这些变化，将其添加到变化列表中，更新其文档和版本，并将其发送出去。",
+    "_note": ""
+  },
+  "When receiving changes that start from an outdated document, the server can locally transform them, and accept the transformed version. This is not absolutely necessary, since the client will eventually transform them and try again, but it helps a lot with throughput, and prevents and issue where slow clients are constantly being overtaken by faster ones and can't get their changes out.": {
+    "_translate": "当接收到基于过时文档发起的变更时，服务器可以在本地对这些变更进行<a href=\"../../docs/ref/#collab.collab.transformUpdate\">转换</a>，并接受转换后的版本。这并非绝对必要，因为客户端最终会自行转换这些变更并重试，但这样做能显著提升吞吐量，并防止因慢速客户端不断被快速客户端超越而导致其变更无法发出的问题。",
+    "_note": ""
+  },
+  "When a client receives a change from the server that was made by someone else, if it has no pending local changes, it can just apply it. If it does, it needs to transform the remote change and its local changes over each other, so that it can apply the transformed remote changes, and update its set of pending changes to the transformed version, so that those still start from the document the server has at this version. Receiving also updates the client's synced document version to the document after the received changes.": {
+    "_translate": "当客户端 <a href=\"../../docs/ref/#collab.collab.receive\">接收</a> 到由他人发起的来自服务器的变更时，如果它没有待处理的本地变更，则可以直接应用该变更。如果存在待处理的本地变更，则它需要将远程变更与本地变更相互转换，以便应用转换后的远程变更，并将其待处理变更集更新为转换后的版本，从而确保这些变更仍然从服务器在此版本所持有的文档开始。接收操作还会将客户端的同步文档版本更新为应用所接收变更后的文档版本。",
+    "_note": ""
+  },
+  "In order to be robust in the face of network failure, clients wait for their own changes to come back from the server before they consider them confirmed. So such changes come in like other changes, but can be recognized by their associated client ID. When receiving such a change, the client drops the change from its set of pending changes, and again updates the document version that it has synchronized with the server.": {
+    "_translate": "为了在网络故障面前保持健壮性，客户端会等待其自身的变更从服务器返回，然后才将其视为已确认。因此，此类变更与其他变更一样到达，但可以通过其关联的客户端 ID 进行识别。当接收到此类变更时，客户端会从其待处理变更集中移除该变更，并再次更新其已与服务器同步的文档版本。",
+    "_note": ""
+  },
+  "Tracking this client-side state is done with the collab plugin. To update an editor with received changes, you dispatch a transaction produced by collab.receive. To organize sending local changes to the server, you'll generally want to use an update handler or plugin.": {
+    "_translate": "跟踪此客户端状态是通过 <a href=\"../../docs/ref/#collab.collab\"><code>collab</code> 插件</a> 完成的。要使用接收到的更改更新编辑器，您需要分派由 <a href=\"../../docs/ref/#collab.collab.receive\"><code>collab.receive</code></a> 生成的事务。为了组织将本地更改发送到服务器，您通常需要使用更新处理器或插件。",
+    "_note": ""
+  },
+  "Our client and server will communicate with each other through a simple JSON protocol. Clients only send update messages containing a change they made (along with the document version to which they made it).": {
+    "_translate": "我们的客户端和服务器将通过简单的 JSON 协议进行通信。客户端仅发送包含其所做的更改（以及该更改所对应的文档版本）的更新消息。",
+    "_note": ""
+  },
+  "Server": {
+    "_translate": "服务器",
+    "_note": ""
+  },
+  "These messages are sent through a crude communication channel abstraction that is an object with a send method and an asynchronous iterator yielding messages as strings.": {
+    "_translate": "这些消息通过一个粗糙的通信通道抽象发送，该抽象是一个具有 <code>send</code> 方法的对象，并且是一个异步迭代器，用于以字符串形式生成消息。",
+    "_note": ""
+  },
+  "The server will send a single initialization message that gives a newly connecting client the current docuent and version, as well as its unique ID. Other than that, it sends updates or, if something goes wrong, error messages.": {
+    "_translate": "服务器将发送一条初始化消息，向新连接的客户端提供当前文档、版本及其唯一标识符。除此之外，服务器仅发送更新内容，或在出现错误时发送错误消息。",
+    "_note": ""
+  },
+  "Updates are stored as objects of type StoredUpdate. Due to the need to keep documents well-formed during transformation, Wordgard's transform operation needs access to the document that the changes start from. That's why each update also keeps its starting document. This example server stores all updates in memory. In a practical server, you'd want to keep only recent ones (to allow transforming slightly out-of-date incoming changes).": {
+    "_translate": "更新以 <code>StoredUpdate</code> 类型的对象形式存储。由于需要在转换过程中保持文档格式良好，Wordgard 的 <a href=\"../../docs/ref/#doc.ChangeSet.transform\">转换操作</a> 需要访问变更起始的文档。因此，每个更新还会保留其起始文档。此示例服务器将所有更新存储在内存中。在实际的服务器中，您通常只保留最近的更新（以便对稍过时的传入变更进行转换）。",
+    "_note": ""
+  },
+  "To know who to send updates to, the server keeps a set of active clients. For a network server, these could be the clients that have a web socket open to the server.": {
+    "_translate": "为了确定向谁发送更新，服务器会维护一个活跃客户端集合。对于网络服务器而言，这些客户端可能是那些与服务器保持 WebSocket 连接的客户端。",
+    "_note": ""
+  },
+  "The server is a simple object that holds a current document, an update history, and an array of connected clients.": {
+    "_translate": "服务器是一个简单的对象，用于保存当前文档、更新历史记录以及已连接客户端的数组。",
+    "_note": ""
+  },
+  "When a new client connects, it is added to the set of active clients and sent an initialization message. An asynchronous listening loop is started on its message channel, which calls receive when this client sends an update.": {
+    "_translate": "当新客户端连接时，它会被添加到活动客户端集合中，并收到一条初始化消息。随后，在其消息通道上启动一个异步监听循环，当该客户端发送更新时，该循环会调用 <code>receive</code> 方法。",
+    "_note": ""
+  },
+  "If a client sends an update that doesn't match the current latest version, the server first tries to tranform it. Again, this isn't 100% necessary, and you could not do it if, for example, you don't have the necessary changes available anymore. The client will, once they receive the updates they didn't have yet when they sent this update, locally transform the change and try again to submit it.": {
+    "_translate": "如果客户端发送的更新与当前最新版本不匹配，服务器会首先尝试对其进行转换。同样，这一步并非绝对必要；例如，如果您不再拥有必要的变更数据，也可以跳过此步骤。一旦客户端收到其在发送该更新时尚未获取的更新，它将在本地对该变更进行转换，并再次尝试提交。",
+    "_note": ""
+  },
+  "Finally, the change is added to the history, the current document updated, and the change broadcast to all clients.": {
+    "_translate": "最后，该变更被添加到历史记录中，当前文档得到更新，并且变更被广播给所有客户端。",
+    "_note": ""
+  },
+  "When transorm returns null, that means that the given change is already known to the server, so it doesn't try to apply it again.": {
+    "_translate": "当 <code>transorm</code> 返回 null 时，表示服务器已知该变更，因此不会再次尝试应用它。",
+    "_note": ""
+  },
+  "In a real server, you'll want to be quite a bit more defensive about all this, to make sure a client sending malformed input cannot sabotage your server process. You'll also usually want to store changes and document snapshots in a database of some kind, so that you can restore your server if it needs to be restarted. But in broad strokes, this is the shape of a collab server.": {
+    "_translate": "在真实的服务器环境中，您需要采取更加谨慎的防御措施，以确保发送畸形输入的客户端无法破坏您的服务器进程。此外，您通常还需要将更改和文档快照存储在某种数据库中，以便在服务器需要重启时能够恢复数据。但总体而言，这就是协作服务器的基本架构。",
+    "_note": ""
+  },
+  "Client": {
+    "_translate": "客户",
+    "_note": ""
+  },
+  "The client consists of two pieces: a function that connects to the server and sets up an editor configuration, and a plugin, part of that configuration, that manages communication with the server.": {
+    "_translate": "客户端由两部分组成：一个用于连接服务器并设置编辑器配置的函数，以及作为该配置一部分、负责管理与服务器通信的插件。",
+    "_note": ""
+  },
+  "The initialization function takes a channel to the server and a Wordgard configuration object and (asynchronously) returns an editor instance wired up to that server.": {
+    "_translate": "初始化函数接收一个指向服务器的通道和一个 Wordgard 配置对象，并（异步）返回一个已连接到该服务器的编辑器实例。",
+    "_note": ""
+  },
+  "Because several things, like the document and the client ID, need to be known before creating the editor, this function reads the first message from the server channel, looking for a \"state\" message holding the data we need.": {
+    "_translate": "由于在创建编辑器之前需要知道某些信息（例如文档和客户端 ID），因此该函数会从服务器通道读取第一条消息，查找包含我们所需数据的 <code>\"state\"</code> 消息。",
+    "_note": ""
+  },
+  "The collab extension is provided by \"wordgard/collab\" and provides the tracking of pending local changes. The ClientPlugin is part of this example, and does the actual communication with the server.": {
+    "_translate": "<a href=\"../../docs/ref/#collab.collab\"><code>collab</code></a> 扩展由 <code>\"wordgard/collab\"</code> 提供，用于跟踪待处理的本地更改。<code>ClientPlugin</code> 是该示例的一部分，负责与服务器进行实际通信。",
+    "_note": ""
+  },
+  "This again runs an asynchronous loop reading messages from the server. After initialization, the only messages we are expecting are updates and errors. Updates are handled by calling collab.receive. Because it is possible that we need to resubmit a pending change after receiving remote changes, we schedule a send if necessary.": {
+    "_translate": "这再次运行一个异步循环，从服务器读取消息。初始化后，我们期望接收的唯一消息是更新和错误。更新通过调用 <a href=\"../../docs/ref/#collab.collab.receive\"><code>collab.receive</code></a> 进行处理。由于在接收远程更改后可能需要重新提交待处理的更改，因此如有必要，我们会安排发送操作。",
+    "_note": ""
+  },
+  "The update method is called by the editor whenever its state changes. When the document is changed, we schedule a send.": {
+    "_translate": "<code>update</code> 方法会在编辑器状态发生更改时被调用。当文档发生更改时，我们会安排发送。",
+    "_note": ""
+  },
+  "Updates are sent to the server after a short delay, to allow a few of them to be batched together. The sentCurrent flag is set when a change has been sent off, until an update from the server comes back, to prevent the client from trying to send the same changes again and again.": {
+    "_translate": "更新会在短暂延迟后发送至服务器，以便将部分更新合并处理。当变更已发出后，<code>sentCurrent</code> 标志会被设置，直到收到来自服务器的更新响应为止，以防止客户端反复尝试发送相同的变更。",
+    "_note": ""
+  },
+  "A proper client would also want to handle disconnection somehow. You'd need to extend the protocol to allow a client to say that it already has an editor at a given document version, so that the server can send it the new changes it needs to resynchronize.": {
+    "_translate": "一个完善的客户端还需要以某种方式处理断开连接的情况。您需要扩展协议，允许客户端声明其已在特定文档版本上拥有编辑器，以便服务器能够发送其重新同步所需的新变更。",
+    "_note": ""
+  },
+  "Corrections": {
+    "_translate": "更正",
+    "_note": ""
+  },
+  "Transactions created by receive are marked with the Transaction.remote annotation. Components like the undo history automatically handle these specially, so that each client can undo their own changes but not remote changes.": {
+    "_translate": "由 <a href=\"../../docs/ref/#collab.collab.receive\"><code>receive</code></a> 创建的事务会标记上 <a href=\"../../docs/ref/#state.Transaction.remote\"><code>Transaction.remote</code></a> 注解。像撤销历史这样的组件会自动对这些事务进行特殊处理，以便每个客户端只能撤销自己的更改，而无法撤销远程更改。",
+    "_note": ""
+  },
+  "A transaction being remote also turns off corrections from kicking in for it. Transaction extenders (which corrections use) are a lot more difficult to get right for collaborative changes—if two changes that individually don't trigger the correction get merged in a way that does trigger it then, if you aren't careful, every client will individually apply the correction, creating chaos (and possibly an endless loop of re-correction).": {
+    "_translate": "远程事务也会阻止<a href=\"../../docs/ref/#state.Correction\">修正</a>对其生效。<a href=\"../../docs/ref/#state.Transaction.extender\">事务扩展器</a>（修正功能所依赖的机制）在处理协作变更时更难正确实现——如果两个单独不会触发修正的变更以某种方式合并后触发了修正，那么若不加以小心，每个客户端都会单独应用该修正，从而导致混乱（甚至可能引发无限的重修正循环）。",
+    "_note": ""
+  },
+  "But if you just don't apply corrections for remote changes, you can no longer count on their checks being enforced, and merged changes could, for example, leave you with a non-rectangular table in your document. For this reason, wordgard/collab handles corrections specially if you tell it to. It will apply them, in receive, when local pending changes are transformed, and store their adjustments (if any) as part of the local pending change. This way one specific party (the client providing the change that causes the issue) is responsible for applying the correction, and we avoid confusion.": {
+    "_translate": "但是，如果您不应用针对远程更改的修正，就无法再依赖其检查的强制执行，合并后的更改可能会导致您的文档中出现非矩形表格等问题。因此，如果您<a href=\"../../docs/ref/#collab.collab.Config.corrections\">告知</a> wordgard/collab，它将特殊处理这些修正。它会在<a href=\"../../docs/ref/#collab.collab.receive\"><code>receive</code></a>中，当本地待处理更改进行转换时应用这些修正，并将其调整（如有）作为本地待处理更改的一部分进行存储。这样，特定的一方（即提供导致问题的更改的客户端）负责应用修正，从而避免混淆。",
+    "_note": ""
+  },
+  "When you allow the server to transform changes, you have the same issue, and use the same solution: tell the server about the corrections, so that it can also apply them when transforming changes. It is important to give the server the exact same set of corrections as the client is using, because the protocol relies on client-side and server-side transformations producing the same output.": {
+    "_translate": "当您允许服务器转换变更时，会遇到相同的问题，并采用相同的解决方案：<a href=\"../../docs/ref/#collab.collab.transformUpdate.corrections\">告知</a>服务器这些修正，以便它在转换变更时也能应用这些修正。向服务器提供与客户端完全相同的修正集至关重要，因为该协议依赖于客户端和服务端转换产生相同的输出。",
+    "_note": ""
+  },
+  "// The rest of the configuration is given in the spec": {
+    "_translate": "// 其余配置已在规范中给出",
+    "_note": ""
+  }
+}

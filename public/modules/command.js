@@ -179,7 +179,7 @@ function joinBackward(state) {
     }
     let before = scan.previousSibling, parent = scan.parent.node, pos = scan.start - 1;
     while (before.isLeaf || !before.isTextblock) {
-        if (before.isLeaf || before.type.isAtom || before.type.isolating || !before.type.isBlock)
+        if (before.isLeaf || state.isAtom(before.type) || before.type.isolating || !before.type.isBlock)
             return false;
         let last = before.content.length - 1;
         if (last < 0)
@@ -249,7 +249,7 @@ function joinForward(state) {
     }
     let after = scan.nextSibling, parent = scan.parent.node, pos = scan.after;
     while (after.isLeaf || !after.isTextblock) {
-        if (after.isLeaf || after.type.isolating || after.type.isAtom || !after.type.isBlock || !after.content.length)
+        if (after.isLeaf || after.type.isolating || state.isAtom(after.type) || !after.type.isBlock || !after.content.length)
             return false;
         parent = after;
         after = after.content[0];
@@ -289,7 +289,7 @@ function deleteBackward(state, word = false) {
     for (;;) {
         if (next.isPlot && next.type.isolating)
             return false;
-        if (next.isLeaf || next.type.isAtom)
+        if (next.isLeaf || state.isAtom(next.type))
             break;
         let last = next.content.length - 1;
         if (last < 0)
@@ -366,7 +366,7 @@ function deleteForward(state, word = false) {
     for (;;) {
         if (next.isPlot && next.type.isolating)
             return false;
-        if (next.isLeaf || next.type.isAtom)
+        if (next.isLeaf || state.isAtom(next.type))
             break;
         if (!next.content.length)
             return false;
@@ -1086,10 +1086,10 @@ const moveByUnit = ({ state }, { dir, extend }) => {
             return false;
         if (!extend)
             state.doc.iterate(Math.min(selection.head, next.head), Math.max(selection.head, next.head), (node, pos) => {
+                if (node.type.isSelectable && state.isAtom(node.type))
+                    next = GardSelection.node(pos, node);
                 if (node.isPlot)
                     return !node.type.isolating;
-                if (node.type.isSelectable)
-                    next = GardSelection.node(pos, node);
             });
         return setSelection(extend ? extendSel(selection, next) : next);
     }

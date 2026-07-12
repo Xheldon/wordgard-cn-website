@@ -110,5 +110,17 @@
   "Blame Tracking": {
     "_translate": "责任追踪",
     "_note": ""
+  },
+  "Collaborative Editing": {
+    "_translate": "协同编辑",
+    "_note": ""
+  },
+  "Collaborative Editing Wiring up multiple editors to synchronize their content.": {
+    "_translate": "<a href=\"collab/\" class=\"blocklink\">\n      <h3>协同编辑</h3>\n      <p>将多个编辑器连接起来以同步其内容。</p>\n    </a>",
+    "_note": ""
+  },
+  "Wiring up multiple editors to synchronize their content.": {
+    "_translate": "将多个编辑器连接起来以同步其内容。",
+    "_note": ""
   }
 }

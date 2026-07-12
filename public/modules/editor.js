@@ -60,21 +60,29 @@ class Widget {
 ;return Widget})(Widget);
 const Decoration = /*@__PURE__*/(function (Decoration) {
     (function (Tag) {
-        function shape(type, shape) {
+        function shape(type, shape, config) {
             let tp = Node.Type.get(type);
             let shapeFunc = typeof shape == "function"
                 ? tag => addMarkAttributes(shape(tag), tag)
                 : tag => addMarkAttributes(shape, tag);
-            return tagShape.of({ type: tp, shape: memo(shapeFunc) });
+            let atom = typeof shape == "function" ? config?.atom : !shape.hasContent;
+            let ext = tagShape.of({ type: tp, shape: memo(shapeFunc) });
+            if (tp.isPlot && atom != null)
+                ext = [ext, GardState.isAtom.of([tp, atom])];
+            return ext;
         }
         Tag.shape = shape;
         (function (shape_1) {
-            function dynamic(type, shape) {
+            function dynamic(type, shape, config) {
                 let tp = Node.Type.get(type);
-                return tagShape.compute(state => {
+                let ext = tagShape.compute(state => {
                     let s = shape(state);
                     return { type: tp, shape: typeof s == "function" ? memo(s) : () => s };
                 });
+                let atom = config?.atom;
+                if (tp.isPlot && atom != null)
+                    ext = [ext, GardState.isAtom.of([tp, atom])];
+                return ext;
             }
             shape_1.dynamic = dynamic;
         })(shape = Tag.shape || (Tag.shape = {}));
@@ -237,7 +245,7 @@ class WrapperRangeDecoration extends Decoration.Range {
     }
     eq(other) {
         return this == other ||
-            other instanceof WrapperRangeDecoration && other.elt.eq(other.elt) &&
+            other instanceof WrapperRangeDecoration && other.elt.eq(this.elt) &&
                 other.rank == this.rank && other.spanning == this.spanning && other.inc == this.inc;
     }
 }
@@ -305,11 +313,8 @@ class WrapperDecoration extends Decoration.Point {
 }
 const nodeSelectionDeco = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-node" });
 function nodeSelection(state) {
-    if (state.selection instanceof GardSelection.Node) {
-        let { node, from } = state.selection;
-        if (node.isLeaf && node.type.isSelectable)
-            return PointSet.create([[from, nodeSelectionDeco]]);
-    }
+    if (state.selection instanceof GardSelection.Node)
+        return PointSet.create([[state.selection.from, nodeSelectionDeco]]);
     return PointSet.empty;
 }
 function findAbove(array, start, n) {
@@ -669,7 +674,7 @@ function joinRanges(ranges) {
         for (let i = 0; i < ranges.length; i++) {
             let idx = index[i], set = ranges[i];
             if (idx < set.length && (minI < 0 || set[idx] < minFrom)) {
-                minI = idx;
+                minI = i;
                 minFrom = set[idx];
             }
         }
@@ -708,13 +713,14 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
                     curPos = 0;
                 }
                 addRange(cur, from, to);
+                curPos = to;
             };
             compareDecoSet(prevDeco.ranges, deco.ranges, (a, b) => {
                 (a || RangeSet.empty).compareRange(posA, b || RangeSet.empty, posB, len, add);
             });
             compareDecoSet(prevDeco.points, deco.points, (a, b) => {
                 (a || PointSet.empty).compareRange(posA, b || PointSet.empty, posB, len, (pos, val) => {
-                    add(pos, pos + 1);
+                    add(pos, pos + (val instanceof WidgetDecoration ? 0 : 1));
                     if (val instanceof ShapeDecoration) {
                         if (!globalChange)
                             shapeChanges.push(pos);
@@ -726,7 +732,7 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
                 let from = Math.max(pos, joined[i++]), to = Math.min(end, joined[i++]);
                 if (from > pos)
                     addSection(result, from - pos, -1);
-                if (from < to)
+                if (from <= to)
                     addSection(result, to - from, -2);
                 pos = to;
             }
@@ -994,6 +1000,10 @@ class DecoIterator {
             i.goto(inclusiveStart ? from : from + 1);
         let iter = new HeapIterator(this.rangeIter.filter(i => !i.done), this.pointIter.filter(i => !i.done), from, to);
         let pos = this.pos.advance(from - this.pos.pos), started = inclusiveStart;
+        let atomParent;
+        for (let p = pos.parent; p; p = p.parent)
+            if (this.state.isAtom(p.node.type))
+                atomParent = p;
         let pendingDeco = [], pendingPos = -1;
         let pendingShape = null, pendingShapeSet = null;
         let wrap = {
@@ -1009,7 +1019,7 @@ class DecoIterator {
                         shape = applyDeco(shape, deco, node.tag);
                 if (shape.hasContent)
                     throw new Error("Leaf nodes shapes shouldn't have a content hole");
-                walker.node(node, shape, nodeWrappers(this.schema, node.tag, iter.active, true));
+                walker.node(node, shape, nodeWrappers(this.schema, node.tag, iter.active, true), undefined);
                 this.widgets(node.tag, 1, walker);
             },
             enterPlot: (node, pos) => {
@@ -1025,7 +1035,7 @@ class DecoIterator {
                 let wrappers = nodeWrappers(this.schema, node.tag, iter.active, !shape.hasContent);
                 let atom = !shape.hasContent;
                 if (atom)
-                    walker.node(node, shape, wrappers);
+                    walker.node(node, shape, wrappers, pos + node.length > to ? to - pos : undefined);
                 else
                     walker.enter(node, shape, wrappers);
                 this.widgets(node.tag, 2, walker);
@@ -1068,6 +1078,14 @@ class DecoIterator {
                         pendingDeco.push(value);
                     }
                 }
+            }
+            else if (atomParent) {
+                let end = Math.min(to, atomParent.after), done = atomParent.after <= to;
+                walker.nodePart(atomParent.node, end - pos.pos, done);
+                pos = pos.advance(end - pos.pos);
+                if (done)
+                    this.widgets(atomParent.node.tag, 1, walker);
+                atomParent = undefined;
             }
             else {
                 pos = pos.walk(iter.to - iter.from, wrap);
@@ -1394,12 +1412,12 @@ function clearScratchRange() {
 function nonZero(rect) {
     return rect.top < rect.bottom || rect.left < rect.right;
 }
-function singleRect(target, bias) {
+function singleRect(target, bias, preferWide = false) {
     let rects = target.getClientRects();
-    if (rects.length) {
-        let first = rects[bias < 0 ? 0 : rects.length - 1];
-        if (nonZero(first))
-            return first;
+    for (let i = bias < 0 ? 0 : rects.length - 1; bias < 0 ? i < rects.length : i >= 0; i -= bias) {
+        let rect = rects[i];
+        if (nonZero(rect) && (!preferWide || rect.width))
+            return rect;
     }
     return Array.prototype.find.call(rects, nonZero) || target.getBoundingClientRect();
 }
@@ -1606,12 +1624,10 @@ class CompositeTile extends Tile {
         let { node } = this, outerOrientation = orientation;
         if (node && node.isPlot) {
             orientation = node.type.orientation == "row" ? 0 : 1;
-            if (node.isTextblock) {
-                textblock = TextblockMap.get(start, start ? state.doc.nodeAt(start - 1) : state.doc, state.textblockLTR(node));
-            }
-            else if (node.type.isBlock) {
+            if (node.isTextblock)
+                textblock = TextblockMap.get(state, start, node);
+            else if (node.type.isBlock)
                 textblock = null;
-            }
         }
         else if (node && node.isText) {
             orientation = 0;
@@ -1623,7 +1639,7 @@ class CompositeTile extends Tile {
             return result;
         let rect = this.dom.getBoundingClientRect();
         let after = outerOrientation == 0 ? x > (rect.left + rect.right) / 2 : y > (rect.top + rect.bottom) / 2;
-        let target = this.node && this.node.isLeaf &&
+        let target = this.node && this.node.type.isSelectable &&
             x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom ? start : null;
         return CoordPos.create(start + (after ? this.length - 2 * this.boundary : 0), after ? -1 : 1, target);
     }
@@ -1704,11 +1720,11 @@ function rowScan(x, y, scan) {
 function ltrAt(state, pos, assoc, textblock) {
     if (textblock === undefined) {
         let { textblockParent: block } = state.doc.resolve(pos);
-        textblock = block ? TextblockMap.get(block.start, block.node, state.textblockLTR(block.node)) : null;
+        textblock = block ? TextblockMap.get(state, block.start, block.node) : null;
     }
     if (!textblock)
         return state.textLTR;
-    let found = BidiSpan.find(textblock.order, pos - textblock.start, assoc);
+    let found = BidiSpan.find(textblock.order, textblock.toIndex(pos), assoc);
     return textblock.order[found].ltr;
 }
 class DocTile extends CompositeTile {
@@ -2051,7 +2067,7 @@ class TextTile extends Tile {
         let { closest, rect } = rowScan(x, y, add => {
             for (let i = 0; i < this.length;) {
                 let end = findClusterBreak(this.text, i);
-                let rect = singleRect(textRange(this.dom, i, end), 1);
+                let rect = singleRect(textRange(this.dom, i, end), 1, true);
                 if (rect.top == rect.bottom)
                     continue;
                 if (add(rect, i))
@@ -2084,7 +2100,7 @@ class TilePointer {
         let { tile, index, parent } = this, nodeBoundary = 0;        for (;;) {
             if (!dist && side < 0 && !nodeBoundary)
                 break;
-            if (tile.isText) {
+            if (tile.isAtom) {
                 if (!dist)
                     break;
                 nodeBoundary = 0;
@@ -2131,9 +2147,9 @@ class TilePointer {
                         nodeBoundary = 0;
                 }
                 else {
-                    if (next.isNodeOuter && (!dist || next.isAtom && !next.isText))
+                    if (next.isNodeOuter && !dist)
                         break;
-                    if (walker && !next.isText)
+                    if (walker && !next.isAtom)
                         walker.enter(next);
                     dist -= next.boundary;
                     parent = tile == this.tile && index == this.index ? this : new TilePointer(tile, index, parent);
@@ -2204,6 +2220,7 @@ class ContentUpdate {
     reused = new Map();
     keepWalker;
     toConnect = [];
+    partialNode = null;
     constructor(state, old, deco, cursorWrapper) {
         this.state = state;
         this.deco = deco;
@@ -2244,8 +2261,28 @@ class ContentUpdate {
             },
             skip: (tile, from, to) => {
                 if (!(tile instanceof TextTile)) {
-                    this.reused.set(tile, 1);
-                    this.new.addChild(tile);
+                    if (!from && to == tile.length) {
+                        this.reused.set(tile, 1);
+                        this.new.addChild(tile);
+                    }
+                    else if (from == 0) {
+                        let wrappers = 0;
+                        for (let w = this.new; w && w.isWrapper; w = w.parent)
+                            wrappers++;
+                        let shape = tile instanceof EltTile ? tile.elt : tile instanceof WidgetTile ? tile.widget : null;
+                        if (!shape || !tile.node)
+                            throw new Error("Unexpected atom tile");
+                        this.partialNode = { node: tile.node, reuse: tile, shape, wrappers };
+                    }
+                    else {
+                        if (!this.partialNode)
+                            throw new Error("Missing partial node");
+                        if (to == tile.length) {
+                            let { node, shape, reuse } = this.partialNode;
+                            this.partialNode = null;
+                            this.new.addChild(this.buildNodeShape(node, shape, reuse));
+                        }
+                    }
                 }
                 else if (this.new.lastChild instanceof TextTile && !this.new.lastChild.isComposition) {
                     this.addText(tile.text.slice(from, to));
@@ -2344,7 +2381,7 @@ class ContentUpdate {
                     this.old = this.old.walk(1, 1);
                 this.posB++;
             },
-            node: (node, shape, wrappers) => {
+            node: (node, shape, wrappers, partial) => {
                 this.openWrappers(wrappers, reuse);
                 let wrapCount = wrappers.length;
                 if (node.is(Leaf.Text)) {
@@ -2366,6 +2403,13 @@ class ContentUpdate {
                         this.new.addChild(new TextTile(node.param, next.dom));
                     }
                 }
+                else if (partial != null) {
+                    this.partialNode = { node, shape, wrappers: wrapCount, reuse: reuse ? this.old.tileAfter() : null };
+                    if (reuse)
+                        this.old = this.old.walk(partial, 1);
+                    this.posB += partial;
+                    return;
+                }
                 else {
                     this.new.addChild(this.buildNodeShape(node, shape, reuse ? this.old.tileAfter() : null));
                 }
@@ -2374,6 +2418,21 @@ class ContentUpdate {
                 if (reuse)
                     this.old = this.old.walk(node.length, 1);
                 this.posB += node.length;
+            },
+            nodePart: (node, length, done) => {
+                if (!this.partialNode)
+                    throw new Error("Continuing unknown partial node");
+                this.posB += length;
+                this.partialNode.node = node;
+                if (reuse)
+                    this.old = this.old.walk(length, 1);
+                if (done) {
+                    let { node, shape, wrappers, reuse } = this.partialNode;
+                    this.partialNode = null;
+                    this.new.addChild(this.buildNodeShape(node, shape, reuse));
+                    for (let i = 0; i < wrappers; i++)
+                        this.up();
+                }
             },
             widget: (widget, side) => {
                 let sideFlag = side < 0 ? 32 : side > 0 ? 64 : 0;
@@ -2643,7 +2702,7 @@ function coordsAtPos(wg, pos, assoc) {
             to++;
         else
             from--;
-        return flattenV(singleRect(textRange(node, from, to), side), (side < 0) == ltrAt(wg.state, pos, assoc));
+        return flattenV(singleRect(textRange(node, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc));
     }
     let tagTile = tile.tile;
     while (!tagTile.node)
@@ -2663,19 +2722,21 @@ function coordsAtPos(wg, pos, assoc) {
     }
     if (offset && (assoc < 0 || offset == maxOffset(node))) {
         let before = node.childNodes[offset - 1];
-        let target = before.nodeType == 3 ? textRange(before, maxOffset(before))
+        let target = before.nodeType == 3 ? textRange(before, Math.max(0, maxOffset(before)), maxOffset(before))
             : before.nodeType == 1 && (before.nodeName != "BR" || !before.nextSibling) ? before : null;
         if (target)
-            return flattenV(singleRect(target, 1), !ltrAt(wg.state, pos, assoc));
+            return flattenV(singleRect(target, 1, true), !ltrAt(wg.state, pos, assoc));
     }
     if (offset < maxOffset(node)) {
         let after = node.childNodes[offset];
-        let target = !after ? null : after.nodeType == 3 ? textRange(after, 0, 0)
+        let target = !after ? null : after.nodeType == 3 ? textRange(after, 0, Math.min(1, maxOffset(after)))
             : after.nodeType == 1 ? after : null;
         if (target)
-            return flattenV(singleRect(target, -1), ltrAt(wg.state, pos, assoc));
+            return flattenV(singleRect(target, -1, true), ltrAt(wg.state, pos, assoc));
     }
-    return flattenV(singleRect(node.nodeType == 3 ? textRange(node, 0, node.nodeValue.length) : node, -assoc), assoc > 0);
+    return flattenV(singleRect(node.nodeType == 3
+        ? textRange(node, 0, node.nodeValue.length)
+        : node, -assoc, true), assoc > 0);
 }
 function flattenV(rect, left) {
     return rect.width ? new DOMRect(left ? rect.left : rect.right, rect.top, 0, rect.height) : rect;
@@ -2919,7 +2980,8 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         display: "block",
         margin: 0,
         whiteSpace: "pre-wrap",
-        boxSizing: "border-box",
+        overflowWrap: "anywhere",
+        wordBreak: "break-word",        boxSizing: "border-box",
         minHeight: "100%",
         padding: "4px 12px",
         outline: "none",
@@ -2992,6 +3054,8 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         backgroundColor: "var(--wg-panel-color)",
         font: "var(--wg-dialog-font)",
     },
+    ".wg-panels-top": { top: "0" },
+    ".wg-panels-bottom": { bottom: "0" },
     "wg-dialog": {
         display: "block",
         padding: "5px 19px 5px 6px",
@@ -3071,7 +3135,7 @@ function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
     for (let scan = start.head;;) {
         let pos = wg.state.doc.resolve(scan), block = pos.textblockParent;
         if (block) {
-            let blockTile = wg.docTile.nodeTile(block.before);
+            let blockTile = block.parent ? wg.docTile.nodeTile(block.before) : wg.docTile;
             let rect = blockTile.dom.getBoundingClientRect();
             if (forward ? y < rect.top : y > rect.bottom)
                 y = forward ? rect.top : rect.bottom;
@@ -3123,8 +3187,8 @@ function findTargetVertically(wg, from, forward, x, allowNode) {
         else {
             let next = parent.node.content[index - (forward ? 0 : 1)];
             let nextPos = pos - (forward ? 0 : next.length);
-            if (next.isLeaf || next.type.isAtom) {
-                if (allowNode && next.isLeaf && next.type.isSelectable)
+            if (next.isLeaf || wg.state.isAtom(next.type)) {
+                if (allowNode && next.type.isSelectable && wg.state.isAtom(next.type))
                     return Pos.Node.create(parent, next, nextPos, index - (forward ? 0 : 1));
                 index += forward ? 1 : -1;
                 pos += (forward ? 1 : -1) * next.length;
@@ -3598,14 +3662,13 @@ function runHandlers(map, event, wg, scope) {
         return false;
     let key = event.key, charCode = key.codePointAt(0);
     let altGr = event.getModifierState("AltGraph"), fromCode = charKeyCodes[event.keyCode];
-    let isChar = codePointSize(charCode) == key.length &&
-        (altGr || !(event.ctrlKey || event.altKey || event.metaKey));
+    let isChar = codePointSize(charCode) == key.length;
     let char = isChar ? String.fromCodePoint(charCode) : null;
     let base = modifiers(key, event);
     let fallback = isChar && !altGr && fromCode && fromCode != base ? modifiers(fromCode, event) : null;
     let handled = false, didMatch = false, allowDefault = false;
     for (let binding of handlers) {
-        let matched = ((binding.flags & 1) && binding.name == char) ||
+        let matched = ((binding.flags & 1) && (altGr || !event.ctrlKey && !event.metaKey) && binding.name == char) ||
             ((binding.flags & 2) && (binding.name == base || binding.name == fallback)) ||
             (binding.flags & 4);
         if (matched) {
@@ -3969,7 +4032,7 @@ function queryPos(wg, event) {
 function rangeForClick(wg, pos, type) {
     if (type < 3 && pos.target != null) {
         let target = wg.state.doc.nodeAt(pos.target);
-        if (target && target.isLeaf && target.type.isSelectable)
+        if (target && target.type.isSelectable && wg.state.isAtom(target.type))
             return GardSelection.node(pos.target, target);
     }
     if (type == 1) {        return GardSelection.near(wg.state, pos.pos, pos.side || -1);
@@ -4024,7 +4087,8 @@ function copy(wg, event) {
         writeClipboard(state, slice, context, event.clipboardData);
         if (event.type == "cut" && !state.readOnly)
             wg.dispatch({
-                changes: state.selection.ranges.map(r => ({ from: r.from, to: r.to })),
+                changes: state.selection.ranges.map(r => ({ from: r.from, to: r.to, fit: true })),
+                selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(state.selection.from, -1), 1),
                 scrollIntoView: true,
                 userEvent: "delete.cut"
             });
@@ -4598,12 +4662,10 @@ class Wordgard {
         this.plugins = [cursorPlugin, ...this.state.facet(editorPlugin)].map(spec => new PluginInstance(spec));
         for (let plugin of this.plugins)
             plugin.update(this);
-        this.observer = new DOMObserver(this);
         this.inputState = new InputState(this);
-        this.observer.ignore(() => {
-            this.docTile = DocTile.create(this.state, this.contentDOM);
-            this.updateAttrs();
-        });
+        this.docTile = DocTile.create(this.state, this.contentDOM);
+        this.updateAttrs();
+        this.observer = new DOMObserver(this);
         if (spec.parent)
             spec.parent.appendChild(this.dom);
     }
@@ -5362,7 +5424,6 @@ class PanelGroup {
         if (!this.dom) {
             this.dom = document.createElement("wg-panels");
             this.dom.className = this.top ? "wg-panels-top" : "wg-panels-bottom";
-            this.dom.style[this.top ? "top" : "bottom"] = "0";
             let parent = this.container || this.wg.dom;
             parent.insertBefore(this.dom, this.top ? parent.firstChild : null);
         }

@@ -5378,5 +5378,65 @@
   "Get the set of tags defined by a given phrase set, as a type.": {
     "_translate": "获取由给定短语集定义的标签集，作为类型。",
     "_note": ""
+  },
+  "When set to true, nodes of this type, if they are a leaf or atom, can be selected by clicking them or moving the selection into them with the keyboard.": {
+    "_translate": "当设置为 <code>true</code> 时，如果此类节点是叶子节点或原子节点，则可以通过点击它们或使用键盘将选择移入它们来选中它们。",
+    "_note": ""
+  },
+  "Whether this node is selectable.": {
+    "_translate": "此节点是否<a href=\"#doc.Node.Spec.selectable\">可选</a>。",
+    "_note": ""
+  },
+  "Tells you whether a node type is an atom (a leaf or a plot with an atomic shape).": {
+    "_translate": "告诉您节点类型是否为原子（具有原子形状的叶节点或图）。",
+    "_note": ""
+  },
+  "This functionality should be used with care. Indiscriminately modifying transaction is likely to break something or degrade the user experience.": {
+    "_translate": "应谨慎使用此功能。随意修改事务可能会导致功能损坏或降低用户体验。",
+    "_note": ""
+  },
+  "Extenders that may add document changes should generally not do anything for remote transactions, because doing so risks causing endlessly cascading changes or other confusion. It is possible to define extenders that are safe when activated on multiple peer (for example, duplicate deletions of the same content tend to converge), but it requires a lot of care.": {
+    "_translate": "可能会添加文档更改的扩展器通常不应为<a href=\"#state.Transaction.remote\">远程</a>事务执行任何操作，因为这样做可能会导致无限级联更改或其他混乱。可以定义在多个对等节点上激活时安全的扩展器（例如，对相同内容的重复删除往往会收敛），但这需要格外小心。",
+    "_note": ""
+  },
+  "The selected node.": {
+    "_translate": "所选节点。",
+    "_note": ""
+  },
+  "Corrections install themselves as transaction extenders that check modified nodes and, if necessary, apply fixes to enforce constraints. In normal operation, this means that they guarantee the constraints implemented in the transaction are enforced.": {
+    "_translate": "修正机制会作为<a href=\"#state.Transaction.extender\">事务扩展器</a>进行安装，用于检查已修改的节点，并在必要时应用修复以强制执行约束。在正常运行情况下，这意味着它们能够确保事务中实现的约束得到强制执行。",
+    "_note": ""
+  },
+  "They do not activate for remote transactions, because acting on those can cause collaborative editing setups to malfunction (for example, causing all peers to repeatedly try to correct the same issue, causing an endless loop of updates or other chaos). The collab module has special provisions for integrating corrections in the step transformation in a safe way, but that requires you to explicitly tell it to use them, both on the client and the server.": {
+    "_translate": "它们不会为 <a href=\"#state.Transaction.remote\">远程</a> 事务激活，因为对这些事务采取行动可能会导致协作编辑设置发生故障（例如，导致所有对等节点反复尝试纠正同一问题，从而引发无尽的更新循环或其他混乱）。collab 模块提供了特殊规定，以便以安全的方式在步骤转换中集成更正，但这需要您明确告知其在 <a href=\"#collab.collab.Config.corrections\">客户端</a> 和 <a href=\"#collab.collab.transformUpdate\">服务器</a> 上使用这些规定。",
+    "_note": ""
+  },
+  "Check the ranges touched by the given change set against the given list of corrections. Return a change set if any changes need to be made. (This isn't how you normally use corrections, but can be useful in a situation where you aren't working with an editor state transaction.)": {
+    "_translate": "检查给定变更集所触及的范围与给定的修正列表。如果需要进行任何更改，则返回一个变更集。（这并非通常使用修正的方式，但在未使用编辑器状态事务的情况下可能很有用。）",
+    "_note": ""
+  },
+  "When providing a shape for a plot that changes whether it is rendered as an atom, provide the atom option.": {
+    "_translate": "当为可能以原子形式渲染的绘图提供形状时，请提供 <code>atom</code> 选项。",
+    "_note": ""
+  },
+  "An implementation of basic collaborative editing. See the example for more information.": {
+    "_translate": "基本协同编辑的实现。有关更多信息，请参阅<a href=\"../../examples/collab/\">示例</a>。",
+    "_note": ""
+  },
+  "A set of corrections to apply to transformed changes. Can be used to enforce document shapes even in merged changes. Requires the exact same set, in the same order, to be used on the server.": {
+    "_translate": "一组应用于已转换变更的修正。可用于即使在合并的变更中也强制实施文档结构。要求服务器使用完全相同且顺序一致的一组修正。",
+    "_note": ""
+  },
+  "Returns true if there are unconfirmed changes for this editor.": {
+    "_translate": "如果此编辑器存在未确认的更改，则返回 true。",
+    "_note": ""
+  },
+  "Transform an update that arrives on the server with an outdated start version. Being able to do this requires tracking a document history server-side. It is not necessary to do this, but it helps a lot with “starvation” problems, where slower clients or clients with a high ping can, in a busy document, keep losing the race to submit their changes to other, faster clients.": {
+    "_translate": "转换一个在服务器上到达但起始版本已过时的更新。实现此功能需要在服务器端跟踪文档历史。虽然并非必须这样做，但它能极大缓解“饥饿”问题：在繁忙的文档中，较慢的客户端或高延迟的客户端可能会不断输掉提交更改的竞赛，无法将更改提交给其他更快的客户端。",
+    "_note": ""
+  },
+  "When providing a function that returns a shape that changes whether the node is rendered as an atom, you need to provide the atom.": {
+    "_translate": "在提供返回一个根据节点是否被渲染为原子而变化的形状的函数时，您需要提供 <code>atom</code>。",
+    "_note": ""
   }
 }

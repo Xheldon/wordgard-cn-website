@@ -394,6 +394,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Extra parse rules to associate with this node type.">与此节点类型关联的额外解析规则。</p>
 </div>
+<pre class="refcode">  <a href="#doc.Node.Spec.selectable" class="def" id="doc.Node.Spec.selectable">selectable</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="When set to true, nodes of this type, if they are a leaf or atom, can be selected by clicking them or moving the selection into them with the keyboard.">当设置为 <code>true</code> 时，如果此类节点是叶子节点或原子节点，则可以通过点击它们或使用键盘将选择移入它们来选中它们。</p>
+</div>
 <pre class="refcode">}
 </pre>
 </section>
@@ -575,10 +580,10 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="True when this is a block node type.">当此节点类型为块节点时为真。</p>
 </div>
-<pre class="refcode">  <a href="#doc.Leaf.Type.isAtom" class="def" id="doc.Leaf.Type.isAtom">isAtom</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+<pre class="refcode">  <a href="#doc.Leaf.Type.isSelectable" class="def" id="doc.Leaf.Type.isSelectable">isSelectable</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="True when this node is a leaf or a plot whose default shape is rendered as an atom.">当此节点为叶节点或默认形状被渲染为原子的绘图时，该值为真。</p>
+<p data-x-en="Whether this node is selectable.">此节点是否<a href="#doc.Node.Spec.selectable">可选</a>。</p>
 </div>
 <pre class="refcode">  <a href="#doc.Leaf.Type.default" class="def" id="doc.Leaf.Type.default">default</a>: <a href="#doc.Leaf" class="ref">Leaf</a>&lt;<a href="#doc.Leaf.Type.Param" class="ref">Param</a>&gt; | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
@@ -613,11 +618,6 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Leaves are not plots.">叶子不是情节。</p>
 </div>
-<pre class="refcode">  <a href="#doc.Leaf.Type.isSelectable" class="def" id="doc.Leaf.Type.isSelectable">isSelectable</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Whether this leaf is selectable.">此叶子是否<a href="#doc.Leaf.Spec.selectable">可选</a>。</p>
-</div>
 <pre class="refcode">}
 </pre>
 </section>
@@ -628,11 +628,6 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Can be used to make leaves of this type show up in the output of textContent.">可用于使此类节点在 <a href="#doc.Plot.textContent"><code>textContent</code></a> 的输出中显示。</p>
-</div>
-<pre class="refcode">  <a href="#doc.Leaf.Spec.selectable" class="def" id="doc.Leaf.Spec.selectable">selectable</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="When set to true, nodes of this type can be selected by clicking them or moving the selection into them with the keyboard.">当设置为 <code>true</code> 时，可以通过单击或使用键盘将选择移动至该类型的节点来选中它们。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -856,10 +851,10 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="True when this is a block node type.">当此节点类型为块节点时为真。</p>
 </div>
-<pre class="refcode">  <a href="#doc.Plot.Type.isAtom" class="def" id="doc.Plot.Type.isAtom">isAtom</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+<pre class="refcode">  <a href="#doc.Plot.Type.isSelectable" class="def" id="doc.Plot.Type.isSelectable">isSelectable</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="True when this node is a leaf or a plot whose default shape is rendered as an atom.">当此节点为叶节点或默认形状被渲染为原子的绘图时，该值为真。</p>
+<p data-x-en="Whether this node is selectable.">此节点是否<a href="#doc.Node.Spec.selectable">可选</a>。</p>
 </div>
 <pre class="refcode">  <a href="#doc.Plot.Type.default" class="def" id="doc.Plot.Type.default">default</a>: <a href="#doc.Plot.Tag" class="ref">Plot.Tag</a>&lt;<a href="#doc.Plot.Type.Param" class="ref">Param</a>&gt; | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
@@ -1753,8 +1748,8 @@ addEventListener("load", function() {
 <p data-x-en="Parse a JSON representation into a change set.">将 JSON 表示解析为变更集。</p>
 </div>
 <pre class="refcode">  <a href="#doc.ChangeSet.transform" class="def" id="doc.ChangeSet.transform">transform</a>(
-    <a href="#doc.ChangeSet.transform.other" class="def" id="doc.ChangeSet.transform.other">other</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>,
     <a href="#doc.ChangeSet.transform.doc" class="def" id="doc.ChangeSet.transform.doc">doc</a>: <a href="#doc.Plot.Doc" class="ref">Plot.Doc</a>,
+    <a href="#doc.ChangeSet.transform.other" class="def" id="doc.ChangeSet.transform.other">other</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>,
     <a href="#doc.ChangeSet.transform.before" class="def" id="doc.ChangeSet.transform.before">before</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> = false
   ): <a href="#doc.ChangeSet" class="ref">ChangeSet</a>
 </pre>
@@ -1927,14 +1922,13 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="The sections in a change set are represented as an array, with each pair of two numbers describing a changed section. The first number is the length of the section in the old document. The second number is -1 for unchanged sections, -2 for updated sections, and a non-negative number (the length of the inserted content) for replacements.">变更集中的各个部分表示为一个数组，其中每对数字描述一个变更部分。第一个数字是该部分在旧文档中的长度。第二个数字为 <code>-1</code> 表示未变更部分，<code>-2</code> 表示已更新部分，非负数（即插入内容的长度）表示替换部分。</p>
 </div>
-<pre class="refcode"><span class="keyword">type</span> <a href="#doc.ChangeSet.JSON" class="def" id="doc.ChangeSet.JSON">ChangeSet.JSON</a> = <span class="keyword">readonly</span> {
-  <a href="#doc.ChangeSet.JSON.length" class="def" id="doc.ChangeSet.JSON.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-  <a href="#doc.ChangeSet.JSON.modifications" class="def" id="doc.ChangeSet.JSON.modifications">modifications</a>?: <span class="keyword">readonly</span> ({
-    <a href="#doc.ChangeSet.JSON.modifications.add" class="def" id="doc.ChangeSet.JSON.modifications.add">add</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>,
-    <a href="#doc.ChangeSet.JSON.modifications.value" class="def" id="doc.ChangeSet.JSON.modifications.value">value</a>: <a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>
-  } | {<a href="#doc.ChangeSet.JSON.modifications.remove" class="def" id="doc.ChangeSet.JSON.modifications.remove">remove</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a href="#doc.ChangeSet.JSON.modifications.value_2" class="def" id="doc.ChangeSet.JSON.modifications.value_2">value</a>: <a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>})[],
-  <a href="#doc.ChangeSet.JSON.replacement" class="def" id="doc.ChangeSet.JSON.replacement">replacement</a>?: <a href="#doc.Slice.JSON" class="ref">Slice.JSON</a>
-}[]
+<pre class="refcode"><span class="keyword">type</span> <a href="#doc.ChangeSet.JSON" class="def" id="doc.ChangeSet.JSON">ChangeSet.JSON</a> = <span class="keyword">readonly</span> (<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | [
+  <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+  <a href="#doc.Slice.JSON" class="ref">Slice.JSON</a> | <span class="keyword">readonly</span> ({
+    <a href="#doc.ChangeSet.JSON.add" class="def" id="doc.ChangeSet.JSON.add">add</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>,
+    <a href="#doc.ChangeSet.JSON.value" class="def" id="doc.ChangeSet.JSON.value">value</a>: <a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>
+  } | {<a href="#doc.ChangeSet.JSON.remove" class="def" id="doc.ChangeSet.JSON.remove">remove</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a href="#doc.ChangeSet.JSON.value_2" class="def" id="doc.ChangeSet.JSON.value_2">value</a>: <a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>})[]
+])[]
 </pre>
 <div class="doc indent1">
 <p data-x-en="The JSON representation of a change set.">变更集的 JSON 表示。</p>
@@ -2003,9 +1997,7 @@ addEventListener("load", function() {
 <pre class="refcode">}
 </pre>
 </section>
-<pre class="refcode"><span class="keyword">type</span> <a href="#doc.Slice.JSON" class="def" id="doc.Slice.JSON">Slice.JSON</a> = <span class="keyword">readonly</span> ({<a href="#doc.Slice.JSON.node" class="def" id="doc.Slice.JSON.node">node</a>: <a href="#doc.Node.JSON" class="ref">Node.JSON</a>} |
-  {<a href="#doc.Slice.JSON.open" class="def" id="doc.Slice.JSON.open">open</a>: <a href="#doc.Node.JSON" class="ref">Node.JSON</a>} |
-  {<a href="#doc.Slice.JSON.close" class="def" id="doc.Slice.JSON.close">close</a>: <span class="literal">true</span>})[]
+<pre class="refcode"><span class="keyword">type</span> <a href="#doc.Slice.JSON" class="def" id="doc.Slice.JSON">Slice.JSON</a> = <span class="keyword">readonly</span> (<a href="#doc.Node.JSON" class="ref">Node.JSON</a> | <span class="literal">"."</span>)[]
 </pre>
 <div class="doc indent1">
 <p data-x-en="A slice's JSON representation.">切片（slice）的 JSON 表示。</p>
@@ -2596,6 +2588,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Return the text direction in a given textblock (by tag).">返回给定文本块（按标签）的文本方向。</p>
 </div>
+<pre class="refcode">  <a href="#state.GardState.isAtom" class="def" id="state.GardState.isAtom">isAtom</a>(<a href="#state.GardState.isAtom.type" class="def" id="state.GardState.isAtom.type">type</a>: <a href="#doc.Node.Type" class="ref">Node.Type</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Tells you whether a node type is an atom (a leaf or a plot with an atomic shape).">告诉您节点类型是否为原子（具有原子形状的叶节点或图）。</p>
+</div>
 <pre class="refcode">  <a href="#state.GardState.wordAt" class="def" id="state.GardState.wordAt">wordAt</a>(<a href="#state.GardState.wordAt.pos" class="def" id="state.GardState.wordAt.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#state.GardState.wordAt.bias" class="def" id="state.GardState.wordAt.bias">bias</a>: <span class="literal">1</span> | <span class="literal">-1</span> = 1): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a>
 </pre>
 <div class="doc indent2">
@@ -3117,7 +3114,8 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Facet used to register a hook that gets a chance to add to transactions before they are applied. If such a function returns a transaction spec, it will be combined with the original transaction (in the same way as the arguments to update).">此 Facet 用于注册一个钩子，该钩子有机会在事务应用之前向其中添加内容。如果此类函数返回一个事务规范，它将与原事务合并（方式与 <a href="#state.GardState.update"><code>update</code></a> 的参数相同）。</p>
 <p data-x-en="When possible, it is recommended to avoid accessing state in an extender, since it will force creation of a state that will then be discarded again, if the transaction is actually extended.">在可能的情况下，建议避免在扩展器中访问 <a href="#state.Transaction.state"><code>state</code></a>，因为如果事务实际上被扩展，这将强制创建一个随后会被丢弃的状态。</p>
-<p data-x-en="(This functionality should be used with care. Indiscriminately modifying transaction is likely to break something or degrade the user experience.)">（此功能应谨慎使用。随意修改事务可能会导致功能损坏或降低用户体验。）</p>
+<p data-x-en="This functionality should be used with care. Indiscriminately modifying transaction is likely to break something or degrade the user experience.">应谨慎使用此功能。随意修改事务可能会导致功能损坏或降低用户体验。</p>
+<p data-x-en="Extenders that may add document changes should generally not do anything for remote transactions, because doing so risks causing endlessly cascading changes or other confusion. It is possible to define extenders that are safe when activated on multiple peer (for example, duplicate deletions of the same content tend to converge), but it requires a lot of care.">可能会添加文档更改的扩展器通常不应为<a href="#state.Transaction.remote">远程</a>事务执行任何操作，因为这样做可能会导致无限级联更改或其他混乱。可以定义在多个对等节点上激活时安全的扩展器（例如，对相同内容的重复删除往往会收敛），但这需要格外小心。</p>
 </div>
 <pre class="refcode"><a href="#state.Transaction.appender" class="def" id="state.Transaction.appender">Transaction.appender</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
   <a href="#state.Transaction.appender.trs" class="def" id="state.Transaction.appender.trs">trs</a>: <span class="keyword">readonly</span> <a href="#state.Transaction" class="ref">Transaction</a>[],
@@ -3432,7 +3430,7 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardSelection.node" class="def" id="state.GardSelection.node">node</a>(
     <a href="#state.GardSelection.node.pos" class="def" id="state.GardSelection.node.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#state.GardSelection.node.node" class="def" id="state.GardSelection.node.node">node</a>: <a href="#doc.Leaf" class="ref">Leaf</a>,
+    <a href="#state.GardSelection.node.node" class="def" id="state.GardSelection.node.node">node</a>: <a href="#doc.Node" class="ref">Node</a>,
     <a href="#state.GardSelection.node.goalColumn" class="def" id="state.GardSelection.node.goalColumn">goalColumn</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
   ): <a href="#state.GardSelection.Node" class="ref">GardSelection.Node</a>
 </pre>
@@ -3576,10 +3574,10 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Node selections select a single node. They are created, for example, when clicking on or moving into a selectable leaf node. Use GardSelection.node to create one.">节点选择用于选中单个节点。例如，当点击或移入一个<a href="#doc.Leaf.Spec.selectable">可选择的</a>叶节点时，就会创建节点选择。使用<a href="#state.GardSelection.node"><code>GardSelection.node</code></a>来创建一个。</p>
 </div>
-<pre class="refcode">  <a href="#state.GardSelection.Node.node" class="def" id="state.GardSelection.Node.node">node</a>: <a href="#doc.Leaf" class="ref">Leaf</a>
+<pre class="refcode">  <a href="#state.GardSelection.Node.node" class="def" id="state.GardSelection.Node.node">node</a>: <a href="#doc.Node" class="ref">Node</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="The selected leaf node.">选中的叶节点。</p>
+<p data-x-en="The selected node.">所选节点。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -3683,9 +3681,9 @@ addEventListener("load", function() {
 <p data-x-en="The text order of the text in this block. Will generally be a single span, but if the block mixes left-to-right and right-to-left text, this describes the individual sections, ordered from the block's start to its end.">此块中文本的顺序。通常为一个单独的跨度，但如果该块混合了从左到右和从右到左的文本，则此描述各个部分，顺序从块的开始到结束。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.TextblockMap.get" class="def" id="state.TextblockMap.get">get</a>(
+    <a href="#state.TextblockMap.get.cx" class="def" id="state.TextblockMap.get.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
     <a href="#state.TextblockMap.get.start" class="def" id="state.TextblockMap.get.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#state.TextblockMap.get.node" class="def" id="state.TextblockMap.get.node">node</a>: <a href="#doc.Plot" class="ref">Plot</a>,
-    <a href="#state.TextblockMap.get.ltr" class="def" id="state.TextblockMap.get.ltr">ltr</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+    <a href="#state.TextblockMap.get.node" class="def" id="state.TextblockMap.get.node">node</a>: <a href="#doc.Plot" class="ref">Plot</a>
   ): <a href="#state.TextblockMap" class="ref">TextblockMap</a>
 </pre>
 <div class="doc indent2">
@@ -3756,6 +3754,8 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="The class representing a correction. Counts as an editor extension.">表示修正的类。计为编辑器扩展。</p>
+<p data-x-en="Corrections install themselves as transaction extenders that check modified nodes and, if necessary, apply fixes to enforce constraints. In normal operation, this means that they guarantee the constraints implemented in the transaction are enforced.">修正机制会作为<a href="#state.Transaction.extender">事务扩展器</a>进行安装，用于检查已修改的节点，并在必要时应用修复以强制执行约束。在正常运行情况下，这意味着它们能够确保事务中实现的约束得到强制执行。</p>
+<p data-x-en="They do not activate for remote transactions, because acting on those can cause collaborative editing setups to malfunction (for example, causing all peers to repeatedly try to correct the same issue, causing an endless loop of updates or other chaos). The collab module has special provisions for integrating corrections in the step transformation in a safe way, but that requires you to explicitly tell it to use them, both on the client and the server.">它们不会为 <a href="#state.Transaction.remote">远程</a> 事务激活，因为对这些事务采取行动可能会导致协作编辑设置发生故障（例如，导致所有对等节点反复尝试纠正同一问题，从而引发无尽的更新循环或其他混乱）。collab 模块提供了特殊规定，以便以安全的方式在步骤转换中集成更正，但这需要您明确告知其在 <a href="#collab.collab.Config.corrections">客户端</a> 和 <a href="#collab.collab.transformUpdate">服务器</a> 上使用这些规定。</p>
 </div>
 <pre class="refcode">  <a href="#state.Correction.extension" class="def" id="state.Correction.extension">extension</a>: <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
@@ -3769,10 +3769,7 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.Correction.onChildList" class="def" id="state.Correction.onChildList">onChildList</a>(
     <a href="#state.Correction.onChildList.query" class="def" id="state.Correction.onChildList.query">query</a>: <a href="#doc.Node.Query" class="ref">Node.Query</a>,
-    <a href="#state.Correction.onChildList.correct" class="def" id="state.Correction.onChildList.correct">correct</a>: (
-      <a href="#state.Correction.onChildList.correct.node" class="def" id="state.Correction.onChildList.correct.node">node</a>: <a href="#doc.Pos.Plot" class="ref">Pos.Plot</a>,
-      <a href="#state.Correction.onChildList.correct.state" class="def" id="state.Correction.onChildList.correct.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>
-    ) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+    <a href="#state.Correction.onChildList.correct" class="def" id="state.Correction.onChildList.correct">correct</a>: (<a href="#state.Correction.onChildList.correct.node" class="def" id="state.Correction.onChildList.correct.node">node</a>: <a href="#doc.Pos.Plot" class="ref">Pos.Plot</a>) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
   ): <a href="#state.Correction" class="ref">Correction</a>
 </pre>
 <div class="doc indent2">
@@ -3780,10 +3777,7 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.Correction.onContent" class="def" id="state.Correction.onContent">onContent</a>(
     <a href="#state.Correction.onContent.query" class="def" id="state.Correction.onContent.query">query</a>: <a href="#doc.Node.Query" class="ref">Node.Query</a>,
-    <a href="#state.Correction.onContent.correct" class="def" id="state.Correction.onContent.correct">correct</a>: (
-      <a href="#state.Correction.onContent.correct.node" class="def" id="state.Correction.onContent.correct.node">node</a>: <a href="#doc.Pos.Plot" class="ref">Pos.Plot</a>,
-      <a href="#state.Correction.onContent.correct.state" class="def" id="state.Correction.onContent.correct.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>
-    ) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+    <a href="#state.Correction.onContent.correct" class="def" id="state.Correction.onContent.correct">correct</a>: (<a href="#state.Correction.onContent.correct.node" class="def" id="state.Correction.onContent.correct.node">node</a>: <a href="#doc.Pos.Plot" class="ref">Pos.Plot</a>) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
   ): <a href="#state.Correction" class="ref">Correction</a>
 </pre>
 <div class="doc indent2">
@@ -3791,14 +3785,20 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.Correction.onMarks" class="def" id="state.Correction.onMarks">onMarks</a>(
     <a href="#state.Correction.onMarks.query" class="def" id="state.Correction.onMarks.query">query</a>: <a href="#doc.Node.Query" class="ref">Node.Query</a>,
-    <a href="#state.Correction.onMarks.correct" class="def" id="state.Correction.onMarks.correct">correct</a>: (
-      <a href="#state.Correction.onMarks.correct.node" class="def" id="state.Correction.onMarks.correct.node">node</a>: <a href="#doc.Pos.Node" class="ref">Pos.Node</a>,
-      <a href="#state.Correction.onMarks.correct.state" class="def" id="state.Correction.onMarks.correct.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>
-    ) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+    <a href="#state.Correction.onMarks.correct" class="def" id="state.Correction.onMarks.correct">correct</a>: (<a href="#state.Correction.onMarks.correct.node" class="def" id="state.Correction.onMarks.correct.node">node</a>: <a href="#doc.Pos.Node" class="ref">Pos.Node</a>) =&gt; <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
   ): <a href="#state.Correction" class="ref">Correction</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Define a correction that runs whenever the set of marks on a matching tag changes.">定义一个修正操作，当匹配标签上的标记集发生变化时，该操作将自动运行。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#state.Correction.check" class="def" id="state.Correction.check">check</a>(
+    <a href="#state.Correction.check.changes" class="def" id="state.Correction.check.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>,
+    <a href="#state.Correction.check.doc" class="def" id="state.Correction.check.doc">doc</a>: <a href="#doc.Plot.Doc" class="ref">Plot.Doc</a>,
+    <a href="#state.Correction.check.corrections" class="def" id="state.Correction.check.corrections">corrections</a>: <span class="keyword">readonly</span> <a href="#state.Correction" class="ref">Correction</a>[]
+  ): <a href="#doc.ChangeSet" class="ref">ChangeSet</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Check the ranges touched by the given change set against the given list of corrections. Return a change set if any changes need to be made. (This isn't how you normally use corrections, but can be useful in a situation where you aren't working with an editor state transaction.)">检查给定变更集所触及的范围与给定的修正列表。如果需要进行任何更改，则返回一个变更集。（这并非通常使用修正的方式，但在未使用编辑器状态事务的情况下可能很有用。）</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -4610,23 +4610,27 @@ addEventListener("load", function() {
 <pre class="refcode"><a href="#editor.Decoration.Tag.shape" class="def" id="editor.Decoration.Tag.shape">Decoration.Tag.shape</a>&lt;<a href="#editor.Decoration.Tag.shape.T" class="def" id="editor.Decoration.Tag.shape.T">T</a> <span class="keyword">extends</span> <a href="#doc.Node.Type.Ref" class="ref">Node.Type.Ref</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;&gt;(
   <a href="#editor.Decoration.Tag.shape.type" class="def" id="editor.Decoration.Tag.shape.type">type</a>: <a href="#editor.Decoration.Tag.shape.T" class="ref">T</a>,
   <a href="#editor.Decoration.Tag.shape.shape" class="def" id="editor.Decoration.Tag.shape.shape">shape</a>: <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a> |
-    ((<a href="#editor.Decoration.Tag.shape.shape.tag" class="def" id="editor.Decoration.Tag.shape.shape.tag">tag</a>: <a href="#doc.Node.Tag.For" class="ref">Node.Tag.For</a>&lt;<a href="#editor.Decoration.Tag.shape.T" class="ref">T</a>&gt;) =&gt; <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a>)
+    ((<a href="#editor.Decoration.Tag.shape.shape.tag" class="def" id="editor.Decoration.Tag.shape.shape.tag">tag</a>: <a href="#doc.Node.Tag.For" class="ref">Node.Tag.For</a>&lt;<a href="#editor.Decoration.Tag.shape.T" class="ref">T</a>&gt;) =&gt; <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a>),
+  <a href="#editor.Decoration.Tag.shape.config" class="def" id="editor.Decoration.Tag.shape.config">config</a>?: {<a href="#editor.Decoration.Tag.shape.config.atom" class="def" id="editor.Decoration.Tag.shape.config.atom">atom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>}
 ): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
 <div class="doc indent1">
 <p data-x-en="Override the way a given node type is drawn in the editor. By default, the shape field in the type's definition will be used, but extensions created with this function can provide an alternative shape for a given type.">覆盖编辑器中给定节点类型的绘制方式。默认情况下，将使用类型定义中的 <a href="#doc.Node.Spec.shape"><code>shape</code></a> 字段，但通过此函数创建的扩展可以为给定类型提供替代形状。</p>
 <p data-x-en="When providing a function for the shape, keep in mind that the result will be cached by tag, and you should make sure your function is pure.">在提供用于形状的函数时，请注意结果将按标签进行缓存，因此请确保您的函数是纯函数。</p>
+<p data-x-en="When providing a function that returns a shape that changes whether the node is rendered as an atom, you need to provide the atom.">在提供返回一个根据节点是否被渲染为原子而变化的形状的函数时，您需要提供 <code>atom</code>。</p>
 </div>
-<pre class="refcode"><a href="#editor.Decoration.Tag.shape.dynamic" class="def" id="editor.Decoration.Tag.shape.dynamic">Decoration.Tag.shape.dynamic</a>&lt;<a href="#editor.Decoration.Tag.shape.dynamic.T" class="def" id="editor.Decoration.Tag.shape.dynamic.T">T</a> <span class="keyword">extends</span> <a href="#doc.Node.Type.Ref" class="ref">Node.Type.Ref</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;&gt;(
+<pre class="refcode"><a href="#editor.Decoration.Tag.shape.dynamic" class="def" id="editor.Decoration.Tag.shape.dynamic">Decoration.Tag.shape.dynamic</a>&lt;<a href="#editor.Decoration.Tag.shape.dynamic.T" class="def" id="editor.Decoration.Tag.shape.dynamic.T">T</a> <span class="keyword">extends</span> <a href="#doc.Node.Type" class="ref">Node.Type</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;&gt;(
   <a href="#editor.Decoration.Tag.shape.dynamic.type" class="def" id="editor.Decoration.Tag.shape.dynamic.type">type</a>: <a href="#editor.Decoration.Tag.shape.dynamic.T" class="ref">T</a>,
   <a href="#editor.Decoration.Tag.shape.dynamic.shape" class="def" id="editor.Decoration.Tag.shape.dynamic.shape">shape</a>: (<a href="#editor.Decoration.Tag.shape.dynamic.shape.state" class="def" id="editor.Decoration.Tag.shape.dynamic.shape.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>) =&gt; <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a> |
-    ((<a href="#editor.Decoration.Tag.shape.dynamic.shape.returns.tag" class="def" id="editor.Decoration.Tag.shape.dynamic.shape.returns.tag">tag</a>: <a href="#doc.Node.Tag.For" class="ref">Node.Tag.For</a>&lt;<a href="#editor.Decoration.Tag.shape.dynamic.T" class="ref">T</a>&gt;) =&gt; <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a>)
+    ((<a href="#editor.Decoration.Tag.shape.dynamic.shape.returns.tag" class="def" id="editor.Decoration.Tag.shape.dynamic.shape.returns.tag">tag</a>: <a href="#doc.Node.Tag.For" class="ref">Node.Tag.For</a>&lt;<a href="#editor.Decoration.Tag.shape.dynamic.T" class="ref">T</a>&gt;) =&gt; <a href="#editor.Decoration.Shape" class="ref">Decoration.Shape</a>),
+  <a href="#editor.Decoration.Tag.shape.dynamic.config" class="def" id="editor.Decoration.Tag.shape.dynamic.config">config</a>?: {<a href="#editor.Decoration.Tag.shape.dynamic.config.atom" class="def" id="editor.Decoration.Tag.shape.dynamic.config.atom">atom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>}
 ): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
 <div class="doc indent1">
 <p data-x-en="This function allows you to define a custom node shape that depends on the editor state. It will automatically track what slots (see compute) you use, and make sure the nodes are redrawn when those change.">此函数允许您定义一个依赖于编辑器状态的<a href="#editor.Decoration.Tag.shape">自定义节点形状</a>。它将自动跟踪您使用的插槽（参见<a href="#state.GardState.Facet.compute"><code>compute</code></a>），并确保在它们发生变化时重新绘制节点。</p>
 <p data-x-en="If your shape function returns a function from a tag, you must be careful do any state access you need in the outer function, not the returned function, or it won't be tracked.">如果您的形状函数从标签返回一个函数，您必须小心，在<em>外部</em>函数中执行所需的任何状态访问，而不是在返回的函数中执行，否则它将不会被追踪。</p>
 <p data-x-en="You generally don't want to make your shapes depend on constantly-changing slots like the document or selection, because when the document is big, there's a non-trivial amount of work involved when a node shape changes (or may have changed).">通常，您不希望让形状依赖于不断变化的插槽（如文档或选区），因为当文档很大时，节点形状发生变化（或可能已发生变化）时，会涉及大量非微不足道的工作。</p>
+<p data-x-en="When providing a shape for a plot that changes whether it is rendered as an atom, provide the atom option.">当为可能以原子形式渲染的绘图提供形状时，请提供 <code>atom</code> 选项。</p>
 </div>
 <pre class="refcode"><a href="#editor.Decoration.Tag.wrapper" class="def" id="editor.Decoration.Tag.wrapper">Decoration.Tag.wrapper</a>(
   <a href="#editor.Decoration.Tag.wrapper.type" class="def" id="editor.Decoration.Tag.wrapper.type">type</a>: <a href="#doc.Node.Type.Ref" class="ref">Node.Type.Ref</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;,
@@ -6171,7 +6175,7 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Set the selected textblocks to the given alignment. &quot;left&quot; and &quot;right&quot; will be normalized to &quot;start&quot; or &quot;end&quot; depending on the editor's text direction. The default implementation uses the Alignment mark.">将选定的文本块设置为指定的对齐方式。<code>"left"</code> 和 <code>"right"</code> 将根据编辑器的文本方向规范化为 <code>"start"</code> 或 <code>"end"</code>。默认实现使用 <a href="#types.Alignment"><code>Alignment</code></a> 标记。</p>
 </div>
-<pre class="refcode"><a href="#command.setDirection" class="def" id="command.setDirection">setDirection</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>&lt;<span class="literal">"ltr"</span> | <span class="literal">"auto"</span> | <span class="literal">"rtl"</span> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>&gt;
+<pre class="refcode"><a href="#command.setDirection" class="def" id="command.setDirection">setDirection</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>&lt;<span class="literal">"auto"</span> | <span class="literal">"ltr"</span> | <span class="literal">"rtl"</span> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>&gt;
 </pre>
 <div class="doc indent1">
 <p data-x-en="Set the text direction for the selected textblocks. null will remove an explicit direction mark, defaulting the blocks back to the editor's base direction. The default implementation uses the Direction mark.">设置所选文本块的文本方向。<code>null</code> 将移除显式方向标记，使文本块恢复为编辑器的基础方向。默认实现使用 <a href="#types.Direction"><code>Direction</code></a> 标记。</p>
@@ -6494,7 +6498,7 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Text alignment. Applies to any textblock or figure. Not having this mark implies aligning to the start of the block. Renders as a text-align style.">文本对齐。适用于任何文本块或图形。未设置此标记表示将文本对齐到块的起始位置。渲染为 `<code>text-align</code>` 样式。</p>
 </div>
-<pre class="refcode"><a href="#types.Direction" class="def" id="types.Direction">Direction</a>: <a href="#doc.Mark.Type" class="ref">Mark.Type</a>&lt;<span class="literal">"ltr"</span> | <span class="literal">"auto"</span> | <span class="literal">"rtl"</span>&gt;
+<pre class="refcode"><a href="#types.Direction" class="def" id="types.Direction">Direction</a>: <a href="#doc.Mark.Type" class="ref">Mark.Type</a>&lt;<span class="literal">"auto"</span> | <span class="literal">"ltr"</span> | <span class="literal">"rtl"</span>&gt;
 </pre>
 <div class="doc indent1">
 <p data-x-en="The text direction for a textblock. Not having this mark means the document's base direction is used. &quot;auto&quot; means the direction is derived from the first character in the block that has a strong direction. Rendered using the dir attribute.">文本块的文本方向。未设置此标记时，将使用文档的基线方向。<code>"auto"</code> 表示方向由块中具有强方向性的第一个字符推导得出。通过 <code>dir</code> 属性进行渲染。</p>
@@ -7379,7 +7383,7 @@ addEventListener("load", function() {
 </section><hr class="floral">
   <section class="modsection">
     <h2><a class="def" href="#collab" id="collab">wordgard/collab</a></h2><div class="doc">
-<p data-x-en="An implementation of basic collaborative editing. Does not include server or communication logic.">基本协同编辑的实现。不包含服务器或通信逻辑。</p>
+<p data-x-en="An implementation of basic collaborative editing. See the example for more information.">基本协同编辑的实现。有关更多信息，请参阅<a href="../../examples/collab/">示例</a>。</p>
 </div>
 <pre class="refcode"><a href="#collab.collab" class="def" id="collab.collab">collab</a>(<a href="#collab.collab.config" class="def" id="collab.collab.config">config</a>: <a href="#collab.collab.Config" class="ref">collab.Config</a> = {}): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
@@ -7402,6 +7406,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="This client's identifying ID. Will be a randomly generated string if not provided.">此客户端的标识 <a href="#collab.collab.getClientID">ID</a>。如果未提供，将生成一个随机字符串。</p>
 </div>
+<pre class="refcode">  <a href="#collab.collab.Config.corrections" class="def" id="collab.collab.Config.corrections">corrections</a>?: <span class="keyword">readonly</span> <a href="#state.Correction" class="ref">Correction</a>[]
+</pre>
+<div class="doc indent2">
+<p data-x-en="A set of corrections to apply to transformed changes. Can be used to enforce document shapes even in merged changes. Requires the exact same set, in the same order, to be used on the server.">一组应用于已转换变更的修正。可用于即使在合并的变更中也强制实施文档结构。要求服务器使用完全相同且顺序一致的一组修正。</p>
+</div>
 <pre class="refcode">  <a href="#collab.collab.Config.sharedEffects" class="def" id="collab.collab.Config.sharedEffects">sharedEffects</a>?: (<a href="#collab.collab.Config.sharedEffects.tr" class="def" id="collab.collab.Config.sharedEffects.tr">tr</a>: <a href="#state.Transaction" class="ref">Transaction</a>) =&gt;
     <span class="keyword">readonly</span> <a href="#state.Transaction.Effect" class="ref">Transaction.Effect</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;[]
 </pre>
@@ -7417,15 +7426,15 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="An update is a set of changes and effects.">更新是一组变更和效果。</p>
 </div>
-<pre class="refcode">  <a href="#collab.collab.Update.versionBefore" class="def" id="collab.collab.Update.versionBefore">versionBefore</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+<pre class="refcode">  <a href="#collab.collab.Update.version" class="def" id="collab.collab.Update.version">version</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="The document version that this update starts from.">此更新所基于的文档版本。</p>
 </div>
-<pre class="refcode">  <a href="#collab.collab.Update.versionAfter" class="def" id="collab.collab.Update.versionAfter">versionAfter</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+<pre class="refcode">  <a href="#collab.collab.Update.clientID" class="def" id="collab.collab.Update.clientID">clientID</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="The new version, as determined by the client creating the update.">新版本由创建更新的客户端确定。</p>
+<p data-x-en="The ID of the client who created this update.">创建此更新的客户端的 <a href="#collab.collab.Config.clientID">ID</a>。</p>
 </div>
 <pre class="refcode">  <a href="#collab.collab.Update.changes" class="def" id="collab.collab.Update.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>
 </pre>
@@ -7436,11 +7445,6 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="The effects in this update. There'll only ever be effects here when you configure your collab extension with a sharedEffects option.">此更新中的效果。仅当您使用 <a href="#collab.collab.Config.sharedEffects"><code>sharedEffects</code></a> 选项配置您的协作扩展时，此处才会出现效果。</p>
-</div>
-<pre class="refcode">  <a href="#collab.collab.Update.clientID" class="def" id="collab.collab.Update.clientID">clientID</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="The ID of the client who created this update.">创建此更新的客户端的 <a href="#collab.collab.Config.clientID">ID</a>。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -7458,6 +7462,11 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="If there are unconfirmed local changes that need to be sent to the server,return them as an Update object.">如果存在需要发送到服务器的未确认本地更改，则将其作为 <code>Update</code> 对象返回。</p>
 </div>
+<pre class="refcode"><a href="#collab.collab.hasUnsentUpdate" class="def" id="collab.collab.hasUnsentUpdate">collab.hasUnsentUpdate</a>(<a href="#collab.collab.hasUnsentUpdate.state" class="def" id="collab.collab.hasUnsentUpdate.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Returns true if there are unconfirmed changes for this editor.">如果此编辑器存在未确认的更改，则返回 true。</p>
+</div>
 <pre class="refcode"><a href="#collab.collab.getSyncedVersion" class="def" id="collab.collab.getSyncedVersion">collab.getSyncedVersion</a>(<a href="#collab.collab.getSyncedVersion.state" class="def" id="collab.collab.getSyncedVersion.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
 </pre>
 <div class="doc indent1">
@@ -7467,6 +7476,19 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Get this editor's collaborative editing client ID.">获取此编辑器的协同编辑客户端 ID。</p>
+</div>
+<pre class="refcode"><a href="#collab.collab.transformUpdate" class="def" id="collab.collab.transformUpdate">collab.transformUpdate</a>(
+  <a href="#collab.collab.transformUpdate.update" class="def" id="collab.collab.transformUpdate.update">update</a>: <a href="#collab.collab.Update" class="ref">collab.Update</a>,
+  <a href="#collab.collab.transformUpdate.over" class="def" id="collab.collab.transformUpdate.over">over</a>: <span class="keyword">readonly</span> {
+    <a href="#collab.collab.transformUpdate.over.doc" class="def" id="collab.collab.transformUpdate.over.doc">doc</a>: <a href="#doc.Plot.Doc" class="ref">Plot.Doc</a>,
+    <a href="#collab.collab.transformUpdate.over.changes" class="def" id="collab.collab.transformUpdate.over.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>,
+    <a href="#collab.collab.transformUpdate.over.clientID" class="def" id="collab.collab.transformUpdate.over.clientID">clientID</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+  }[],
+  <a href="#collab.collab.transformUpdate.corrections" class="def" id="collab.collab.transformUpdate.corrections">corrections</a>?: <span class="keyword">readonly</span> <a href="#state.Correction" class="ref">Correction</a>[]
+): <a href="#collab.collab.Update" class="ref">collab.Update</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Transform an update that arrives on the server with an outdated start version. Being able to do this requires tracking a document history server-side. It is not necessary to do this, but it helps a lot with “starvation” problems, where slower clients or clients with a high ping can, in a busy document, keep losing the race to submit their changes to other, faster clients.">转换一个在服务器上到达但起始版本已过时的更新。实现此功能需要在服务器端跟踪文档历史。虽然并非必须这样做，但它能极大缓解“饥饿”问题：在繁忙的文档中，较慢的客户端或高延迟的客户端可能会不断输掉提交更改的竞赛，无法将更改提交给其他更快的客户端。</p>
 </div>
 </section><hr class="floral">
   <section class="modsection">

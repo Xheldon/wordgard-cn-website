@@ -313,6 +313,8 @@ ul.grid-list h3 {
   nav#toc { display: none; }
 }
 
+ul { padding-left: 25px }
+
 dd p, dd ul, dd ol { margin: 0 }
 dd { margin-left: 20px }
 dt { line-height: 1.35 }

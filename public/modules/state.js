@@ -337,34 +337,35 @@ class TextblockMap {
     ltr;
     text;
     _order;
+    config;
     sections;
     constructor(
     start, 
     node, 
     ltr, 
-    text, _order, 
+    text, _order, config, 
     sections) {
         this.start = start;
         this.node = node;
         this.ltr = ltr;
         this.text = text;
         this._order = _order;
+        this.config = config;
         this.sections = sections;
     }
     get order() {
         return this._order || (this._order = computeOrder(this.text, this.ltr, []));
     }
-    static get(start, node, ltr) {
+    static get(cx, start, node) {
         let cached = cache.get(node);
-        if (cached && cached.start == start && cached.ltr == ltr)
-            return cached;
-        let result = cached && cached.ltr == ltr
-            ? new TextblockMap(start, node, ltr, cached.text, cached._order, cached.sections)
-            : TextblockMap.create(start, node, ltr);
+        if (cached && cached.config == cx.config)
+            return cached.start == start ? cached
+                : new TextblockMap(start, node, cached.ltr, cached.text, cached._order, cx.config, cached.sections);
+        let result = TextblockMap.create(start, node, cx.config);
         cache.set(node, result);
         return result;
     }
-    static create(start, node, ltr) {
+    static create(start, node, config) {
         let text = "", sections = [], sectionPos = 0;
         let flush = (upto) => {
             if (upto > sectionPos)
@@ -375,7 +376,7 @@ class TextblockMap {
                 if (ch.is(Leaf.Text)) {
                     text += ch.param;
                 }
-                else if (ch.isLeaf || !ch.inlineContent) {
+                else if (ch.isLeaf || config.isAtom(ch.type)) {
                     text += "\ufffc";
                     if (ch.length > 1) {
                         flush(pos);
@@ -401,7 +402,7 @@ class TextblockMap {
         };
         scan(node, 0);
         flush(node.contentLength);
-        return new TextblockMap(start, node, ltr, text, null, sections);
+        return new TextblockMap(start, node, config.textblockLTR(node), text, null, config, sections);
     }
     toIndex(pos) {
         if (pos < this.start)
@@ -471,7 +472,7 @@ class TextblockMap {
         let nextSpan = spanI == (forward ? order.length - 1 : 0) ? null : order[spanI + (forward ? 1 : -1)];
         if (nextSpan && nextIndex == spanEnd && nextSpan.level + (forward ? 0 : 1) < span.level)
             return { pos: this.fromIndex(nextSpan.side(!forward, ltr)), side: nextSpan.forward(forward, ltr) ? 1 : -1 };
-        return { pos: this.fromIndex(nextIndex), side: span.forward(forward, ltr) ? -1 : 1 };
+        return { pos: this.fromIndex(nextIndex), side: nextIndex != spanEnd ? 1 : span.forward(forward, ltr) ? -1 : 1 };
     }
     skipWord(start, side, forward, visually) {
         let word = "", skipped = [""], cur = null;
@@ -521,7 +522,7 @@ class TextblockMap {
     moveLogically(start, forward) {
         let index = this.toIndex(start);
         let next = findClusterBreak(this.text, index, forward);
-        return next == index ? null : { pos: this.fromIndex(next), side: forward ? -1 : 1 };
+        return next == index ? null : { pos: this.fromIndex(next), side: 1 };
     }
 }
 
@@ -617,8 +618,8 @@ class GardSelection {
     }
     static atEnd(cx, block) {
         let found = block
-            ? TextblockMap.get(block.start, block.node, cx.config.textblockLTR(block.node)).visualSide(false)
-            : cx.doc.inlineContent ? TextblockMap.get(0, cx.doc, cx.config.textLTR).visualSide(false)
+            ? TextblockMap.get(cx, block.start, block.node).visualSide(false)
+            : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(false)
                 : scanNormalFrom(cx, cx.doc.length, -1, false, false) ?? { pos: cx.doc.length, side: -1 };
         return GardSelection.cursor(found.pos, found.side);
     }
@@ -713,7 +714,7 @@ class GardSelection {
     (function (Node) {
         Node.type = new SelectionType("node", Node, (sel) => ({ pos: sel.anchor }), (doc, json) => {
             let node = json && typeof json.pos == "number" && doc.nodeAt(json.pos);
-            if (!node || node.isText || node.isPlot || !node.type.isSelectable)
+            if (!node || node.isText || !node.type.isSelectable)
                 throw new ValidationError("Invalid GardSelection.Node JSON representation");
             return Node.create(json.pos, node);
         });
@@ -756,18 +757,18 @@ class GardSelection {
 ;return GardSelection})(GardSelection);
 function cursorAtStart(cx, block) {
     let found = block
-        ? TextblockMap.get(block.start, block.node, cx.config.textblockLTR(block.node)).visualSide(true)
-        : cx.doc.inlineContent ? TextblockMap.get(0, cx.doc, cx.config.textblockLTR(cx.doc)).visualSide(true)
+        ? TextblockMap.get(cx, block.start, block.node).visualSide(true)
+        : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(true)
             : scanNormalFrom(cx, 0, 1, true, false) ?? { pos: 0, side: 1 };
     return GardSelection.cursor(found.pos, found.side);
 }
-function isBarrier(node) {
+function isBarrier(cx, node) {
     if (node.isLeaf)
         return node.type.isBlock;
     let override = node.type.spec.cursorBarrier;
     if (override != null)
         return override;
-    return node.type.isolating || node.type.preserveWhitespace || node.type.isBlock && node.type.isAtom;
+    return node.type.isolating || node.type.preserveWhitespace || node.type.isBlock && cx.config.isAtom(node.type);
 }
 function scanNormalFrom(cx, from, side, forward, mustMove) {
     let pos = cx.doc.resolve(from), pastBarrier = false;
@@ -775,20 +776,20 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         if (!mustMove)
             return { pos: pos.pos, side };
         let block = pos.textblockParent;
-        let map = TextblockMap.get(block.start, block.node, cx.config.textblockLTR(block.node));
+        let map = TextblockMap.get(cx, block.start, block.node);
         let next = cx.config.visualCursorMotion ? map.moveVisually(pos.pos, side, forward) : map.moveLogically(pos.pos, forward);
         if (next != null)
             return next;
         if (!block.parent)
             return null;
         pos = Pos.create(block.parent, forward ? block.after : block.before, block.index + (forward ? 1 : 0), 0);
-        pastBarrier = isBarrier(block.node);
+        pastBarrier = isBarrier(cx, block.node);
     }
     else {
         pastBarrier = !pos.parent.parent && pos.index == (forward ? 0 : pos.parent.node.content.length);
         for (let { parent: { node }, index } = pos; !pastBarrier && (forward ? index : index < node.content.length);) {
             let next = node.content[forward ? index - 1 : index];
-            if (isBarrier(next))
+            if (isBarrier(cx, next))
                 pastBarrier = true;
             if (next.isLeaf) {
                 index += forward ? 1 : -1;
@@ -806,11 +807,11 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         let { node, parent: next } = parent;
         if (node.inlineContent) {
             if (cx.config.visualCursorMotion)
-                return TextblockMap.get(parent.start, parent.node, cx.config.textblockLTR(parent.node)).visualSide(forward);
+                return TextblockMap.get(cx, parent.start, parent.node).visualSide(forward);
             return { pos: p, side: forward ? 1 : -1 };
         }
         if (index == (forward ? node.content.length : 0)) {
-            let barrier = !next || isBarrier(node);
+            let barrier = !next || isBarrier(cx, node);
             if ((bottom != from || !mustMove) && pastBarrier && barrier)
                 return { pos: bottom, side: forward ? -1 : 1 };
             if (!next)
@@ -824,10 +825,10 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         }
         else {
             let nextNode = node.content[index - (forward ? 0 : 1)];
-            let barrier = isBarrier(nextNode);
+            let barrier = isBarrier(cx, nextNode);
             if (pastBarrier && (bottom != from || !mustMove) && barrier)
                 return { pos: bottom, side: forward ? -1 : 1 };
-            if (nextNode.isLeaf || nextNode.type.isAtom) {
+            if (nextNode.isLeaf || cx.config.isAtom(nextNode.type)) {
                 index += step;
                 p += nextNode.length * step;
             }
@@ -856,7 +857,7 @@ function skipWord(cx, start, side, forward) {
             ({ pos, side } = next);
         }
         else {
-            let map = TextblockMap.get(block.start, block.node, cx.config.textblockLTR(block.node));
+            let map = TextblockMap.get(cx, block.start, block.node);
             let next = map.skipWord(pos, side, forward, visually);
             if (next)
                 return next;
@@ -1099,7 +1100,7 @@ function resolveTransactionInner(state, after, spec) {
             changes = b;
         }
         else {
-            changes = changes.transform(after, state.doc);
+            changes = changes.transform(state.doc, after);
         }
         effects = Transaction.Effect.mapEffects(effects, after);
     }
@@ -1284,7 +1285,7 @@ class GardState {
         return result;
     }
     textblockMap(node) {
-        return TextblockMap.get(node.start, node.node, this.textblockLTR(node.node));
+        return TextblockMap.get(this, node.start, node.node);
     }
     toJSON(fields) {
         let result = {
@@ -1324,6 +1325,7 @@ class GardState {
     get readOnly() { return this.facet(GardState.readOnly); }
     get textLTR() { return this.config.textLTR; }
     textblockLTR(plot) { return this.config.textblockLTR(plot); }
+    isAtom(type) { return this.config.isAtom(type); }
     wordAt(pos, bias = 1) {
         return wordAt(this, pos, bias);
     }
@@ -1553,6 +1555,9 @@ class GardState {
             return this.textLTR;
         }
         get visualCursorMotion() { return this.staticFacet(GardState.visualCursorMotion); }
+        isAtom(type) {
+            return type.isLeaf || (this.staticFacet(GardState.isAtom).get(type) ?? type.isAtom);
+        }
     }
     GardState.Configuration = Configuration;
     function flatten(extension, compartments, newCompartments) {
@@ -1641,6 +1646,15 @@ class GardState {
     GardState.visualCursorMotion = GardState.Facet.define({
         combine(values) { return !values.length ? true : values[0]; },
         static: true
+    });
+    GardState.isAtom = GardState.Facet.define({
+        static: true,
+        combine(inputs) {
+            let map = new Map();
+            for (let i = inputs.length - 1; i >= 0; i--)
+                map.set(inputs[i][0], inputs[i][1]);
+            return map;
+        }
     });
 ;return GardState})(GardState);
 const initField = /*@__PURE__*/GardState.Facet.define({ static: true });
@@ -1845,11 +1859,13 @@ GardSelection = /*@__PURE__*/(GardSelection => {GardSelection.selectionType = Ga
 Transaction = /*@__PURE__*/(Transaction => {Transaction.extender = GardState.Facet.define(); return Transaction})(Transaction);
 Transaction = /*@__PURE__*/(Transaction => {Transaction.appender = GardState.Facet.define(); return Transaction})(Transaction);
 
-function scanTransaction(tr) {
-    let [childList, content, marks] = tr.startState.facet(corrections);
+function scanChanges(changes, doc, corrections) {
+    let buckets = [[], [], []], [childList, content, marks] = buckets;
+    for (let c of corrections)
+        buckets[c.event].push(c);
     let plan = [];
     let queried = new Set, newNode = childList.concat(content);
-    let updateWalker, { schema } = tr.startState.doc;
+    let updateWalker, { schema } = doc;
     let checkMarks = (node, pos, parent, index) => {
         for (let correction of marks)
             if (schema.matchNode(node.type, correction.query))
@@ -1889,62 +1905,51 @@ function scanTransaction(tr) {
         },
         leavePlot() { }
     };
-    let posA = tr.startState.doc.resolve(0), posB = tr.newDoc.resolve(0);
-    for (let i = 0, { sections } = tr.changes; i < sections.length;) {
+    let pos = doc.resolve(0);
+    for (let i = 0, { sections } = changes; i < sections.length;) {
         let len = sections[i++], ins = sections[i++];
         if (ins == -1 || ins == -2 && !updateWalker) {
             if (i == sections.length)
                 break;
-            posA = posA.advance(len);
-            posB = posB.advance(len);
+            pos = pos.advance(len);
         }
         else if (ins == -2) {
             while (i < sections.length && sections[i + 1] == -2) {
                 len += sections[i++];
                 i++;
             }
-            posA = posA.advance(len);
-            posB = posB.walk(len, updateWalker);
+            pos = pos.walk(len, updateWalker);
         }
         else {
             while (i < sections.length && sections[i + 1] >= 0) {
                 len += sections[i++];
                 ins += sections[i++];
             }
-            for (let pA = posA.parent, pB = posB.parent;;) {
-                if (queried.has(pB.start - 1))
+            let start = pos.pos, end = start + ins;
+            for (let checkChildList = childList.length > 0, parent = pos.parent;;) {
+                if (queried.has(parent.start - 1))
                     break;
-                queried.add(pB.start - 1);
-                if (childList.some(c => schema.matchNode(pA.node.type, c.query))) {
-                    let chA = pA.node.content, chB = pB.node.content;
-                    if (chA.length != chB.length || chA.some((ch, i) => !ch.tag.eq(chB[i].tag))) {
-                        for (let correction of childList)
-                            if (schema.matchNode(pA.node.type, correction.query))
-                                plan.push({ node: pB, correction });
-                    }
+                queried.add(parent.start - 1);
+                if (checkChildList) {
+                    for (let correction of childList)
+                        if (schema.matchNode(parent.node.type, correction.query))
+                            plan.push({ node: parent, correction });
+                    if (start >= parent.start && end <= parent.end)
+                        checkChildList = false;
                 }
                 for (let correction of content)
-                    if (schema.matchNode(pB.node.type, correction.query))
-                        plan.push({ node: pB, correction });
-                if (!pB.parent)
+                    if (schema.matchNode(parent.node.type, correction.query))
+                        plan.push({ node: parent, correction });
+                if (!parent.parent || !content.length && !checkChildList)
                     break;
-                pA = pA.parent;
-                pB = pB.parent;
+                parent = parent.parent;
             }
-            posB = posB.walk(ins, changeWalker);
-            posA = posA.advance(len);
+            pos = pos.walk(ins, changeWalker);
         }
     }
     return plan;
 }
-const corrections = /*@__PURE__*/GardState.Facet.define({
-    combine(corrections) {
-        let buckets = [[], [], []];
-        for (let c of corrections)
-            buckets[c.event].push(c);
-        return buckets;
-    }
-});
+const corrections = /*@__PURE__*/GardState.Facet.define();
 const planCache = /*@__PURE__*/(() => new WeakMap())();
 class Correction {
     event;
@@ -1964,15 +1969,15 @@ class Correction {
         ];
     }
     extend(tr) {
-        if (!tr.docChanged)
+        if (!tr.docChanged || tr.annotation(Transaction.remote))
             return null;
         let plan = planCache.get(tr);
         if (!plan)
-            planCache.set(tr, plan = scanTransaction(tr));
+            planCache.set(tr, plan = scanChanges(tr.changes, tr.newDoc, tr.startState.facet(corrections)));
         let changes = [];
         for (let elt of plan)
             if (elt.correction == this) {
-                let change = this.correct(elt.node, tr.startState);
+                let change = this.correct(elt.node);
                 if (change)
                     changes.push(change);
             }
@@ -1982,7 +1987,7 @@ class Correction {
         let changes = [];
         state.doc.iterate((node, pos) => {
             if (state.schema.matchNode(node.type, this.query) && (this.event == 2 || node.isPlot)) {
-                let change = this.correct(state.doc.resolveNode(pos), state);
+                let change = this.correct(state.doc.resolveNode(pos));
                 if (change)
                     changes.push(change);
             }
@@ -1999,6 +2004,19 @@ class Correction {
     }
     static onMarks(query, correct) {
         return new Correction(2, query, correct);
+    }
+    static check(changes, doc, corrections) {
+        if (!corrections.length || changes.empty)
+            return null;
+        let plan = scanChanges(changes, doc, corrections), changed = [];
+        for (let c of corrections)
+            for (let elt of plan)
+                if (elt.correction == c) {
+                    let change = c.correct(elt.node);
+                    if (change)
+                        changed.push(change);
+                }
+        return changed.length ? ChangeSet.create(doc, changed) : null;
     }
 }
 
