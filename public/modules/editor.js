@@ -706,6 +706,7 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             addSection(result, len, -2);
         }
         else if (ins == -1) {
+            let endB = posB + len;
             let cur = [], curPos = 0, ranges = [cur];
             let add = (from, to) => {
                 if (from < curPos) {
@@ -720,16 +721,16 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             });
             compareDecoSet(prevDeco.points, deco.points, (a, b) => {
                 (a || PointSet.empty).compareRange(posA, b || PointSet.empty, posB, len, (pos, val) => {
-                    add(pos, pos + (val instanceof WidgetDecoration ? 0 : 1));
-                    if (val instanceof ShapeDecoration) {
-                        if (!globalChange)
-                            shapeChanges.push(pos);
-                    }
+                    add(pos, Math.min(pos + (val instanceof WidgetDecoration ? 0 : 1), endB));
+                    if (val instanceof ShapeDecoration && !globalChange)
+                        shapeChanges.push(pos);
                 });
             });
-            let joined = joinRanges(ranges), pos = posB, end = pos + len;
-            for (let i = 0; i < joined.length;) {
-                let from = Math.max(pos, joined[i++]), to = Math.min(end, joined[i++]);
+            let joined = joinRanges(ranges), pos = posB, end = pos + len, j = 0;
+            if (joined.length && joined[0] == pos && joined[1] == pos && result.length && result[result.length - 1] != -1)
+                j = 2;
+            for (; j < joined.length;) {
+                let from = Math.max(pos, joined[j++]), to = Math.min(end, joined[j++]);
                 if (from > pos)
                     addSection(result, from - pos, -1);
                 if (from <= to)
@@ -739,11 +740,15 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             if (pos < end)
                 addSection(result, end - pos, -1);
             posA += len;
-            posB += len;
+            posB = endB;
         }
         else {
             posA += len;
             posB += ins < 0 ? len : ins;
+            if (ins >= 0 && result.length && result[result.length - 2] == 0 && result[result.length - 1] == -2) {
+                result.pop();
+                result.pop();
+            }
             addSection(result, len, ins);
         }
     }
@@ -1058,7 +1063,17 @@ class DecoIterator {
                 this.widgets(pos.parent.node.tag, 2, walker);
         }
         for (; !iter.next().done;) {
-            if (iter.point) {
+            if (atomParent) {
+                let end = Math.min(to, atomParent.after), done = atomParent.after <= to;
+                walker.nodePart(atomParent.node, end - pos.pos, done);
+                pos = pos.advance(end - pos.pos);
+                if (done)
+                    this.widgets(atomParent.node.tag, 1, walker);
+                atomParent = undefined;
+                while (iter.point && iter.from < end)
+                    iter.next();
+            }
+            else if (iter.point) {
                 let value = iter.point.value;
                 if (value instanceof WidgetDecoration) {
                     walker.widget(value.widget, value.side);
@@ -1079,25 +1094,22 @@ class DecoIterator {
                     }
                 }
             }
-            else if (atomParent) {
-                let end = Math.min(to, atomParent.after), done = atomParent.after <= to;
-                walker.nodePart(atomParent.node, end - pos.pos, done);
-                pos = pos.advance(end - pos.pos);
-                if (done)
-                    this.widgets(atomParent.node.tag, 1, walker);
-                atomParent = undefined;
-            }
             else {
                 pos = pos.walk(iter.to - iter.from, wrap);
             }
         }
         if (pos.pos < to)
             pos = pos.walk(to - pos.pos, wrap);
-        let after = pos.nodeAfter;
-        if (after)
-            this.widgets(after.tag, 0, walker);
-        else
-            this.widgets(pos.parent.node.tag, 3, walker);
+        if (atomParent) {
+            walker.nodePart(atomParent.node, 0, atomParent.after == to);
+        }
+        else {
+            let after = pos.nodeAfter;
+            if (after)
+                this.widgets(after.tag, 0, walker);
+            else
+                this.widgets(pos.parent.node.tag, 3, walker);
+        }
         this.pos = pos;
     }
     tagShape(tag, active) {
@@ -1842,12 +1854,14 @@ class DocTile extends CompositeTile {
                 if (ch.isPlotContent && !ch.boundary ? pos >= off && pos <= end : pos > off && pos < end) {
                     if (ch instanceof TextTile)
                         return new TilePos(ch, pos - off, pos);
+                    else if (ch.isAtom) {
+                        i = j;
+                        break search;
+                    }
                     scan = ch;
                     off += ch.boundary;
                     if (ch.isPlotContent || ch.isWrapper)
                         parent = ch;
-                    else if (ch.isAtom)
-                        pos = end;
                     continue search;
                 }
                 off = end;
@@ -2952,7 +2966,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         flexDirection: "column",
         border: "1px solid var(--wg-border-color)"
     },
-    "&:has(wg-content:focus)": {
+    "&:has(> wg-scroller > wg-content:focus)": {
         outline: "1px solid var(--wg-highlight-color)",
         "& > wg-scroller > wg-cursor-layer": {
             animation: "steps(1) wg-blink 1.2s infinite"
@@ -3343,7 +3357,7 @@ class DOMObserver {
     onSelectionChange() {
         this.readSelectionRange();
         if (this.selectionChanged) {
-            if (this.wg.inputState.lastTouchTime > Date.now() - 100)
+            if (this.wg.inputState.lastTouchTime > Date.now() - 100 || !this.wg.focusable)
                 this.pollSelection("select.pointer");
             else
                 this.wg.scheduleFlush();
@@ -3351,7 +3365,7 @@ class DOMObserver {
     }
     pollSelection(userEvent = "select") {
         if (this.selectionChanged && !this.wg.inputState.pendingComposition &&
-            this.wg.hasFocus && hasSelection(this.wg.contentDOM, this.selectionRange)) {
+            (this.wg.hasFocus || !this.wg.focusable) && hasSelection(this.wg.contentDOM, this.selectionRange)) {
             this.selectionChanged = false;
             let sel = readDOMSelection(this.wg, this.selectionRange);
             if (!sel.eqPos(this.wg.state.selection))
@@ -3730,6 +3744,7 @@ class InputState {
     compositionPendingKey = false;
     pendingComposition = null;
     pendingDeletion = null;
+    modifiedTextNodes = new Set;
     wrappingComposition = null;
     mouseSelection = null;
     draggedContent = null;
@@ -3812,8 +3827,12 @@ class InputState {
             this.draggedContent = this.draggedContent.map(update.changes, update.state);
         if (update.transactions.length)
             this.lastKeyCode = 0;
-        if (this.composing)
+        this.modifiedTextNodes.clear();
+        if (this.composing) {
             this.composing.targetPos = update.changes.mapPos(this.composing.targetPos, -1);
+            if (this.composing.target)
+                this.modifiedTextNodes.add(this.composing.target);
+        }
     }
     findComposition() {
         let comp = this.composing;
@@ -3840,9 +3859,27 @@ class InputState {
             if (pos == null)
                 return comp.target = null;
             comp.target = newTarget;
+            this.modifiedTextNodes.add(newTarget);
             comp.targetPos = this.wg.viewState.mapPosPending(pos, -1);
         }
         return comp;
+    }
+    markModifiedNodes(range) {
+        let { startContainer: start, startOffset: startOff, endContainer: end, endOffset: endOff } = range;
+        for (;;) {
+            if (start.nodeType == 3 && !this.modifiedTextNodes.has(start))
+                this.modifiedTextNodes.add(start);
+            if (start == end && (start.nodeType != 1 || startOff == endOff))
+                break;
+            if (start.nodeType != 1 || startOff == start.childNodes.length) {
+                startOff = domIndex(start) + 1;
+                start = start.parentNode;
+            }
+            else {
+                start = start.childNodes[startOff];
+                startOff = 0;
+            }
+        }
     }
     connect() {
         this.ensureHandlers(this.wg.state);
@@ -4190,26 +4227,26 @@ const inputTypeCommands = /*@__PURE__*/(() => ({
     formatJustifyLeft: Command.bind(setAlignment, "left"),
     formatJustifyRight: Command.bind(setAlignment, "right")
 }))();
+function interpretDOMPosition(wg, node, offset, bias) {
+    if (node.nodeType == 3 && wg.viewState.pending.length && wg.inputState.modifiedTextNodes.has(node)) {
+        let parent = wg.docTile.nearest(node);
+        if (parent?.isText && parent.dom == node) {
+            let start = parent.posAtStart;
+            return wg.viewState.mapPosPending(start, bias) + offset;
+        }
+    }
+    let pos = wg.docTile.posFromDOM(node, offset);
+    return wg.viewState.mapPosPending(pos, bias);
+}
 function inputEventRange(event, wg, preferSel = false) {
     let range = event.getTargetRanges()[0];
-    let from = wg.docTile.posFromDOM(range.startContainer, range.startOffset, -1);
-    let to = range.collapsed ? from : wg.docTile.posFromDOM(range.endContainer, range.endOffset, 1);
+    let from = interpretDOMPosition(wg, range.startContainer, range.startOffset, -1);
+    let to = interpretDOMPosition(wg, range.endContainer, range.endOffset, -1);
     let { pending } = wg.viewState;
-    if (pending.length) {
-        let comp = wg.inputState.composing;
-        if (preferSel && !comp && from == to) {
-            let fromMin = wg.viewState.mapPosPending(from, -1), fromMax = wg.viewState.mapPosPending(from, 1);
-            if (fromMin <= wg.state.selection.from && fromMax >= wg.state.selection.to)
-                return wg.state.selection;
-        }
-        if (comp && comp.target == range.startContainer)
-            from = comp.targetPos + range.startOffset;
-        else
-            from = wg.viewState.mapPosPending(from, 1);
-        if (comp && comp.target == range.endContainer)
-            to = comp.targetPos + range.endOffset;
-        else
-            to = wg.viewState.mapPosPending(to, 1);
+    if (pending.length && preferSel && !wg.inputState.composing && from == to) {
+        let fromMax = interpretDOMPosition(wg, range.startContainer, range.startOffset, 1);
+        if (from <= wg.state.selection.from && fromMax >= wg.state.selection.to)
+            return wg.state.selection;
     }
     return { from, to };
 }
@@ -4219,8 +4256,9 @@ const baseHandlers = {
     },
     mousedown(wg, event) {
         wg.inputState.shiftKey = event.shiftKey;
-        if (wg.inputState.lastTouchTime > Date.now() - 500)
-            return false;        let style = null;
+        if (wg.inputState.lastTouchTime > Date.now() - 500 ||            !wg.focusable)
+            return false;
+        let style = null;
         for (let makeStyle of wg.state.facet(mouseSelectionStyle)) {
             style = makeStyle(wg, event);
             if (style)
@@ -4315,6 +4353,7 @@ const baseHandlers = {
         if (command) {
             if (browser.android && browser.chrome && (type == "deleteContentBackward" || type == "deleteContentForward")) {
                 wg.inputState.pendingDeletion = inputEventRange(event, wg);
+                wg.inputState.markModifiedNodes(event.getTargetRanges()[0]);
                 return false;
             }
             Command.dispatch(wg, command);
@@ -4361,6 +4400,8 @@ const baseHandlers = {
     input(wg, event) {
         let type = event.inputType;
         if (type == "insertCompositionText" && wg.inputState.pendingComposition) {
+            if (wg.state.readOnly)
+                return true;
             let { from, to, text } = wg.inputState.pendingComposition;
             wg.inputState.pendingComposition = null;
             let start = !wg.inputState.composing.changes;
@@ -4391,6 +4432,8 @@ const baseHandlers = {
         }
         else if (browser.android && browser.chrome && (type == "deleteContentBackward" || type == "deleteContentForward") &&
             wg.inputState.pendingDeletion) {
+            if (wg.state.readOnly)
+                return true;
             let { from, to } = wg.inputState.pendingDeletion;
             wg.inputState.pendingDeletion = null;
             wg.dispatch({
@@ -4619,6 +4662,8 @@ class Wordgard {
     get flushedState() { return this.viewState.flushedState; }
     get composing() { return !!this.inputState.composing; }
     get compositionStarted() { return this.inputState.composing && this.inputState.composing.changes > 0; }
+    get editable() { return this.state.facet(Wordgard.editable); }
+    get focusable() { return this.editable || this.contentDOM.tabIndex > -1; }
     root = document;
     get win() { return this.dom.ownerDocument.defaultView || window; }
     dom;
@@ -4643,6 +4688,7 @@ class Wordgard {
     observer;
     domReaders = [];
     domWriters = [];
+    pendingTransactionListeners = new Map();
     constructor(spec) {
         this.flushFunc = () => { if (this.willFlush)
             this.flush(); };
@@ -4703,8 +4749,10 @@ class Wordgard {
             tr = this.state.update(tr);
         else if (tr.startState != this.state)
             throw new Error("Dispatching a transaction starting from the wrong state");
-        for (let t of Transaction.append(tr))
+        let trs = Transaction.append(tr);
+        for (let t of trs)
             this.viewState.update(t);
+        this.runTransactionListeners(trs);
         this.scheduleFlush();
     }
     scheduleFlush() {
@@ -5013,6 +5061,21 @@ class Wordgard {
     }
     static scrollHandler = /*@__PURE__*/GardState.Facet.define();
     static exceptionSink = exceptionSink;
+    static transactionListener = /*@__PURE__*/GardState.Facet.define();
+    runTransactionListeners(trs) {
+        for (let l of this.state.facet(Wordgard.transactionListener)) {
+            let has = this.pendingTransactionListeners.get(l);
+            this.pendingTransactionListeners.set(l, has ? has.concat(trs) : trs);
+        }
+        for (;;) {
+            let next = this.pendingTransactionListeners.keys().next();
+            if (next.done)
+                break;
+            let trs = this.pendingTransactionListeners.get(next.value);
+            this.pendingTransactionListeners.delete(next.value);
+            next.value(trs, this);
+        }
+    }
     static updateListener = /*@__PURE__*/GardState.Facet.define();
     static editable = /*@__PURE__*/GardState.Facet.define({ combine: values => values.length ? values[0] : true });
     static cursorBlinkRate = cursorBlinkRate;
@@ -5379,9 +5442,9 @@ const Panel = /*@__PURE__*/(function (Panel) {
     Panel.show = GardState.Facet.define({
         enables: panelPlugin
     });
-    function get(wg, panel) {
+    function get(wg, constructor) {
         let plugin = wg.plugin(panelPlugin);
-        let index = plugin ? plugin.specs.indexOf(panel) : -1;
+        let index = plugin ? plugin.specs.indexOf(constructor) : -1;
         return index > -1 ? plugin.panels[index] : null;
     }
     Panel.get = get;
@@ -5505,10 +5568,10 @@ class BarButton {
             if ((flags & 32) != (this.flags & 32))
                 this.dom.style.display = flags & 32 ? "none" : "";
             if ((flags & 8) != (this.flags & 8)) {
-                if (!(flags & 8))
-                    this.dom.removeAttribute("aria-disabled");
-                else
+                if (flags & 8)
                     this.dom.setAttribute("aria-disabled", "true");
+                else
+                    this.dom.removeAttribute("aria-disabled");
             }
             if ((flags & 4) != (this.flags & 4)) {
                 if (flags & 4)
@@ -5613,9 +5676,9 @@ class BarSubmenu {
                 this.dom.style.display = flags & 32 ? "none" : "";
             if ((flags & 8) != (this.flags & 8)) {
                 if (flags & 8)
-                    this.button.removeAttribute("aria-disabled");
-                else
                     this.button.setAttribute("aria-disabled", "true");
+                else
+                    this.button.removeAttribute("aria-disabled");
             }
             if ((flags & 4) != (this.flags & 4)) {
                 if (flags & 4)
@@ -5659,9 +5722,6 @@ function instantiate(item, bar, flat) {
     flat.push(elt);
     return elt;
 }
-const menuBarPanel = /*@__PURE__*/Panel.show.of(wg => {
-    return new MenuBar(wg);
-});
 class MenuBar {
     wg;
     dom;
@@ -5678,6 +5738,7 @@ class MenuBar {
         this.init();
         this.globalClick = this.globalClick.bind(this);
     }
+    static create(wg) { return new MenuBar(wg); }
     init() {
         let elts = [];
         this.elts = elts;
@@ -5855,6 +5916,7 @@ class MenuBar {
     }
     get top() { return true; }
 }
+const menuBarPanel = /*@__PURE__*/(() => Panel.show.of(MenuBar.create))();
 function findChild(children, start) {
     for (let i = start ? 0 : children.length - 1; start ? i < children.length : i >= 0; start ? i++ : i--) {
         let child = children[i];
@@ -6515,7 +6577,7 @@ const Tooltip = /*@__PURE__*/(function (Tooltip) {
         let plugin = wg.plugin(tooltipPlugin);
         if (!plugin)
             return null;
-        let found = plugin.manager.tooltips.indexOf(tooltip);
+        let found = plugin.manager.tooltips.findIndex(typeof tooltip == "function" ? p => p.create == tooltip : p => p == tooltip);
         return found < 0 ? null : plugin.manager.tooltipViews[found];
     }
     Tooltip.get = get;

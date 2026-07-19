@@ -663,6 +663,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="The type of this plot's tag.">此情节标签的类型。</p>
 </div>
+<pre class="refcode">  <a href="#doc.Plot.contentEq" class="def" id="doc.Plot.contentEq">contentEq</a>(<a href="#doc.Plot.contentEq.other" class="def" id="doc.Plot.contentEq.other">other</a>: <a href="#doc.Plot" class="ref">Plot</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Compare the content of this plot to the content of the given plot.">将此情节的内容与给定情节的内容进行比较。</p>
+</div>
 <pre class="refcode">  <a href="#doc.Plot.inlineContent" class="def" id="doc.Plot.inlineContent">inlineContent</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent2">
@@ -1844,6 +1849,16 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Iterate over the ranges changed (either replaced or modified) by this change desc. Joins adjacent changed ranges together.">遍历此变更描述所更改（替换或修改）的范围。将相邻的更改范围合并。</p>
 </div>
+<pre class="refcode">  <a href="#doc.ChangeSet.pad" class="def" id="doc.ChangeSet.pad">pad</a>(<a href="#doc.ChangeSet.pad.before" class="def" id="doc.ChangeSet.pad.before">before</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#doc.ChangeSet.pad.after" class="def" id="doc.ChangeSet.pad.after">after</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#doc.ChangeSet" class="ref">ChangeSet</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Add skipped sections before and after this change set, so that it can apply to a larger document. Mostly useful when propagating changes from an editor displaying a smaller part of a document into the full document.">在此变更集之前和之后添加跳过的部分，以便它可以应用于更大的文档。这在将编辑器中显示的文档较小部分中的更改传播到完整文档时尤其有用。</p>
+</div>
+<pre class="refcode">  <a href="#doc.ChangeSet.clip" class="def" id="doc.ChangeSet.clip">clip</a>(<a href="#doc.ChangeSet.clip.from" class="def" id="doc.ChangeSet.clip.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#doc.ChangeSet.clip.to" class="def" id="doc.ChangeSet.clip.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#doc.ChangeSet" class="ref">ChangeSet</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Clip the set to only a sub-region. This can fail, if there are replacements across the region's sides, in which case the method returns null">将集合裁剪为仅包含子区域。如果存在跨越区域边界的替换，此操作可能会失败，此时方法将返回 null。</p>
+</div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#doc.ChangeSet.create" class="def" id="doc.ChangeSet.create">create</a>(<a href="#doc.ChangeSet.create.doc" class="def" id="doc.ChangeSet.create.doc">doc</a>: <a href="#doc.Plot.Doc" class="ref">Plot.Doc</a>, <a href="#doc.ChangeSet.create.spec" class="def" id="doc.ChangeSet.create.spec">spec</a>: <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a>): <a href="#doc.ChangeSet" class="ref">ChangeSet</a>
 </pre>
 <div class="doc indent2">
@@ -2958,7 +2973,7 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="This facet controls the value of the readOnly getter, which is consulted by commands and extensions that implement editing functionality to determine whether they should apply. It defaults to false, but when its highest-precedence value is true, the state is considered read-only, and such functions won't change the document.">此方面控制 <a href="#state.GardState.readOnly"><code>readOnly</code> 获取器</a> 的值，该值会被实现编辑功能的命令和扩展所查询，以判断是否应应用这些功能。其默认值为 false，但当其最高优先级的值为 <code>true</code> 时，该状态被视为只读，此类函数将不会修改文档。</p>
-<p data-x-en="Not to be confused with Wordgard.editable, which controls whether the editor's DOM is set to be editable (and thus focusable).">请勿与 <a href="#editor.Wordgard.editable"><code>Wordgard.editable</code></a> 混淆，后者控制编辑器的 DOM 是否被设置为可编辑（从而可聚焦）。</p>
+<p data-x-en="Not to be confused with editable, which controls whether the editor's DOM is set to be editable (and thus focusable).">请勿与 <a href="#editor.Wordgard.editable"><code>editable</code></a> 混淆，后者用于控制编辑器的 DOM 是否被设置为可编辑（从而可聚焦）。</p>
 </div>
 <pre class="refcode"><a href="#state.GardState.textLTR_2" class="def" id="state.GardState.textLTR_2">GardState.textLTR</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>, <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>&gt;
 </pre>
@@ -3837,6 +3852,16 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Indicates whether the user is currently in composing state. Note that on some platforms, like Android, this will be the case a lot, since just putting the cursor on a word starts a composition there.">指示用户当前是否处于输入状态。请注意，在某些平台（如 Android）上，这种情况会非常常见，因为只需将光标置于某个单词上，就会在该处开始输入。</p>
 </div>
+<pre class="refcode">  <a href="#editor.Wordgard.editable" class="def" id="editor.Wordgard.editable">editable</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Queries whether the editor's DOM is editable.">查询编辑器的 DOM 是否<a href="#editor.Wordgard.editable_2">可编辑</a>。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Wordgard.focusable" class="def" id="editor.Wordgard.focusable">focusable</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Returns true if the editor can be focused (is editable or has a tabindex).">如果编辑器可以获得焦点（可<a href="#editor.Wordgard.editable">编辑</a>或具有 tabindex），则返回 true。</p>
+</div>
 <pre class="refcode">  <a href="#editor.Wordgard.root" class="def" id="editor.Wordgard.root">root</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/API/DocumentOrShadowRoot">DocumentOrShadowRoot</a>
 </pre>
 <div class="doc indent2">
@@ -3863,6 +3888,11 @@ addEventListener("load", function() {
 <p data-x-en="All editor state updates go through this. It takes a transaction or transaction spec and updates the editor to show the new state produced by that transaction. This function is bound to the editor instance, so it does not have to be called as a method.">所有编辑器状态更新都通过此函数进行。它接收一个事务或事务规范，并更新编辑器以显示该事务所产生的新状态。此函数已绑定到编辑器实例，因此无需作为方法调用。</p>
 <p data-x-en="Will apply transaction appenders and include any extra transactions they produce in the editor's state.">将应用 <a href="#state.Transaction.appender">事务追加器</a>，并将它们产生的任何额外事务包含在编辑器的状态中。</p>
 <p data-x-en="Updates will be immediately be reflected in the object's state property, but updating the DOM will be deferred to the next display update.">更新将立即反映在对象的 <code>state</code> 属性中，但 DOM 的更新将推迟到下一次显示更新。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Wordgard.flush" class="def" id="editor.Wordgard.flush">flush</a>()
+</pre>
+<div class="doc indent2">
+<p data-x-en="Force a flush on the editor content, updating its DOM representation for any pending changes.">强制刷新编辑器内容，更新其 DOM 表示以反映任何待处理的变化。</p>
 </div>
 <pre class="refcode">  <a href="#editor.Wordgard.scheduleDOMRead" class="def" id="editor.Wordgard.scheduleDOMRead">scheduleDOMRead</a>(<a href="#editor.Wordgard.scheduleDOMRead.read" class="def" id="editor.Wordgard.scheduleDOMRead.read">read</a>: (<a href="#editor.Wordgard.scheduleDOMRead.read.wg" class="def" id="editor.Wordgard.scheduleDOMRead.read.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>) =&gt; <span class="keyword">void</span>)
 </pre>
@@ -4110,14 +4140,22 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Allows you to provide a function that should be called when the library catches an exception from an extension (mostly from plugins, but may be used by other extensions to route exceptions from user-code-provided callbacks). This is mostly useful for debugging and logging. See Wordgard.logException.">允许您提供一个函数，当库捕获来自扩展（主要是插件，但也可由其他扩展用于路由用户代码提供的回调中的异常）的异常时调用该函数。这主要用于调试和日志记录。参见 <a href="#editor.Wordgard.logException"><code>Wordgard.logException</code></a>。</p>
 </div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.transactionListener" class="def" id="editor.Wordgard.transactionListener">transactionListener</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
+    <a href="#editor.Wordgard.transactionListener.trs" class="def" id="editor.Wordgard.transactionListener.trs">trs</a>: <span class="keyword">readonly</span> <a href="#state.Transaction" class="ref">Transaction</a>[],
+    <a href="#editor.Wordgard.transactionListener.wg" class="def" id="editor.Wordgard.transactionListener.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>
+  ) =&gt; <span class="keyword">void</span>&gt;
+</pre>
+<div class="doc indent2">
+<p data-x-en="Registers a listener function to be called whenever a set of transactions is applied to the editor. This function may dispatch additional transactions, if needed.">注册一个监听函数，每当一组事务应用于编辑器时调用该函数。如有需要，此函数可分派额外的交易。</p>
+</div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.updateListener" class="def" id="editor.Wordgard.updateListener">updateListener</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
     <a href="#editor.Wordgard.updateListener.update" class="def" id="editor.Wordgard.updateListener.update">update</a>: <a href="#editor.Wordgard.Update" class="ref">Wordgard.Update</a>
   ) =&gt; <span class="keyword">void</span>&gt;
 </pre>
 <div class="doc indent2">
-<p data-x-en="A facet that can be used to register a function to be called after the editor updates. Dispatching transactions from such a function is allowed, but will cause a new, separate update to happen.">一个可用于注册在编辑器更新后调用的函数的 Facet。允许从此类函数中分发事务，但这将导致发生一次新的、独立的更新。</p>
+<p data-x-en="A facet that can be used to register a function to be called after the editor flushes updates to the DOM. Dispatching transactions from such a function is allowed, but will cause a new, separate update to happen.">一个可用于注册在编辑器将更新刷新到 DOM 后调用的函数的 Facet。从此类函数中分发事务是允许的，但会触发一次新的、独立的更新。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.editable" class="def" id="editor.Wordgard.editable">editable</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>, <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>&gt;
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.editable_2" class="def" id="editor.Wordgard.editable_2">editable</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>, <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="Facet that controls whether the editor content DOM is editable. When its highest-precedence value is false, the element will not have its contenteditable attribute set. (Note that this doesn't affect API calls that change the editor content, even when those are bound to keys or buttons. See the readOnly facet for that.)">控制编辑器内容 DOM 是否可编辑的 Facet。当其最高优先级值为 <code>false</code> 时，该元素将不会设置 <code>contenteditable</code> 属性。（请注意，这不会影响更改编辑器内容的 API 调用，即使这些调用绑定到了按键或按钮。请参见 <a href="#state.GardState.readOnly"><code>readOnly</code> facet</a>。）</p>
@@ -5103,7 +5141,10 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Opening a panel is done by providing a constructor function for the panel through this facet. (The panel is closed again when its constructor is no longer provided.) Values of null are ignored.">通过此方面为面板提供构造函数即可打开面板。（当不再提供其构造函数时，面板将再次关闭。）<code>null</code> 值将被忽略。</p>
 </div>
-<pre class="refcode"><a href="#editor.Panel.get" class="def" id="editor.Panel.get">Panel.get</a>(<a href="#editor.Panel.get.wg" class="def" id="editor.Panel.get.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>, <a href="#editor.Panel.get.panel" class="def" id="editor.Panel.get.panel">panel</a>: <a href="#editor.Panel.Constructor" class="ref">Panel.Constructor</a>): <a href="#editor.Panel" class="ref">Panel</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+<pre class="refcode"><a href="#editor.Panel.get" class="def" id="editor.Panel.get">Panel.get</a>&lt;<a href="#editor.Panel.get.T" class="def" id="editor.Panel.get.T">T</a> <span class="keyword">extends</span> <a href="#editor.Panel" class="ref">Panel</a>&gt;(
+  <a href="#editor.Panel.get.wg" class="def" id="editor.Panel.get.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>,
+  <a href="#editor.Panel.get.constructor" class="def" id="editor.Panel.get.constructor">constructor</a>: (<a href="#editor.Panel.get.constructor.wg" class="def" id="editor.Panel.get.constructor.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>) =&gt; <a href="#editor.Panel.get.T" class="ref">T</a>
+): <a href="#editor.Panel.get.T" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
 <div class="doc indent1">
 <p data-x-en="Get the active panel created by the given constructor, if any. This can be useful when you need access to your panels' DOM structure.">获取由给定构造函数创建的当前活动面板（如果存在）。当您需要访问面板的 DOM 结构时，此方法非常有用。</p>
@@ -5334,10 +5375,18 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Facet to which an extension can add a value to show a tooltip.">扩展可向其添加值以显示工具提示的 Facet。</p>
 </div>
-<pre class="refcode"><a href="#editor.Tooltip.get" class="def" id="editor.Tooltip.get">Tooltip.get</a>(<a href="#editor.Tooltip.get.wg" class="def" id="editor.Tooltip.get.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>, <a href="#editor.Tooltip.get.tooltip" class="def" id="editor.Tooltip.get.tooltip">tooltip</a>: <a href="#editor.Tooltip" class="ref">Tooltip</a>): <a href="#editor.Tooltip.View" class="ref">Tooltip.View</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+<pre class="refcode"><a href="#editor.Tooltip.get" class="def" id="editor.Tooltip.get">Tooltip.get</a>&lt;<a href="#editor.Tooltip.get.T" class="def" id="editor.Tooltip.get.T">T</a> <span class="keyword">extends</span> <a href="#editor.Tooltip" class="ref">Tooltip</a>&gt;(
+  <a href="#editor.Tooltip.get.wg" class="def" id="editor.Tooltip.get.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>,
+  <a href="#editor.Tooltip.get.tooltip" class="def" id="editor.Tooltip.get.tooltip">tooltip</a>: <a href="#editor.Tooltip.get.T" class="ref">T</a>
+): <a class="ref" href="https://www.typescriptlang.org/docs/handbook/utility-types.html#returntypetype">ReturnType</a>&lt;<a href="#editor.Tooltip.get.T" class="ref">T</a>[<span class="literal">"create"</span>]&gt; | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<pre class="refcode"><a href="#editor.Tooltip.get" class="def">Tooltip.get</a>&lt;<a href="#editor.Tooltip.get.T_2" class="def" id="editor.Tooltip.get.T_2">T</a> <span class="keyword">extends</span> <a href="#editor.Tooltip.View" class="ref">Tooltip.View</a>&gt;(
+  <a href="#editor.Tooltip.get.wg_2" class="def" id="editor.Tooltip.get.wg_2">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>,
+  <a href="#editor.Tooltip.get.create" class="def" id="editor.Tooltip.get.create">create</a>: (<a href="#editor.Tooltip.get.create.wg" class="def" id="editor.Tooltip.get.create.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>) =&gt; <a href="#editor.Tooltip.get.T_2" class="ref">T</a>
+): <a href="#editor.Tooltip.get.T_2" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="Get the active tooltip view for a given tooltip, if available.">获取给定提示框的可用活动提示视图。</p>
+<p data-x-en="Get the active tooltip view for a given tooltip or tooltip constructor, if available.">获取给定工具提示或工具提示构造函数的活动工具提示视图（如果可用）。</p>
 </div>
 <pre class="refcode"><a href="#editor.Tooltip.reposition" class="def" id="editor.Tooltip.reposition">Tooltip.reposition</a>(<a href="#editor.Tooltip.reposition.wg" class="def" id="editor.Tooltip.reposition.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>): <span class="keyword">void</span>
 </pre>

@@ -65,13 +65,13 @@ function renderLoggable(value          , space        , top = false)       {
         space -= 2
       }
       let next = space > 0 && renderLoggable(elt, space)
-      let nextSize = next ? next.textContent.length : 0
+      let nextSize = next ? next.textContent .length : 0
       if (space - nextSize <= 0) {
         children.push(etcButton(() => expandObj(wrap , array)))
         break
       }
       space -= nextSize
-      children.push(next)
+      children.push(next        )
     }
     children.push("]")
     return wrap = span("log-array", ...children)
@@ -94,7 +94,7 @@ function renderLoggable(value          , space        , top = false)       {
         try { next = renderLoggable(object[prop], space) }
         catch (_) {}
       }
-      let nextSize = next ? prop.length + 2 + next.textContent.length : 0
+      let nextSize = next ? prop.length + 2 + next.textContent .length : 0
       if (!next || space - nextSize <= 0) {
         children.push(etcButton(() => expandObj(wrap , object)))
         break
@@ -119,17 +119,17 @@ function expandObj(node             , val     ) {
   }
   if (Array.isArray(val)) {
     for (let i = 0; i < val.length; i++) addProp(String(i))
-    node.parentNode.replaceChild(span("log-array", "[", content, "]"), node)
+    node.parentNode .replaceChild(span("log-array", "[", content, "]"), node)
   } else {
     for (let prop of Object.keys(val)) addProp(prop)
     let children                    = ["{", content, "}"]
     if ((node.firstChild               ).className == "tok-typeName") children.unshift(node.firstChild )
-    node.parentNode.replaceChild(span("log-object", ...children), node)
+    node.parentNode .replaceChild(span("log-object", ...children), node)
   }
 }
 
 function parseStack(stack        ) {
-  return stack.split("\n").map(line => /^\s*([\w$*.]*)/.exec(line)[1] || "<anonymous>")
+  return stack.split("\n").map(line => /^\s*([\w$*.]*)/.exec(line) [1] || "<anonymous>")
 }
 
 function expandError(target             , val     ) {
@@ -182,7 +182,7 @@ window.addEventListener("keydown", e => {
     run()
     e.preventDefault()
   }
-})
+}, {capture: true})
 
 for (let i = 0; i < tabs.length; i++)
   tabButtons[i].addEventListener("click", () => toggleTab(i))
@@ -196,7 +196,7 @@ for (let i = 0; i < tabs.length; i++)
 
 let urlCode = /[?&]code=([^&]+)/.exec(document.location.search)
 let urlBCode = /[?&]c=([^&]+)/.exec(document.location.search) || /^#c=([^&]+)/.exec(document.location.hash)
-let view
+let view            
 
 function encParam(code        ) {
   return btoa(code.replace(/[\xff-\uffff]/g, ch => `\xff${String.fromCharCode(ch.charCodeAt(0) & 0xff, ch.charCodeAt(0) >> 8)}`))
@@ -229,7 +229,7 @@ function run() {
     if (event.data.log) showLog(event.data.elements, event.data.log, tabs[2])
   }
   frame.onload = () => {
-    frame.contentWindow.postMessage({type: "load", code}, "*", [channel.port1])
+    frame.contentWindow .postMessage({type: "load", code}, "*", [channel.port1])
   }
   tabs[1].appendChild(frame)
   return true

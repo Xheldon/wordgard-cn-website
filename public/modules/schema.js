@@ -31,6 +31,7 @@ function paragraph() {
         run: Command.bind(setTextblockType, Paragraph),
         active: selectionInType(Paragraph),
         label: phrases.ref("paragraph"),
+        enable: s => !s.readOnly,
         parent: Menu.Submenu.textblockStyle,
         rank: 10
     });
@@ -53,6 +54,7 @@ function heading() {
         run: Command.bind(setTextblockType, Heading.of(1)),
         active: selectionInType(Heading.of(1)),
         label: phrases.ref("heading_1"),
+        enable: s => !s.readOnly,
         parent: Menu.Submenu.textblockStyle,
         rank: 50
     });
@@ -60,6 +62,7 @@ function heading() {
         run: Command.bind(setTextblockType, Heading.of(2)),
         active: selectionInType(Heading.of(2)),
         label: phrases.ref("heading_2"),
+        enable: s => !s.readOnly,
         parent: Menu.Submenu.textblockStyle,
         rank: 51
     });
@@ -67,6 +70,7 @@ function heading() {
         run: Command.bind(setTextblockType, Heading.of(3)),
         active: selectionInType(Heading.of(3)),
         label: phrases.ref("heading_3"),
+        enable: s => !s.readOnly,
         parent: Menu.Submenu.textblockStyle,
         rank: 52
     });
@@ -85,6 +89,7 @@ function codeBlock() {
         run: Command.bind(setTextblockType, CodeBlock),
         active: selectionInType(CodeBlock),
         label: phrases.ref("code_block"),
+        enable: s => !s.readOnly,
         parent: Menu.Submenu.textblockStyle,
         rank: 30
     });
@@ -133,6 +138,7 @@ function alignmentAtCursor(state) {
         description: phrases.ref("alignment"),
         parent: Menu.Group.block,
         arrow: false,
+        enable: s => !s.readOnly,
         rank: 10,
         content: [alignment.buttonStart, alignment.buttonEnd, alignment.buttonCenter]
     });
@@ -188,6 +194,7 @@ function directionAtCursor(state) {
         description: phrases.ref("text_dir"),
         parent: Menu.Group.block,
         arrow: false,
+        enable: s => !s.readOnly,
         rank: 20,
         content: [direction.buttonLTR, direction.buttonRTL, direction.buttonAuto]
     });
@@ -208,6 +215,7 @@ function blockquote() {
             icon: "M75 75a6 6 0 0 0 6-6V53a6 6 0 0 0-6-6h-9q0-3 0-7 1-3 2-6t3-4q2-2 5-2V19q-5 0-9 2a21 21 0 0 0-7 6 31 31 0 0 0-4 9A48 48 0 0 0 56 47V69a5 5 0 0 0 6 6zm-37 0a6 6 0 0 0 6-6V53a6 6 0 0 0-6-6H29q0-3 0-7 1-3 2-6 1-3 3-4 2-2 5-2V19q-5 0-9 2a21 21 0 0 0-7 6 31 31 0 0 0-4 9A48 48 0 0 0 19 47V69a6 6 0 0 0 6 6z"
         },
         description: phrases.ref("toggle_quote"),
+        enable: s => !s.readOnly,
         parent: Menu.Group.block,
         rank: 40
     });
@@ -261,6 +269,7 @@ function bulletList(config = {}) {
             directional: true
         },
         description: phrases.ref("toggle_bullet_list"),
+        enable: s => !s.readOnly,
         parent: Menu.Group.block,
         rank: 20
     });
@@ -280,6 +289,7 @@ function orderedList(config = {}) {
             directional: true
         },
         description: phrases.ref("toggle_ordered_list"),
+        enable: s => !s.readOnly,
         parent: Menu.Group.block,
         rank: 30
     });
@@ -809,13 +819,14 @@ const resizeHandlers = /*@__PURE__*/(() => [
             icon: "M38 34a9 9 0 1 1-19 0 9 9 0 0 1 19 0M9 13A9 9 0 0 0 0 22v56A9 9 0 0 0 9 88h81a9 9 0 0 0 9-9v-56A9 9 0 0 0 91 13zm81 6a3 3 0 0 1 3 3v38l-24-12a3 3 0 0 0-4 1l-23 23-17-11a3 3 0 0 0-4 0L6 75v3L6 78v-56a3 3 0 0 1 3-3z"
         },
         description: imagePhrases.ref("insert_image"),
+        enable: s => !s.readOnly,
         parent: Menu.Group.insert,
         rank: 30,
     });
     image.dropHandler = GardState.prec.lowest(Wordgard.domEventHandler("drop", (event, wg) => {
         let { state } = wg, upload = state.facet(imageUploader)[0];
         const type = state.schema.has(Image) ? Image : state.schema.has(Figure) ? Figure : null;
-        if (!type || !upload || !event.dataTransfer)
+        if (state.readOnly || !type || !upload || !event.dataTransfer)
             return false;
         let files = event.dataTransfer.files, uploads = [];
         for (let i = 0; i < files.length; i++) {
@@ -842,6 +853,8 @@ const resizeHandlers = /*@__PURE__*/(() => [
 
 function setColor(wg, mark, value) {
     let { state } = wg, { selection } = state;
+    if (state.readOnly)
+        return;
     if (selection instanceof GardSelection.Text && selection.empty) {
         let selMarks = selection.marks || state.sel.head.marks();
         let newMarks = value ? mark.of(value).addToSet(selMarks) : mark.removeFromSet(selMarks);
@@ -1090,6 +1103,7 @@ function color() {
         description: phrases.ref("text_color"),
         arrow: false,
         parent: Menu.Group.inline,
+        enable: s => !s.readOnly,
         rank: 80,
         content: [colorPicker]
     });
@@ -1114,12 +1128,15 @@ const backgroundPicker = /*@__PURE__*/Menu.CustomControl.define({
         description: phrases.ref("background_color"),
         arrow: false,
         parent: Menu.Group.inline,
+        enable: s => !s.readOnly,
         rank: 85,
         content: [backgroundPicker]
     });
 ;return backgroundColor})(backgroundColor);
 
 function toggleLink(wg) {
+    if (wg.state.readOnly)
+        return false;
     let open = Dialog.get(wg, "wg-link-dialog");
     if (open) {
         if (open.dom.contains(wg.contentDOM.ownerDocument.activeElement))
@@ -1236,7 +1253,7 @@ function link() {
             return found;
         },
         enable(state) {
-            return !state.selection.empty;
+            return !state.readOnly && !state.selection.empty;
         },
         label: {
             icon: "M29 41 21 49a19 19 0 1 0 27 27l11-11A19 19 0 0 0 54 34L50 38a6 6 0 0 0-1 1 13 13 0 0 1 5 22L43 72a12 12 0 1 1-18-18l5-5a25 25 0 0 1-1-8zM41 29A19 19 0 0 0 46 59l5-5a13 13 0 0 1-6-21L57 22a12 12 0 1 1 18 18l-5 5c1 3 1 5 1 8l9-9a19 19 0 1 0-27-27z"

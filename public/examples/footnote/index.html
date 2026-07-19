@@ -1,0 +1,312 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Footnote Example</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><script type="importmap">{"imports":{"wordgard/doc":"./../../modules/doc.js","wordgard/state":"./../../modules/state.js","wordgard/editor":"./../../modules/editor.js","wordgard/command":"./../../modules/command.js","wordgard/history":"./../../modules/history.js","wordgard/types":"./../../modules/types.js","wordgard/schema":"./../../modules/schema.js","wordgard/table":"./../../modules/table.js","wordgard/collab":"./../../modules/collab.js","wordgard/phrases":"./../../modules/phrases.js","style-mod":"./../../modules/style-mod.js","@marijn/find-cluster-break":"./../../modules/find-cluster-break.js","crelt":"./../../modules/crelt.js"}}</script><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/examples/footnote/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/">文档</a>
+  <a href="./../../examples/" class="active">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><article><h1 id="h-example-footnotes">示例：脚注</h1>
+<p data-x-en="This example shows how you can set up Wordgard to edit some kind of nodes in a sub-editor, rather than normally. It defines a footnote plot, which is an inline node with content, but which the outer editor renders as an atomic element.">本示例展示了如何配置 Wordgard，使其在子编辑器中编辑某种节点，而非采用常规方式。它定义了一个脚注图，该图是一个带有内容的内联节点，但外部编辑器将其渲染为原子元素。</p>
+<p data-x-en="When you select such a plot, the editor pops up a tooltip with a nested Wordgard editor that contains the footnote's text. You can interact with this editor to edit the footnote's content.">选择此类图表时，编辑器会弹出一个包含脚本文本的嵌套 Wordgard 编辑器的工具提示。您可以与该编辑器交互以编辑脚注内容。</p>
+<div id="editor"></div><hr class="floral"><h2 id="h-implementation">实现</h2>
+<p data-x-en="Though at the end of the example, we roll the feature into an extension bundle you can simply drop into your editor configuration, that bundle consists of a whole bunch of separate pieces.">尽管在示例的末尾，我们将该功能打包成一个可直接放入编辑器配置的扩展包，但该包实际上由许多独立的组件组成。</p>
+<p data-x-en="The basis of the whole feature is a plot type. Our footnotes support only inline content.">整个功能的基础是情节类型。我们的脚注仅支持行内内容。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Plot</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">Footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">Plot</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-string">"Footnote"</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">inline</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">inlineContent</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">shape</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">element</span><span class="tok-punctuation">:</span> <span class="tok-string">"footnote"</span><span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">selectable</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The default way to render these use a <footnote> element. This will be used in clipboard content or serialized HTML. In the editor itself, we don't want to see the content of a footnote until we activate it. So this tag decoration, with associated CSS, defines it to look like a superscript number, getting the numbers from a CSS counter.">渲染这些内容的默认方式是使用 <code>&lt;footnote&gt;</code> 元素。该元素将用于剪贴板内容或序列化的 HTML 中。在编辑器本身中，我们希望在激活之前不显示脚注的内容。因此，此带有相关 CSS 的标签装饰将其定义为上标数字，数字由 CSS 计数器提供。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Wordgard</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">Decoration</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Elt</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">footnoteShape</span> <span class="tok-operator">=</span>
+  <span class="tok-variableName">Decoration</span><span class="tok-operator">.</span><span class="tok-propertyName">Tag</span><span class="tok-operator">.</span><span class="tok-propertyName">shape</span><span class="tok-punctuation">(</span><span class="tok-variableName">Footnote</span><span class="tok-punctuation">,</span> <span class="tok-variableName">Elt</span><span class="tok-operator">.</span><span class="tok-propertyName">mk</span><span class="tok-punctuation">(</span><span class="tok-string">"wg-footnote"</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">footnoteStyle</span> <span class="tok-operator">=</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">styles</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-string">"wg-content"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">counterReset</span><span class="tok-punctuation">:</span> <span class="tok-string">"wg-footnote"</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-string">"wg-footnote"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">cursor</span><span class="tok-punctuation">:</span> <span class="tok-string">"pointer"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">display</span><span class="tok-punctuation">:</span> <span class="tok-string">"inline-block"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">verticalAlign</span><span class="tok-punctuation">:</span> <span class="tok-string">"super"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">fontSize</span><span class="tok-punctuation">:</span> <span class="tok-string">"75%"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">borderRadius</span><span class="tok-punctuation">:</span> <span class="tok-string">"1px"</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">counterIncrement</span><span class="tok-punctuation">:</span> <span class="tok-string">"wg-footnote"</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-string">"wg-footnote:after"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">content</span><span class="tok-punctuation">:</span> <span class="tok-string">"counter(wg-footnote)"</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-string">"wg-footnote-tooltip"</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">maxWidth</span><span class="tok-punctuation">:</span> <span class="tok-string">"20em"</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The tooltip showing a footnote's content is displayed only when the tooltip is selected—either as a node selection, or with a selection inside it. The latter is used to make the editor menu work even when you are editing a footnote; by synchronizing the selection in the outer editor to the current selection in the inner editor, menu commands automatically do the right thing.">显示脚注内容的工具提示仅在工具提示被选中时才会显示——无论是作为节点选中，还是在其内部进行选中。后一种方式用于确保即使在编辑脚注时，编辑器菜单也能正常工作；通过将外部编辑器的选区与内部编辑器的当前选区同步，菜单命令即可自动执行正确的操作。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">GardState</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">GardSelection</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">state</span><span class="tok-punctuation">:</span> <span class="tok-typeName">GardState</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-punctuation">{</span><span class="tok-propertyName">from</span><span class="tok-punctuation">}</span> <span class="tok-operator">=</span> <span class="tok-variableName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">sel</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span> <span class="tok-keyword">instanceof</span> <span class="tok-variableName">GardSelection</span><span class="tok-operator">.</span><span class="tok-propertyName">Node</span> <span class="tok-operator">&amp;&amp;</span>
+      <span class="tok-variableName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-operator">.</span><span class="tok-propertyName">type</span> <span class="tok-operator">==</span> <span class="tok-variableName">Footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">type</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">return</span> <span class="tok-variableName">from</span><span class="tok-operator">.</span><span class="tok-propertyName">advance</span><span class="tok-punctuation">(</span><span class="tok-number">1</span><span class="tok-punctuation">)</span><span class="tok-operator">.</span><span class="tok-propertyName">parent</span><span class="tok-operator">!</span>
+  <span class="tok-keyword">return</span> <span class="tok-variableName">from</span><span class="tok-operator">.</span><span class="tok-propertyName">matchingParent</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">p</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">p</span><span class="tok-operator">.</span><span class="tok-propertyName">type</span> <span class="tok-operator">==</span> <span class="tok-variableName">Footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">type</span><span class="tok-punctuation">)</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="This extension makes a tooltip pop up whenever the selection is on or in a tooltip.">此扩展会在选区位于工具提示上或工具提示内时弹出工具提示。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Tooltip</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">footnoteTooltip</span> <span class="tok-operator">=</span> <span class="tok-variableName">Tooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">show</span><span class="tok-operator">.</span><span class="tok-propertyName">compute</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">state</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">state</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">return</span> <span class="tok-variableName">footnote</span> <span class="tok-operator">?</span> <span class="tok-punctuation">{</span>
+    <span class="tok-propertyName tok-definition">pos</span><span class="tok-punctuation">:</span> <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">before</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">create</span><span class="tok-punctuation">:</span> <span class="tok-variableName">FootnoteTooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">,</span>
+    <span class="tok-propertyName tok-definition">above</span><span class="tok-punctuation">:</span> <span class="tok-bool">false</span>
+  <span class="tok-punctuation">}</span> <span class="tok-operator">:</span> <span class="tok-keyword">null</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The FootnoteTooltip creates an inner editor holding the tooltip content, and wires it up in such a way that any editing that happens inside it is propagated back to the outer editor, while also propagating changes inside the tooltip that happen on the outer editor (for example through the menu) into the inner editor."><code>FootnoteTooltip</code> 会创建一个包含提示内容的内部编辑器，并将其进行连接，使得在内部编辑器中发生的任何编辑操作都会传播回外部编辑器，同时，在外部编辑器中发生的更改（例如通过菜单）也会传播到内部编辑器中。</p>
+<p data-x-en="This function handles the propagation from the inner to the outer editor. To avoid re-propagating changes back to the editor they came from, we attach a footnoteSync annotation to such transactions, so that we know to not propagate them back again.">此函数负责从内部编辑器向外层编辑器传播变更。为避免将变更重新传播回其来源的编辑器，我们会向此类事务附加一个 <code>footnoteSync</code> 注解，以便我们知道不再将其反向传播。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Transaction</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/state"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">footnoteSync</span> <span class="tok-operator">=</span> <span class="tok-variableName">Transaction</span><span class="tok-operator">.</span><span class="tok-propertyName">Annotation</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span>&lt;<span class="tok-typeName">boolean</span>&gt;<span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">propagateTransactions</span><span class="tok-punctuation">(</span>
+  <span class="tok-variableName tok-definition">outer</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">,</span>
+  <span class="tok-variableName tok-definition">trs</span><span class="tok-punctuation">:</span> <span class="tok-keyword">readonly</span> <span class="tok-typeName">Transaction</span><span class="tok-punctuation">[</span><span class="tok-punctuation">]</span>
+<span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">outer</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">footnote</span><span class="tok-punctuation">)</span> <span class="tok-keyword">for</span> <span class="tok-punctuation">(</span><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">tr</span> <span class="tok-keyword">of</span> <span class="tok-variableName">trs</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">annotation</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnoteSync</span><span class="tok-punctuation">)</span> <span class="tok-operator">||</span>
+        <span class="tok-operator">!</span><span class="tok-punctuation">(</span><span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">docChanged</span> <span class="tok-operator">||</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">return</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">selection</span> <span class="tok-operator">=</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span> <span class="tok-operator">&amp;&amp;</span>
+      <span class="tok-variableName">GardSelection</span><span class="tok-operator">.</span><span class="tok-propertyName">range</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span> <span class="tok-operator">+</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">anchor</span><span class="tok-punctuation">,</span>
+                          <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span> <span class="tok-operator">+</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">head</span><span class="tok-punctuation">,</span>
+                          <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">headSide</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">lenAfter</span> <span class="tok-operator">=</span> <span class="tok-variableName">outer</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-operator">.</span><span class="tok-propertyName">length</span> <span class="tok-operator">-</span> <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">end</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">changes</span> <span class="tok-operator">=</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">pad</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span><span class="tok-punctuation">,</span> <span class="tok-variableName">lenAfter</span><span class="tok-punctuation">)</span>
+    <span class="tok-variableName">outer</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">selection</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">changes</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">annotations</span><span class="tok-punctuation">:</span> <span class="tok-variableName">footnoteSync</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-bool">true</span><span class="tok-punctuation">)</span>
+    <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="When a transaction changes te document or selection, those changes are applied to the outer editor. Selections can simply be offset by the footnote's position. Changes have to be padded to fit the bigger document.">当交易更改文档或选区时，这些更改将应用于外部编辑器。选区可以简单地根据脚注的位置进行偏移。更改需要进行填充以适应更大的文档。</p>
+<p data-x-en="The tooltip is a class implementing Tooltip.View. It creates an inner editor with a schema that makes the document have inline content, so that it can directly hold the content of the footnote. It also wires up Enter and Escape to move focus back to the outer editor, and adds custom handlers for undo and redo that route them to the parent editor, so that both editors share a single history.">工具提示是一个实现了 <a href="../../docs/ref/#editor.Tooltip.View"><code>Tooltip.View</code></a> 的类。它创建一个内部编辑器，其模式使文档具有行内内容，从而可以直接容纳脚注的内容。它还配置了 <code>Enter</code> 和 <code>Escape</code> 键，以便将焦点移回外部编辑器，并添加了自定义的撤销和重做处理程序，将它们路由到父编辑器，从而使两个编辑器共享单一的历史记录。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Pos</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/doc"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Command</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">undo</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">redo</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/command"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">KeyBinding</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/editor"</span>
+<span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">inlineDoc</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">inlineMarks</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">image</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">lineBreak</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/schema"</span>
+
+<span class="tok-keyword">class</span> <span class="tok-className">FootnoteTooltip</span> <span class="tok-keyword">implements</span> <span class="tok-typeName">Tooltip</span><span class="tok-operator">.</span><span class="tok-typeName">View</span> <span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">dom</span><span class="tok-punctuation">:</span> <span class="tok-typeName">HTMLElement</span>
+  <span class="tok-propertyName tok-definition">inner</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span>
+  <span class="tok-propertyName tok-definition">start</span><span class="tok-punctuation">:</span> <span class="tok-typeName">number</span>
+
+  <span class="tok-propertyName tok-definition">constructor</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">footnote</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Pos</span><span class="tok-operator">.</span><span class="tok-typeName">Plot</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span> <span class="tok-operator">=</span> <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span>
+    <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">dom</span> <span class="tok-operator">=</span> <span class="tok-variableName">document</span><span class="tok-operator">.</span><span class="tok-propertyName">createElement</span><span class="tok-punctuation">(</span><span class="tok-string">"wg-footnote-tooltip"</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span> <span class="tok-operator">=</span> <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">initEditor</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">footnote</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+
+  <span class="tok-propertyName tok-definition">initEditor</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">footnote</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Pos</span><span class="tok-operator">.</span><span class="tok-typeName">Plot</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">config</span> <span class="tok-operator">=</span> <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">Configuration</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span>
+      <span class="tok-variableName">inlineDoc</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span> <span class="tok-variableName">inlineMarks</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span> <span class="tok-variableName">image</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span> <span class="tok-variableName">lineBreak</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">transactionListener</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">trs</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+        <span class="tok-variableName">propagateTransactions</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">trs</span><span class="tok-punctuation">)</span>
+      <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">prec</span><span class="tok-operator">.</span><span class="tok-propertyName">high</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span>
+        <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Escape"</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">exitFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">)</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+        <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Enter"</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">exitFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">)</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-punctuation">]</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">handler</span><span class="tok-punctuation">(</span><span class="tok-variableName">undo</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">undo</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">handler</span><span class="tok-punctuation">(</span><span class="tok-variableName">redo</span><span class="tok-punctuation">,</span> <span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">Command</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">redo</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">return</span> <span class="tok-variableName">Wordgard</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">doc</span><span class="tok-punctuation">:</span> <span class="tok-variableName">config</span><span class="tok-operator">.</span><span class="tok-propertyName">schema</span><span class="tok-operator">!</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-operator">.</span><span class="tok-propertyName">content</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">config</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">parent</span><span class="tok-punctuation">:</span> <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">dom</span><span class="tok-punctuation">,</span>
+    <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+
+  <span class="tok-keyword">static</span> <span class="tok-propertyName tok-definition">create</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">return</span> <span class="tok-keyword">new</span> <span class="tok-className">FootnoteTooltip</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span><span class="tok-operator">!</span><span class="tok-punctuation">)</span>
+  <span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="The footnote's update method is where updates from the parent editor come in. It does something similar to propagateTransactions, but the other way around. This means changes have to be clipped to the extent of the footnote, instead of padded.">脚注的 <code>update</code> 方法是接收来自父编辑器的更新的地方。它执行的操作类似于 <code>propagateTransactions</code>，但方向相反。这意味着更改必须被裁剪到脚注的范围，而不是进行填充。</p>
+<pre><code class="language-typescript">  <span class="tok-variableName">update</span><span class="tok-punctuation">(</span><span class="tok-variableName">update</span><span class="tok-punctuation">:</span> Wordgard<span class="tok-operator">.</span><span class="tok-propertyName">Update</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">update</span><span class="tok-operator">.</span><span class="tok-propertyName">startState</span><span class="tok-punctuation">)</span><span class="tok-operator">!</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">start</span> <span class="tok-operator">=</span> <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span>
+    <span class="tok-keyword">for</span> <span class="tok-punctuation">(</span><span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">tr</span> <span class="tok-keyword">of</span> <span class="tok-variableName">update</span><span class="tok-operator">.</span><span class="tok-propertyName">transactions</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+      <span class="tok-variableName">start</span> <span class="tok-operator">=</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">mapPos</span><span class="tok-punctuation">(</span><span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span><span class="tok-punctuation">,</span> <span class="tok-operator">-</span><span class="tok-number">1</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">annotation</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnoteSync</span><span class="tok-punctuation">)</span> <span class="tok-operator">||</span> <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">empty</span><span class="tok-punctuation">)</span> <span class="tok-keyword">continue</span>
+      <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">localChange</span> <span class="tok-operator">=</span>
+        <span class="tok-variableName">tr</span><span class="tok-operator">.</span><span class="tok-propertyName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">clip</span><span class="tok-punctuation">(</span><span class="tok-variableName">start</span><span class="tok-punctuation">,</span> <span class="tok-variableName">start</span> <span class="tok-operator">+</span> <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-operator">.</span><span class="tok-propertyName">length</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">localChange</span><span class="tok-punctuation">)</span> <span class="tok-keyword">break</span>
+      <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">localChange</span><span class="tok-operator">.</span><span class="tok-propertyName">empty</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+        <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+          <span class="tok-propertyName tok-definition">changes</span><span class="tok-punctuation">:</span> <span class="tok-variableName">localChange</span><span class="tok-punctuation">,</span>
+          <span class="tok-propertyName tok-definition">annotations</span><span class="tok-punctuation">:</span> <span class="tok-variableName">footnoteSync</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-bool">true</span><span class="tok-punctuation">)</span>
+        <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+      <span class="tok-punctuation">}</span>
+    <span class="tok-punctuation">}</span>
+
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">newFootnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">update</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span><span class="tok-operator">!</span>
+    <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">newFootnote</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-operator">.</span><span class="tok-propertyName">contentEq</span><span class="tok-punctuation">(</span><span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">doc</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+      <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span><span class="tok-operator">.</span><span class="tok-propertyName">dom</span><span class="tok-operator">.</span><span class="tok-propertyName">remove</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+      <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span> <span class="tok-operator">=</span> <span class="tok-keyword">this</span><span class="tok-operator">.</span><span class="tok-propertyName">initEditor</span><span class="tok-punctuation">(</span><span class="tok-variableName">update</span><span class="tok-operator">.</span><span class="tok-propertyName">editor</span><span class="tok-punctuation">,</span> <span class="tok-variableName">newFootnote</span><span class="tok-punctuation">)</span>
+    <span class="tok-punctuation">}</span>
+  <span class="tok-punctuation">}</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="The code has to be careful to track the start position of the footnote through the transactions, since changes outside of it may affect its position.">代码必须小心地跟踪脚注在事务中的起始位置，因为外部更改可能会影响其位置。</p>
+<p data-x-en="If the user switches from one footnote to another, the tooltip stays open but must display the new footnote. The code at the end of update checks for this situation.">如果用户从一个脚注切换到另一个脚注，工具提示将保持打开状态，但必须显示新的脚注。`update` 末尾的代码会检查这种情况。</p>
+<p data-x-en="These functions handle keyboard-initiated motion in and out of the inner editor. enterFootnote is bound to Enter in the outer editor, and moves focus into the currently selected footnote. exitFootnote jumps out of a footnote editor, back to the parent.">这些函数处理在内部编辑器中通过键盘发起的进出操作。<code>enterFootnote</code> 在外部编辑器中绑定到 <code>Enter</code> 键，并将焦点移动到当前选中的脚注中。<code>exitFootnote</code> 则从脚注编辑器跳出，返回到父级。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">enterFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span> <span class="tok-keyword">return</span> <span class="tok-bool">false</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">tooltip</span> <span class="tok-operator">=</span> <span class="tok-variableName">Tooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">get</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">,</span> <span class="tok-variableName">FootnoteTooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">tooltip</span><span class="tok-punctuation">)</span> <span class="tok-keyword">return</span> <span class="tok-bool">false</span>
+  <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">selection</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">anchor</span><span class="tok-punctuation">:</span> <span class="tok-variableName">tooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">start</span><span class="tok-punctuation">}</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-variableName">tooltip</span><span class="tok-operator">.</span><span class="tok-propertyName">inner</span><span class="tok-operator">.</span><span class="tok-propertyName">focus</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">return</span> <span class="tok-bool">true</span>
+<span class="tok-punctuation">}</span>
+
+<span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">exitFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">wg</span><span class="tok-punctuation">:</span> <span class="tok-typeName">Wordgard</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">inFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">footnote</span><span class="tok-punctuation">)</span> <span class="tok-keyword">return</span> <span class="tok-bool">false</span>
+  <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">selection</span> <span class="tok-operator">=</span>
+    <span class="tok-variableName">GardSelection</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-punctuation">(</span><span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">before</span><span class="tok-punctuation">,</span> <span class="tok-variableName">footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-operator">!</span><span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">eq</span><span class="tok-punctuation">(</span><span class="tok-variableName">selection</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span>
+    <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">selection</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+  <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">focus</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+  <span class="tok-keyword">return</span> <span class="tok-bool">true</span>
+<span class="tok-punctuation">}</span>
+</code></pre><p data-x-en="To be able to easily insert footnotes, we define a menu button for them.">为了能够轻松插入脚注，我们为其定义了一个菜单按钮。</p>
+<pre><code class="language-typescript"><span class="tok-keyword">import</span> <span class="tok-punctuation">{</span><span class="tok-variableName tok-definition">Menu</span><span class="tok-punctuation">}</span> <span class="tok-keyword">from</span> <span class="tok-string">"wordgard/command"</span>
+
+<span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">insertFootnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">Menu</span><span class="tok-operator">.</span><span class="tok-propertyName">Button</span><span class="tok-operator">.</span><span class="tok-propertyName">define</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+  <span class="tok-propertyName tok-definition">label</span><span class="tok-punctuation">:</span> <span class="tok-string">"¹²"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">description</span><span class="tok-punctuation">:</span> <span class="tok-string">"Insert footnote"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-variableName tok-definition">wg</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+    <span class="tok-keyword">let</span> <span class="tok-punctuation">{</span><span class="tok-propertyName">from</span><span class="tok-punctuation">,</span> <span class="tok-propertyName">to</span><span class="tok-punctuation">}</span> <span class="tok-operator">=</span> <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">state</span><span class="tok-operator">.</span><span class="tok-propertyName">selection</span><span class="tok-operator">.</span><span class="tok-propertyName">replacementRange</span>
+    <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">footnote</span> <span class="tok-operator">=</span> <span class="tok-variableName">Footnote</span><span class="tok-operator">.</span><span class="tok-propertyName">create</span><span class="tok-punctuation">(</span><span class="tok-punctuation">[</span><span class="tok-punctuation">]</span><span class="tok-punctuation">)</span>
+    <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">dispatch</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
+      <span class="tok-propertyName tok-definition">changes</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">from</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">to</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">insert</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">[</span><span class="tok-variableName">footnote</span><span class="tok-punctuation">]</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">fit</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span><span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">selection</span><span class="tok-punctuation">:</span> <span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">cx</span><span class="tok-punctuation">,</span> <span class="tok-variableName tok-definition">changes</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-punctuation">{</span>
+        <span class="tok-keyword">let</span> <span class="tok-variableName tok-definition">found</span> <span class="tok-operator">=</span> <span class="tok-variableName">changes</span><span class="tok-operator">.</span><span class="tok-propertyName">findInserted</span><span class="tok-punctuation">(</span><span class="tok-variableName tok-definition">t</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-variableName">t</span> <span class="tok-operator">==</span> <span class="tok-variableName">Footnote</span><span class="tok-punctuation">)</span>
+        <span class="tok-keyword">if</span> <span class="tok-punctuation">(</span><span class="tok-variableName">found</span> <span class="tok-operator">==</span> <span class="tok-keyword">null</span><span class="tok-punctuation">)</span> <span class="tok-keyword">return</span> <span class="tok-keyword">null</span>
+        <span class="tok-keyword">return</span> <span class="tok-variableName">GardSelection</span><span class="tok-operator">.</span><span class="tok-propertyName">node</span><span class="tok-punctuation">(</span><span class="tok-variableName">found</span><span class="tok-punctuation">,</span> <span class="tok-variableName">footnote</span><span class="tok-punctuation">)</span>
+      <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">userEvent</span><span class="tok-punctuation">:</span> <span class="tok-string">"insert.footnote"</span><span class="tok-punctuation">,</span>
+      <span class="tok-propertyName tok-definition">scrollIntoView</span><span class="tok-punctuation">:</span> <span class="tok-bool">true</span>
+    <span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+    <span class="tok-variableName">wg</span><span class="tok-operator">.</span><span class="tok-propertyName">flush</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span>
+    <span class="tok-variableName">enterFootnote</span><span class="tok-punctuation">(</span><span class="tok-variableName">wg</span><span class="tok-punctuation">)</span>
+    <span class="tok-keyword">return</span> <span class="tok-bool">true</span>
+  <span class="tok-punctuation">}</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">enable</span><span class="tok-punctuation">:</span> <span class="tok-variableName tok-definition">s</span> <span class="tok-punctuation">=&gt;</span> <span class="tok-operator">!</span><span class="tok-variableName">s</span><span class="tok-operator">.</span><span class="tok-propertyName">readOnly</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">parent</span><span class="tok-punctuation">:</span> <span class="tok-variableName">Menu</span><span class="tok-operator">.</span><span class="tok-propertyName">Group</span><span class="tok-operator">.</span><span class="tok-propertyName">insert</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">rank</span><span class="tok-punctuation">:</span> <span class="tok-number">85</span>
+<span class="tok-punctuation">}</span><span class="tok-punctuation">)</span>
+</code></pre><p data-x-en="The code needs to call flush before calling enterFootnote because, before the editor has updated, the tooltip and inner editor don't exist yet, and thus cannot be focused.">代码在调用 <code>enterFootnote</code> 之前需要先调用 <a href="../../docs/ref/#editor.Wordgard.flush"><code>flush</code></a>，因为在编辑器更新之前，工具提示和内部编辑器尚不存在，因此无法获得焦点。</p>
+<p data-x-en="Finally, this bundle function puts all the pieces together:">最后，这个捆绑函数将所有部分整合在一起：</p>
+<pre><code class="language-typescript"><span class="tok-keyword">export</span> <span class="tok-keyword">function</span> <span class="tok-variableName tok-definition">footnote</span><span class="tok-punctuation">(</span><span class="tok-punctuation">)</span> <span class="tok-punctuation">{</span>
+  <span class="tok-keyword">return</span> <span class="tok-punctuation">[</span>
+    <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">schemaElement</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-variableName">Footnote</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">footnoteShape</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">footnoteStyle</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">footnoteTooltip</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">GardState</span><span class="tok-operator">.</span><span class="tok-propertyName">prec</span><span class="tok-operator">.</span><span class="tok-propertyName">high</span><span class="tok-punctuation">(</span>
+      <span class="tok-variableName">KeyBinding</span><span class="tok-operator">.</span><span class="tok-propertyName">of</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span><span class="tok-propertyName tok-definition">key</span><span class="tok-punctuation">:</span> <span class="tok-string">"Enter"</span><span class="tok-punctuation">,</span> <span class="tok-propertyName tok-definition">run</span><span class="tok-punctuation">:</span> <span class="tok-variableName">enterFootnote</span><span class="tok-punctuation">}</span><span class="tok-punctuation">)</span><span class="tok-punctuation">)</span><span class="tok-punctuation">,</span>
+    <span class="tok-variableName">insertFootnote</span>
+  <span class="tok-punctuation">]</span>
+<span class="tok-punctuation">}</span>
+</code></pre><script type="module" src="footnote.js"></script>
+</article><footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</body></html>

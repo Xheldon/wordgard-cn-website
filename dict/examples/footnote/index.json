@@ -1,0 +1,102 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Footnotes": {
+    "_translate": "示例：脚注",
+    "_note": ""
+  },
+  "This example shows how you can set up Wordgard to edit some kind of nodes in a sub-editor, rather than normally. It defines a footnote plot, which is an inline node with content, but which the outer editor renders as an atomic element.": {
+    "_translate": "本示例展示了如何配置 Wordgard，使其在子编辑器中编辑某种节点，而非采用常规方式。它定义了一个脚注图，该图是一个带有内容的内联节点，但外部编辑器将其渲染为原子元素。",
+    "_note": ""
+  },
+  "Implementation": {
+    "_translate": "实现",
+    "_note": ""
+  },
+  "When you select such a plot, the editor pops up a tooltip with a nested Wordgard editor that contains the footnote's text. You can interact with this editor to edit the footnote's content.": {
+    "_translate": "选择此类图表时，编辑器会弹出一个包含脚本文本的嵌套 Wordgard 编辑器的工具提示。您可以与该编辑器交互以编辑脚注内容。",
+    "_note": ""
+  },
+  "Though at the end of the example, we roll the feature into an extension bundle you can simply drop into your editor configuration, that bundle consists of a whole bunch of separate pieces.": {
+    "_translate": "尽管在示例的末尾，我们将该功能打包成一个可直接放入编辑器配置的扩展包，但该包实际上由许多独立的组件组成。",
+    "_note": ""
+  },
+  "The basis of the whole feature is a plot type. Our footnotes support only inline content.": {
+    "_translate": "整个功能的基础是情节类型。我们的脚注仅支持行内内容。",
+    "_note": ""
+  },
+  "The default way to render these use a <footnote> element. This will be used in clipboard content or serialized HTML. In the editor itself, we don't want to see the content of a footnote until we activate it. So this tag decoration, with associated CSS, defines it to look like a superscript number, getting the numbers from a CSS counter.": {
+    "_translate": "渲染这些内容的默认方式是使用 <code>&lt;footnote&gt;</code> 元素。该元素将用于剪贴板内容或序列化的 HTML 中。在编辑器本身中，我们希望在激活之前不显示脚注的内容。因此，此带有相关 CSS 的标签装饰将其定义为上标数字，数字由 CSS 计数器提供。",
+    "_note": ""
+  },
+  "The tooltip showing a footnote's content is displayed only when the tooltip is selected—either as a node selection, or with a selection inside it. The latter is used to make the editor menu work even when you are editing a footnote; by synchronizing the selection in the outer editor to the current selection in the inner editor, menu commands automatically do the right thing.": {
+    "_translate": "显示脚注内容的工具提示仅在工具提示被选中时才会显示——无论是作为节点选中，还是在其内部进行选中。后一种方式用于确保即使在编辑脚注时，编辑器菜单也能正常工作；通过将外部编辑器的选区与内部编辑器的当前选区同步，菜单命令即可自动执行正确的操作。",
+    "_note": ""
+  },
+  "This extension makes a tooltip pop up whenever the selection is on or in a tooltip.": {
+    "_translate": "此扩展会在选区位于工具提示上或工具提示内时弹出工具提示。",
+    "_note": ""
+  },
+  "This function handles the propagation from the inner to the outer editor. To avoid re-propagating changes back to the editor they came from, we attach a footnoteSync annotation to such transactions, so that we know to not propagate them back again.": {
+    "_translate": "此函数负责从内部编辑器向外层编辑器传播变更。为避免将变更重新传播回其来源的编辑器，我们会向此类事务附加一个 <code>footnoteSync</code> 注解，以便我们知道不再将其反向传播。",
+    "_note": ""
+  },
+  "The FootnoteTooltip creates an inner editor holding the tooltip content, and wires it up in such a way that any editing that happens inside it is propagated back to the outer editor, while also propagating changes inside the tooltip that happen on the outer editor (for example through the menu) into the inner editor.": {
+    "_translate": "<code>FootnoteTooltip</code> 会创建一个包含提示内容的内部编辑器，并将其进行连接，使得在内部编辑器中发生的任何编辑操作都会传播回外部编辑器，同时，在外部编辑器中发生的更改（例如通过菜单）也会传播到内部编辑器中。",
+    "_note": ""
+  },
+  "When a transaction changes te document or selection, those changes are applied to the outer editor. Selections can simply be offset by the footnote's position. Changes have to be padded to fit the bigger document.": {
+    "_translate": "当交易更改文档或选区时，这些更改将应用于外部编辑器。选区可以简单地根据脚注的位置进行偏移。更改需要进行填充以适应更大的文档。",
+    "_note": ""
+  },
+  "The tooltip is a class implementing Tooltip.View. It creates an inner editor with a schema that makes the document have inline content, so that it can directly hold the content of the footnote. It also wires up Enter and Escape to move focus back to the outer editor, and adds custom handlers for undo and redo that route them to the parent editor, so that both editors share a single history.": {
+    "_translate": "工具提示是一个实现了 <a href=\"../../docs/ref/#editor.Tooltip.View\"><code>Tooltip.View</code></a> 的类。它创建一个内部编辑器，其模式使文档具有行内内容，从而可以直接容纳脚注的内容。它还配置了 <code>Enter</code> 和 <code>Escape</code> 键，以便将焦点移回外部编辑器，并添加了自定义的撤销和重做处理程序，将它们路由到父编辑器，从而使两个编辑器共享单一的历史记录。",
+    "_note": ""
+  },
+  "The code has to be careful to track the start position of the footnote through the transactions, since changes outside of it may affect its position.": {
+    "_translate": "代码必须小心地跟踪脚注在事务中的起始位置，因为外部更改可能会影响其位置。",
+    "_note": ""
+  },
+  "The footnote's update method is where updates from the parent editor come in. It does something similar to propagateTransactions, but the other way around. This means changes have to be clipped to the extent of the footnote, instead of padded.": {
+    "_translate": "脚注的 <code>update</code> 方法是接收来自父编辑器的更新的地方。它执行的操作类似于 <code>propagateTransactions</code>，但方向相反。这意味着更改必须被裁剪到脚注的范围，而不是进行填充。",
+    "_note": ""
+  },
+  "If the user switches from one footnote to another, the tooltip stays open but must display the new footnote. The code at the end of update checks for this situation.": {
+    "_translate": "如果用户从一个脚注切换到另一个脚注，工具提示将保持打开状态，但必须显示新的脚注。`update` 末尾的代码会检查这种情况。",
+    "_note": ""
+  },
+  "To be able to easily insert footnotes, we define a menu button for them.": {
+    "_translate": "为了能够轻松插入脚注，我们为其定义了一个菜单按钮。",
+    "_note": ""
+  },
+  "These functions handle keyboard-initiated motion in and out of the inner editor. enterFootnote is bound to Enter in the outer editor, and moves focus into the currently selected footnote. exitFootnote jumps out of a footnote editor, back to the parent.": {
+    "_translate": "这些函数处理在内部编辑器中通过键盘发起的进出操作。<code>enterFootnote</code> 在外部编辑器中绑定到 <code>Enter</code> 键，并将焦点移动到当前选中的脚注中。<code>exitFootnote</code> 则从脚注编辑器跳出，返回到父级。",
+    "_note": ""
+  },
+  "The code needs to call flush before calling enterFootnote because, before the editor has updated, the tooltip and inner editor don't exist yet, and thus cannot be focused.": {
+    "_translate": "代码在调用 <code>enterFootnote</code> 之前需要先调用 <a href=\"../../docs/ref/#editor.Wordgard.flush\"><code>flush</code></a>，因为在编辑器更新之前，工具提示和内部编辑器尚不存在，因此无法获得焦点。",
+    "_note": ""
+  },
+  "Finally, this bundle function puts all the pieces together:": {
+    "_translate": "最后，这个捆绑函数将所有部分整合在一起：",
+    "_note": ""
+  }
+}

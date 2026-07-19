@@ -122,5 +122,21 @@
   "Wiring up multiple editors to synchronize their content.": {
     "_translate": "将多个编辑器连接起来以同步其内容。",
     "_note": ""
+  },
+  "Editor extension": {
+    "_translate": "编辑器扩展",
+    "_note": ""
+  },
+  "Footnotes Editing footnotes with nested editors in a tooltip.": {
+    "_translate": "<a href=\"footnote/\" class=\"blocklink\">\n      <h3>脚注</h3>\n      <p>在工具提示中使用嵌套编辑器编辑脚注。</p>\n    </a>",
+    "_note": ""
+  },
+  "Footnotes": {
+    "_translate": "脚注",
+    "_note": ""
+  },
+  "Editing footnotes with nested editors in a tooltip.": {
+    "_translate": "在工具提示中使用嵌套编辑器编辑脚注。",
+    "_note": ""
   }
 }

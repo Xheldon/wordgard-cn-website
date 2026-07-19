@@ -5438,5 +5438,45 @@
   "When providing a function that returns a shape that changes whether the node is rendered as an atom, you need to provide the atom.": {
     "_translate": "在提供返回一个根据节点是否被渲染为原子而变化的形状的函数时，您需要提供 <code>atom</code>。",
     "_note": ""
+  },
+  "Add skipped sections before and after this change set, so that it can apply to a larger document. Mostly useful when propagating changes from an editor displaying a smaller part of a document into the full document.": {
+    "_translate": "在此变更集之前和之后添加跳过的部分，以便它可以应用于更大的文档。这在将编辑器中显示的文档较小部分中的更改传播到完整文档时尤其有用。",
+    "_note": ""
+  },
+  "Compare the content of this plot to the content of the given plot.": {
+    "_translate": "将此情节的内容与给定情节的内容进行比较。",
+    "_note": ""
+  },
+  "Clip the set to only a sub-region. This can fail, if there are replacements across the region's sides, in which case the method returns null": {
+    "_translate": "将集合裁剪为仅包含子区域。如果存在跨越区域边界的替换，此操作可能会失败，此时方法将返回 null。",
+    "_note": ""
+  },
+  "Not to be confused with editable, which controls whether the editor's DOM is set to be editable (and thus focusable).": {
+    "_translate": "请勿与 <a href=\"#editor.Wordgard.editable\"><code>editable</code></a> 混淆，后者用于控制编辑器的 DOM 是否被设置为可编辑（从而可聚焦）。",
+    "_note": ""
+  },
+  "Queries whether the editor's DOM is editable.": {
+    "_translate": "查询编辑器的 DOM 是否<a href=\"#editor.Wordgard.editable_2\">可编辑</a>。",
+    "_note": ""
+  },
+  "Returns true if the editor can be focused (is editable or has a tabindex).": {
+    "_translate": "如果编辑器可以获得焦点（可<a href=\"#editor.Wordgard.editable\">编辑</a>或具有 tabindex），则返回 true。",
+    "_note": ""
+  },
+  "Force a flush on the editor content, updating its DOM representation for any pending changes.": {
+    "_translate": "强制刷新编辑器内容，更新其 DOM 表示以反映任何待处理的变化。",
+    "_note": ""
+  },
+  "Registers a listener function to be called whenever a set of transactions is applied to the editor. This function may dispatch additional transactions, if needed.": {
+    "_translate": "注册一个监听函数，每当一组事务应用于编辑器时调用该函数。如有需要，此函数可分派额外的交易。",
+    "_note": ""
+  },
+  "A facet that can be used to register a function to be called after the editor flushes updates to the DOM. Dispatching transactions from such a function is allowed, but will cause a new, separate update to happen.": {
+    "_translate": "一个可用于注册在编辑器将更新刷新到 DOM 后调用的函数的 Facet。从此类函数中分发事务是允许的，但会触发一次新的、独立的更新。",
+    "_note": ""
+  },
+  "Get the active tooltip view for a given tooltip or tooltip constructor, if available.": {
+    "_translate": "获取给定工具提示或工具提示构造函数的活动工具提示视图（如果可用）。",
+    "_note": ""
   }
 }

@@ -708,6 +708,8 @@ function autoJoinBlocks(state, tr) {
 }
 
 const insertText = ({ state }, { from, to, insert, userEvent }) => {
+    if (state.readOnly)
+        return false;
     let { selection } = state;
     let marks = (from == selection.from && to == selection.to && state.sel.activeMarks) ||
         state.doc.resolve(from).marks(state.doc.resolve(to));
@@ -719,6 +721,8 @@ const insertText = ({ state }, { from, to, insert, userEvent }) => {
     };
 };
 const insertLineBreak = ({ state }) => {
+    if (state.readOnly)
+        return false;
     let { doc, sel } = state;
     let brk = doc.schema.lineBreak, parent = sel.from.parent.node.type;
     let { from, to } = state.selection.replacementRange;
@@ -736,6 +740,8 @@ const insertLineBreak = ({ state }) => {
     };
 };
 const enter = ({ state }) => {
+    if (state.readOnly)
+        return false;
     let { sel, doc } = state;
     if (!sel.head.parent.node.inlineContent || !sel.anchor.parent.node.inlineContent) {
         let { from, to } = sel.replacementRange;
@@ -757,16 +763,22 @@ const enter = ({ state }) => {
     return liftEmptyBlock(state) || splitTextblock(state);
 };
 const deleteUnit = ({ state }, dir) => {
+    if (state.readOnly)
+        return false;
     return deleteSelection(state) || (dir == "forward"
         ? joinForward(state) || deleteForward(state) || deleteEmptyTextblock(state, 1)
         : joinListItems(state) || joinBackward(state) || deleteBackward(state) || deleteEmptyTextblock(state, -1));
 };
 const deleteWord = ({ state }, dir) => {
+    if (state.readOnly)
+        return false;
     return deleteSelection(state) || (dir == "forward"
         ? joinForward(state) || deleteForward(state, true) || deleteEmptyTextblock(state, 1)
         : joinListItems(state) || joinBackward(state) || deleteBackward(state, true) || deleteEmptyTextblock(state, -1));
 };
 const deleteToLineEnd = (wg, dir) => {
+    if (wg.state.readOnly)
+        return false;
     let tr = deleteSelection(wg.state), { selection } = wg.state;
     if (tr)
         return (wg.dispatch(tr), true);
@@ -782,6 +794,8 @@ const deleteToLineEnd = (wg, dir) => {
     };
 };
 const deleteLine = wg => {
+    if (wg.state.readOnly)
+        return false;
     let tr = deleteSelection(wg.state), { selection } = wg.state;
     if (tr)
         return (wg.dispatch(tr), true);
@@ -797,7 +811,7 @@ const deleteLine = wg => {
     };
 };
 const transposeChars = ({ state }) => {
-    if (!state.selection.isCursor)
+    if (state.readOnly || !state.selection.isCursor)
         return false;
     let { sel } = state, head = state.selection.head;
     let before = sel.head.nodeBefore, after = sel.head.nodeAfter;
@@ -814,6 +828,8 @@ const transposeChars = ({ state }) => {
     };
 };
 const setTextblockType = ({ state }, tag) => {
+    if (state.readOnly)
+        return false;
     let changes = [], { schema } = state.doc;
     for (let block of selectedTextblocks(state)) {
         if (!block.node.tag.eq(tag) && block.parent && schema.canContain(block.parent.node.type, tag.type)) {
@@ -826,6 +842,8 @@ const setTextblockType = ({ state }, tag) => {
     return autoJoinBlocks(state, { changes, scrollIntoView: true, userEvent: "settype" });
 };
 const unwrapBlock = ({ state }, query) => {
+    if (state.readOnly)
+        return false;
     let targets = [], changes = [];
     for (let { from, to } of state.selection.ranges) {
         if (!targets.some(t => t.after > from && t.before < to)) {
@@ -846,6 +864,8 @@ const unwrapBlock = ({ state }, query) => {
     });
 };
 const wrapBlock = ({ state }, wrapper) => {
+    if (state.readOnly)
+        return false;
     let changes = [], lastTo = -1;
     for (let { from, to } of state.selection.ranges) {
         let range = findWrappable(state.doc.resolve(from), state.doc.resolve(to), wrapper);
@@ -862,6 +882,8 @@ const toggleBlock = (target, tag) => {
     return unwrapBlock(target, tag) || wrapBlock(target, tag);
 };
 const toggleMark = ({ state }, mark) => {
+    if (state.readOnly)
+        return false;
     let { selection, doc } = state;
     if (selection instanceof GardSelection.Text && selection.empty) {
         let selMarks = selection.marks || state.sel.head.marks(), add = !mark.isInSet(selMarks);
@@ -890,7 +912,7 @@ const toggleStrong = target => toggleMark(target, Strong);
 const toggleUnderline = target => toggleMark(target, Underline);
 const setAlignment = ({ state }, align) => {
     let { schema } = state.doc;
-    if (!schema.has(Alignment))
+    if (state.readOnly || !schema.has(Alignment))
         return false;
     if (align == "start")
         align = null;
@@ -911,7 +933,7 @@ const setAlignment = ({ state }, align) => {
 };
 const setDirection = ({ state }, dir) => {
     let { schema } = state.doc;
-    if (!schema.has(Direction))
+    if (state.readOnly || !schema.has(Direction))
         return false;
     let changes = [];
     for (let block of selectedTextblocks(state)) {
@@ -927,6 +949,8 @@ const setDirection = ({ state }, dir) => {
     };
 };
 const toggleList = ({ state }, listTag) => {
+    if (state.readOnly)
+        return false;
     let blocks = selectedTextblocks(state);
     if (!blocks.length)
         return false;
@@ -1218,6 +1242,7 @@ const Menu = /*@__PURE__*/(function (Menu) {
                     else
                         return !selection.ranges.some(r => canAddMarkInRange(state.doc, r.from, r.to, mark));
                 },
+                enable: s => !s.readOnly,
                 parent,
                 rank,
                 description,

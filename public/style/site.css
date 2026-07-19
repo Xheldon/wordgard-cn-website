@@ -210,22 +210,22 @@ hr {
   margin: 45px 0 39px;
 }
 
-hr.floral {
+hr.floral, hr.floral1, hr.floral2, hr.floral3, hr.floral4 {
   border: none;
   margin: 40px 0;
   height: 80px;
   background: center / contain no-repeat url(../img/divider1.jpg)
 }
 
-hr.floral:nth-of-type(4n+1) {
+hr.floral:nth-of-type(4n+1), hr.floral2 {
   background: center / contain no-repeat url(../img/divider2.jpg)
 }
 
-hr.floral:nth-of-type(4n+2) {
+hr.floral:nth-of-type(4n+2), hr.floral3 {
   background: center / contain no-repeat url(../img/divider3.jpg)
 }
 
-hr.floral:nth-of-type(2n+4) {
+hr.floral:nth-of-type(2n+4), hr.floral4 {
   background: center / contain no-repeat url(../img/divider4.jpg)
 }
 

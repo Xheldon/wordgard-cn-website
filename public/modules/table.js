@@ -960,6 +960,8 @@ function insertCells(state, map, startCol, startRow, cells, event) {
     };
 }
 function handleTablePaste(state, slice, context, drop) {
+    if (state.readOnly)
+        return false;
     let { schema } = state.doc;
     if (drop == null && state.selection instanceof CellSelection) {
         let cells = pastedCells(schema, slice, context);
@@ -986,6 +988,8 @@ const tablePasteHandler = /*@__PURE__*/Wordgard.pasteHandler.of((wg, _event, sli
     return tr && (wg.dispatch(tr), true);
 });
 const tableDropHandler = /*@__PURE__*/Wordgard.dropHandler.of((wg, _event, pos, move, slice, context) => {
+    if (wg.state.readOnly)
+        return false;
     let tr = handleTablePaste(wg.state, slice, context, pos);
     if (!tr)
         return false;
@@ -1140,6 +1144,7 @@ const tableIcon = {
         },
         label: tableIcon,
         description: tablePhrases.ref("insert_table"),
+        enable: s => !s.readOnly,
         parent: Menu.Group.insert,
         rank: 70,
         content: [dimensionPicker]
@@ -1157,42 +1162,49 @@ const tableIcon = {
         run: toggleHeaderCell,
         select: state => !!headerCellTag(state.schema),
         label: tablePhrases.ref("toggle_header"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 10
     });
     tableMenu.addRowAbove = Menu.Button.define({
         run: wg => Command.dispatch(wg, addRow, "before"),
         label: tablePhrases.ref("add_row_above"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 20,
     });
     tableMenu.addRowBelow = Menu.Button.define({
         run: wg => Command.dispatch(wg, addRow, "after"),
         label: tablePhrases.ref("add_row_below"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 21,
     });
     tableMenu.deleteRow = Menu.Button.define({
         run: deleteRow,
         label: tablePhrases.ref("delete_row"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 25
     });
     tableMenu.addColumnBefore = Menu.Button.define({
         run: wg => Command.dispatch(wg, addColumn, "before"),
         label: tablePhrases.ref("add_col_before"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 30,
     });
     tableMenu.addColumnAfter = Menu.Button.define({
         run: wg => Command.dispatch(wg, addColumn, "after"),
         label: tablePhrases.ref("add_col_after"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 31,
     });
     tableMenu.deleteColumn = Menu.Button.define({
         run: deleteColumn,
         label: tablePhrases.ref("delete_col"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 35,
     });
@@ -1204,6 +1216,7 @@ const tableIcon = {
                 state.schema.has(ColSpan) && state.schema.has(RowSpan);
         },
         label: tablePhrases.ref("merge_cells"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 40,
     });
@@ -1217,6 +1230,7 @@ const tableIcon = {
             return !!(cell && (cell.mark(ColSpan) || cell.mark(RowSpan)));
         },
         label: tablePhrases.ref("split_cell"),
+        enable: s => !s.readOnly,
         parent: tableMenu.modifyTable,
         rank: 41,
     });

@@ -994,5 +994,105 @@
   "For these reasons, Wordgard intentionally defines a simpler, looser document model. In cases where you do want to enforce additional constraints, corrections are the abstraction to support this. They allow you to register observer functions that look at nodes of a given type every time they change or are introduced, and optionally return an extension to the transaction to \"fix\" the node.": {
     "_translate": "出于这些原因，Wordgard 有意定义了一个更简单、更宽松的文档模型。在需要强制执行额外约束的情况下，<a href=\"../ref/#state.Correction\">修正（corrections）</a> 是支持此功能的抽象机制。它们允许您注册观察者函数，每当特定类型的节点发生变化或被引入时进行检查，并可选择返回一个事务扩展来“修复”该节点。",
     "_note": ""
+  },
+  "The central thing that this library provides is a user interface component, implemented in the Wordgard class. This component displays an editor in a web document.": {
+    "_translate": "该库提供的核心内容是一个用户界面组件，由 <a href=\"../ref/#editor.Wordgard\"><code>Wordgard</code></a> 类实现。此组件可在网页文档中显示编辑器。",
+    "_note": ""
+  },
+  "A change spec can be a single change or an array of changes. It may also contain existing change set objects. Content changes can specify a start and optional end, and either delete that range, or insert content by providing an array of tokens to insert at the given position.": {
+    "_translate": "变更规范可以是单个变更，也可以是变更数组。它还可以包含现有的变更集对象。内容变更可以指定起始位置和可选的结束位置，并删除该范围，或者通过提供要插入的令牌数组，在给定位置插入内容。",
+    "_note": ""
+  },
+  "Where Strong is the mark for strong emphasis.": {
+    "_translate": "其中 <a href=\"../ref/#types.Strong\"><code>Strong</code></a> 是表示强调的标记。",
+    "_note": ""
+  },
+  "It is possible to create changes that would break document structure. Examples include:": {
+    "_translate": "可能会创建破坏文档结构的更改。示例包括：",
+    "_note": ""
+  },
+  "Putting an inline node where only block nodes are allowed, or vice versa.": {
+    "_translate": "在仅允许块级节点的位置放置内联节点，或反之亦然。",
+    "_note": ""
+  },
+  "Deleting the opening token of a paragraph without replacement.": {
+    "_translate": "删除段落的起始标记且不进行替换。",
+    "_note": ""
+  },
+  "Often, you know that the type of change you're creating is valid. But when you don't, it is possible to make ChangeSet.create check and fix the change for you. There are two ways to do this:": {
+    "_translate": "通常，您知道所创建的变更类型是有效的。但如果您不确定，可以让 <a href=\"../ref/#doc.ChangeSet.create\"><code>ChangeSet.create</code></a> 为您检查并修复该变更。实现这一点有两种方法：",
+    "_note": ""
+  },
+  "Put a fit property on a specific change. This gives ChangeSet.create permission to change the range of the change, moving it out to cover plot open and close tokens if that improves the fit, and activates a correction mechanism that will make sure the document remains valid by dropping changes or adding plot open/close tokens when necessary.": {
+    "_translate": "为特定变更添加一个 <a href=\"../ref/#doc.ChangeSet.Change.fit\"><code>fit</code></a> 属性。这将授予 <a href=\"../ref/#doc.ChangeSet.create\"><code>ChangeSet.create</code></a> 权限以调整该变更的范围，将其扩展以覆盖绘图开始和结束标记（如果这样能改善拟合效果），并激活一种校正机制，确保在必要时通过丢弃变更或添加绘图开始/结束标记来维持文档的有效性。",
+    "_note": ""
+  },
+  "Wrapping a group of changes in a {correct: changes} object. That will first combine the given changes, and then make sure the resulting change is valid. If you add a local true property to the object, the correction strategy will try to keep its corrections as close to the changes as possible.": {
+    "_translate": "<a href=\"../ref/#doc.ChangeSet.Spec\">包装</a>一组更改到一个 <code>{correct: changes}</code> 对象中。这将首先合并给定的更改，然后确保生成的更改是有效的。如果您向该对象添加一个 <code>local true</code> 属性，校正策略将尝试使其校正尽可能接近原始更改。",
+    "_note": ""
+  },
+  "Change sets support position mapping, which adjusts a position in the old document to get the corresponding position in the new document. This keeps the selection in the right place as the document changes, and allows other positional data, such as document decorations to be tracked across changes.": {
+    "_translate": "变更集支持<a href=\"../ref/#doc.ChangeSet.mapPos\">位置映射</a>，它可将旧文档中的位置调整为新文档中对应的位置。这能确保在文档变更时选区保持在正确位置，并允许其他位置数据（如<a href=\"#h-decorations\">文档装饰</a>）在变更过程中被跟踪。",
+    "_note": ""
+  },
+  "In some cases, you want to consider a position deleted and stop tracking it when some content near it is deleted. The optional third argument to mapPos allows you to provide a tracking mode, instructing the method to return null instead of a new position when either the element before, the element after, or the elements on both sides of the position were deleted.": {
+    "_translate": "在某些情况下，当位置附近的内容被删除时，您可能希望将该位置视为已删除并停止跟踪它。<code>mapPos</code> 的可选第三个参数允许您指定跟踪模式，指示该方法在位置之前、之后或两侧的元素被删除时，返回 <code>null</code> 而不是新位置。",
+    "_note": ""
+  },
+  "It is possible for such a transformation to need to apply its own corrections when the changes conflict in a way that would create an invalid change. If you transform two changes across each other, the library makes sure to apply the same correction in both so that if you set the second argument (which determines the ordering of conflicting inserts) to true in one and false in the other, the result of applying them both after the other produces the same document.": {
+    "_translate": "此类转换可能需要应用自身的修正，当变更以会产生无效变更的方式发生冲突时。如果您将两个变更相互转换，库会确保在两者中应用相同的修正，因此，如果您在一个转换中将第二个参数（该参数决定冲突插入的顺序）设置为 <code>true</code>，而在另一个中设置为 <code>false</code>，那么将两者依次应用后所产生的文档将是相同的。",
+    "_note": ""
+  },
+  "A document schema lists a collection of node and mark types that are allowed to appear in documents conforming to that schema, and specifies their relations—which nodes may appear in which plots, and which marks may appear on which tags. The document node stores a reference to the schema, and ensures that its content conforms to the schema on creation.": {
+    "_translate": "<a href=\"../ref/#doc.Schema\">文档模式</a>列出了允许出现在符合该模式的文档中的节点和标记类型的集合，并规定了它们之间的关系——哪些节点可以出现在哪些图中，以及哪些标记可以出现在哪些标签上。文档节点存储对模式的<a href=\"../ref/#doc.Plot.Doc.schema\">引用</a>，并确保其内容在创建时符合该模式。",
+    "_note": ""
+  },
+  "Node selections select a single selectable node. They have a node property that holds the node.": {
+    "_translate": "<a href=\"../ref/#state.GardSelection.Node\">节点选择</a> 用于选择单个<a href=\"../ref/#doc.Node.Spec.selectable\">可选择的</a>节点。它们拥有一个<a href=\"../ref/#state.GardSelection.Node.node\"><code>node</code></a>属性，用于保存该节点。",
+    "_note": ""
+  },
+  "Each mark can provide a rank to influence the way it is ordered in mark sets relative to other marks. This is important for marks that render a wrapping element since it determines the nesting order of the elements when a single node has multiple such marks.": {
+    "_translate": "每个标记都可以提供一个 <a href=\"../ref/#doc.Mark.Spec.rank\">rank</a>，以影响其在标记 <a href=\"../ref/#doc.Mark.Set\">集合</a> 中相对于其他标记的排序方式。这对于渲染包装元素的标记尤为重要，因为它决定了当单个节点拥有多个此类标记时，这些元素的嵌套顺序。",
+    "_note": ""
+  },
+  "Editor plugins allow you to put a stateful object in the editor component and have it get notified whenever the editor updates. This is mostly useful for implementing extensions that need to integrate closely with the DOM—for example, the built-in tooltip and panel features are built with editor plugins.": {
+    "_translate": "编辑器 <a href=\"../ref/#editor.Wordgard.Plugin\">插件</a> 允许您在编辑器组件中放置一个有状态的对象，并在编辑器更新时通知该对象。这主要用于实现需要与 DOM 紧密集成的扩展功能——例如，内置的工具提示和面板功能就是使用编辑器插件构建的。",
+    "_note": ""
+  },
+  "To avoid layout thrashing (when the browser needs to repeatedly recompute its layout because code alternates between reading layout information and modifying the DOM), plugins that need access to the document layout to update themselves should use the scheduleDOMRead and scheduleDOMWrite methods.": {
+    "_translate": "为避免布局抖动（即浏览器因代码在读取布局信息与修改 DOM 之间交替而需要反复重新计算布局），需要访问文档布局以进行自我更新的插件应使用 <a href=\"../ref/#editor.Wordgard.scheduleDOMRead\"><code>scheduleDOMRead</code></a> 和 <a href=\"../ref/#editor.Wordgard.scheduleDOMWrite\"><code>scheduleDOMWrite</code></a> 方法。",
+    "_note": ""
+  },
+  "A plugin update that, for example, needs to measure the size of a tooltip should call scheduleDOMRead to do the reading, and if it concludes that it needs to make more changes to the DOM, call scheduleDOMWrite. When scheduled during a flush, scheduled reads and writes will be immediately handled by the current flush, but grouped by access type, to minimize the amount DOM layout computations.": {
+    "_translate": "例如，需要测量工具提示大小的插件更新应调用 <code>scheduleDOMRead</code> 来执行读取操作；如果确定需要进一步修改 DOM，则应调用 <code>scheduleDOMWrite</code>。在刷新过程中调度的读取和写入操作将由当前刷新立即处理，但会按访问类型进行分组，以最大限度地减少 DOM 布局计算量。",
+    "_note": ""
+  },
+  "You can find out where on the screen a given position is with coordsAtPos or figure out which position is under a set of coordinates with posAtCoords. coordsForElement gives you the rectangle where the node or character at the given position is displayed.": {
+    "_translate": "您可以使用 <a href=\"../ref/#editor.Wordgard.coordsAtPos\"><code>coordsAtPos</code></a> 查找给定位置在屏幕上的坐标，或使用 <a href=\"../ref/#editor.Wordgard.posAtCoords\"><code>posAtCoords</code></a> 确定一组坐标下方的位置。<a href=\"../ref/#editor.Wordgard.coordsForElement\"><code>coordsForElement</code></a> 会返回给定位置处的节点或字符所显示区域的矩形框。",
+    "_note": ""
+  },
+  "Range decorations can add an attribute or wrapper to a number of nodes in a range. Like spanning marks, such wrappers may span multiple nodes.": {
+    "_translate": "<a href=\"../ref/#editor.Decoration.Range\">范围装饰</a> 可以为范围内的多个节点添加一个 <a href=\"../ref/#editor.Decoration.Range.attribute\">属性</a> 或 <a href=\"../ref/#editor.Decoration.Range.wrapper\">包装器</a>。与跨节点标记类似，此类包装器也可以 <a href=\"../ref/#editor.Decoration.Range.WrapperSpec.spanning\">跨越</a> 多个节点。",
+    "_note": ""
+  },
+  "For these reasons Wordgard intentionally defines a simpler, looser document model. In cases where you do want to enforce additional constraints, corrections are the abstraction to support this. They allow you to register observer functions that look at nodes of a given type every time they change or are introduced, and optionally return an extension to the transaction to \"fix\" the node.": {
+    "_translate": "出于这些原因，Wordgard 有意定义了一个更简单、更宽松的文档模型。在需要强制执行额外约束的情况下，<a href=\"../ref/#state.Correction\">修正（corrections）</a> 是支持此功能的抽象机制。它们允许您注册观察者函数，每当特定类型的节点发生变化或被引入时进行检查，并可选择返回一个事务扩展来“修复”该节点。",
+    "_note": ""
+  },
+  "Though commands are just functions, they also act as tags that identify some generic editing action. Extensions can provide additional handlers for a given command which will be run (in order of precedence) when the command is invoked with Command.dispatch. This makes it possible to override a given editing command, either in general or in specific situations, by configuring your own custom handler.": {
+    "_translate": "尽管命令本质上只是函数，但它们也充当标识某些通用编辑操作的标签。扩展可以为给定命令提供额外的<a href=\"../ref/#command.Command.handler\">处理程序</a>，当通过<a href=\"../ref/#command.Command.dispatch\"><code>Command.dispatch</code></a>调用该命令时，这些处理程序将按优先级顺序执行。这使得您可以通过配置自定义处理程序，在一般情况下或特定情况下覆盖给定的编辑命令。",
+    "_note": ""
+  },
+  "Custom fixing code can usually be smart about respecting the thing the user may be trying to do to avoid being destructive or surprising about it—though for some types of constraints this does require some care.": {
+    "_translate": "自定义修复代码通常能够智能地尊重用户可能试图执行的操作，以避免造成破坏或产生意外结果——尽管对于某些类型的约束，这需要格外小心。",
+    "_note": ""
+  },
+  "Extensions may contribute their own menu items, so it is practical to allow them to automatically insert menu content without further configuration work. But in some situations, you want to control precisely what appears in the menu. Wordgard's menu system tries to bridge this tension.": {
+    "_translate": "扩展程序可以贡献自己的菜单项，因此允许它们自动插入菜单内容而无需额外配置是切实可行的。但在某些情况下，您希望精确控制菜单中显示的内容。Wordgard 的菜单系统试图缓解这一矛盾。",
+    "_note": ""
+  },
+  "When resolving your menu structure, you can either just take whatever items are available in the top group, or provide your own Menu.Template, which either specifies the entire structure explicitly or leaves some of the inner structure open to be constructed by resolving parent links.": {
+    "_translate": "在<a href=\"../ref/#command.Menu.resolve\">解析</a>菜单结构时，您可以直接使用<a href=\"../ref/#command.Menu.Group.top\"><code>top</code></a>组中可用的所有项目，或者提供您自己的<a href=\"../ref/#command.Menu.Template\"><code>Menu.Template</code></a>，该模板可以显式指定整个结构，也可以将部分内部结构留空，以便通过解析父级链接来构建。",
+    "_note": ""
   }
 }
