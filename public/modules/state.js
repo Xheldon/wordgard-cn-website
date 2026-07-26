@@ -417,13 +417,14 @@ class TextblockMap {
                 idx += len;
             }
             else if (flag == 1) {
-                off -= len;
+                off = Math.max(0, off - len);
                 if (off < 0)
                     return idx;
                 idx++;
             }
             else {
-                off--;
+                if (off > 0)
+                    off--;
             }
         }
         return idx;

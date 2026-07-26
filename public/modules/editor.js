@@ -1,8 +1,8 @@
 import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'wordgard/state';
-import { Attributes, Elt, Node, Leaf, ChangeSet, parse, serialize, Slice, Plot, Pos } from 'wordgard/doc';
+import { Attributes, Elt, Node, Leaf, ChangeSet, parse, Slice, Plot, serialize, Pos, ValidationError } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
-import { enter, insertLineBreak, selectAll, undo, redo, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, insertText, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
+import { enter, insertLineBreak, selectAll, undo, redo, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
 import { PhraseSet, phrases } from 'wordgard/phrases';
 import { history } from 'wordgard/history';
 
@@ -3133,10 +3133,10 @@ function setDOMSelection(wg) {
         wg.observer.setSelectionRange(anchorDOM, headDOM);
 }
 function readDOMSelection(wg, range) {
-    let anchor = wg.docTile.posFromDOM(range.anchorNode, range.anchorOffset, -1);
+    let anchor = wg.posAtDOM(range.anchorNode, range.anchorOffset);
     let head = range.anchorNode == range.focusNode && range.anchorOffset == range.focusOffset ? anchor
-        : wg.docTile.posFromDOM(range.focusNode, range.focusOffset, -1);
-    return GardSelection.range(wg.viewState.mapPosPending(anchor, 1), wg.viewState.mapPosPending(head, 1));
+        : wg.posAtDOM(range.focusNode, range.focusOffset);
+    return GardSelection.range(anchor, head);
 }
 const Y_STEP = 5;
 function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
@@ -3356,20 +3356,18 @@ class DOMObserver {
     }
     onSelectionChange() {
         this.readSelectionRange();
-        if (this.selectionChanged) {
-            if (this.wg.inputState.lastTouchTime > Date.now() - 100 || !this.wg.focusable)
-                this.pollSelection("select.pointer");
-            else
-                this.wg.scheduleFlush();
-        }
+        if (this.selectionChanged)
+            this.wg.scheduleFlush();
     }
-    pollSelection(userEvent = "select") {
-        if (this.selectionChanged && !this.wg.inputState.pendingComposition &&
+    pollSelection() {
+        if (this.selectionChanged &&
             (this.wg.hasFocus || !this.wg.focusable) && hasSelection(this.wg.contentDOM, this.selectionRange)) {
             this.selectionChanged = false;
             let sel = readDOMSelection(this.wg, this.selectionRange);
-            if (!sel.eqPos(this.wg.state.selection))
+            if (!sel.eqPos(this.wg.state.selection)) {
+                let userEvent = this.wg.inputState.lastTouchTime > Date.now() - 100 ? "select.pointer" : "select";
                 this.wg.dispatch({ selection: sel, userEvent });
+            }
         }
     }
     readSelectionRange() {
@@ -3742,19 +3740,23 @@ class InputState {
     composing = null;
     compositionEndedAt = 0;
     compositionPendingKey = false;
-    pendingComposition = null;
-    pendingDeletion = null;
-    modifiedTextNodes = new Set;
     wrappingComposition = null;
     mouseSelection = null;
     draggedContent = null;
     notifiedFocused;
+    pendingInputEvent = null;
+    domDoc;
+    _domMapping;
+    domMappingIndex = 0;
+    domChanges = null;
     constructor(wg) {
         this.wg = wg;
         this.handleEvent = this.handleEvent.bind(this);
         this.notifiedFocused = wg.hasFocus;
         if (browser.safari)
             wg.contentDOM.addEventListener("input", () => null);
+        this.domDoc = wg.state.doc;
+        this._domMapping = ChangeSet.empty(this.domDoc.length);
     }
     handleEvent(event) {
         if (!eventBelongsToEditor(this.wg, event) || this.ignoreDuringComposition(event))
@@ -3827,58 +3829,135 @@ class InputState {
             this.draggedContent = this.draggedContent.map(update.changes, update.state);
         if (update.transactions.length)
             this.lastKeyCode = 0;
-        this.modifiedTextNodes.clear();
-        if (this.composing) {
-            this.composing.targetPos = update.changes.mapPos(this.composing.targetPos, -1);
-            if (this.composing.target)
-                this.modifiedTextNodes.add(this.composing.target);
+        this.domDoc = update.state.doc;
+        this._domMapping = ChangeSet.empty(this.domDoc.length);
+        this.domMappingIndex = 0;
+        this.domChanges = null;
+    }
+    getDOMPos(node, offset) {
+        if (node.nodeType == 1 && offset && node.childNodes[offset - 1].nodeType == 3) {
+            node = node.childNodes[offset - 1];
+            offset = node.nodeValue.length;
+        }
+        let inText = node.nodeType == 3;
+        let ref = this.wg.docTile.posFromDOM(node, inText ? 0 : offset);
+        let dir = -1;
+        let textBefore = textNodeBefore(node.parentNode, domIndex(node));
+        let prev = textBefore && Tile.get(textBefore);
+        if (prev instanceof TextTile && prev.length < prev.dom.nodeValue.length)
+            dir = 1;
+        if (this.domChanges)
+            ref = this.domChanges.mapPos(ref, dir);
+        return ref + (inText ? offset : 0);
+    }
+    get domMapping() {
+        let { pending } = this.wg.viewState;
+        while (this.domMappingIndex < pending.length)
+            this._domMapping = this._domMapping.compose(pending[this.domMappingIndex++].changes);
+        return this._domMapping;
+    }
+    posAtDOM(node, offset, assoc = -1) {
+        if (this.domMapping.empty && !this.domChanges)
+            return this.wg.docTile.posFromDOM(node, offset);
+        return this.domMapping.mapPos(this.getDOMPos(node, offset), assoc);
+    }
+    beforeInput(event, data) {
+        let type = event.inputType, range;
+        let { wg } = this, sel = wg.state.selection;
+        if (data.domRange) {
+            range = { from: this.domMapping.mapPos(data.domRange.from),
+                to: this.domMapping.mapPos(data.domRange.to) };
+            if (!this.domMapping.empty && type == "insertText" && !this.composing && range.from == range.to) {
+                let fromMax = this.domMapping.mapPos(data.domRange.from, 1);
+                if (range.from <= sel.from && fromMax >= sel.to)
+                    range = sel;
+            }
+        }
+        let command = inputTypeCommands[type];
+        if ((type == "deleteContentBackward" || type == "deleteContentForward") && range &&
+            (sel.empty
+                ? !isSingleChar(this.domDoc, data.domRange.from, data.domRange.to) ||
+                    sel.head != (type == "deleteContentBackward" ? range.to : range.from)
+                : sel.from != range.from || sel.to != range.to)) {
+            wg.dispatch({ changes: { from: range.from, to: range.to, fit: true }, userEvent: "delete" });
+        }
+        else if (command) {
+            Command.dispatch(wg, command);
+        }
+        else if (type == "insertText") {
+            let insert = event.data.replace(/\r\n?|\n/g, " ");
+            Command.dispatch(wg, insertText, { from: range.from, to: range.to, insert, userEvent: "input.type" });
+        }
+        else if ((type == "insertReplacementText" || type == "insertFromYank")) {
+            let read = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, true);
+            let { from, to } = range;
+            let sel = wg.state.selection, touchesSel = from <= sel.to && to >= sel.from;
+            if (read)
+                wg.dispatch({
+                    changes: { from, to, insert: read.slice, fit: read.context },
+                    selection: touchesSel ? (cx, changes) => {
+                        return GardSelection.near(cx, changes.mapPos(to, 1), -1);
+                    } : undefined,
+                    scrollIntoView: touchesSel,
+                    userEvent: "insert.replacementText"
+                });
+        }
+        else if (type == "insertCompositionText") {
+            let compositionStart = !wg.inputState.composing.changes;
+            wg.inputState.composing.changes++;
+            let sel = wg.observer.selectionRange;
+            if (!sel.focusNode)
+                return false;
+            let userEvent = "input.type.compose" + (compositionStart ? ".start" : "");
+            Command.dispatch(wg, insertText, { from: range.from, to: range.to, insert: event.data, userEvent });
+        }
+        else if (type == "formatSetBlockTextDirection") {
+            if (event.data == "ltr" || event.data == "rtl")
+                Command.dispatch(wg, setDirection, event.data);
         }
     }
-    findComposition() {
-        let comp = this.composing;
-        if (!comp)
-            return null;
+    addDOMChange(change) {
+        let { pending } = this.wg.viewState, { domDoc } = this;
+        try {
+            this.domDoc = change.apply(domDoc);
+        }
+        catch (e) {
+            if (!(e instanceof ValidationError))
+                throw e;
+            this.wg.flush();
+            return;
+        }
+        this.domChanges = this.domChanges ? this.domChanges.compose(change) : change;
+        while (this.domMappingIndex < pending.length) {
+            let next = pending[this.domMappingIndex];
+            if (!next.docChanged) {
+                this.domMappingIndex++;
+            }
+            else {
+                let { a: mapping, b: expected } = ChangeSet.transform(domDoc, this._domMapping, change);
+                if (next.changes.sections.length != expected.sections.length ||
+                    next.changes.sections.some((v, i) => v != expected.sections[i]))
+                    break;
+                this.domMappingIndex++;
+                this._domMapping = mapping;
+                return;
+            }
+        }
+        this._domMapping = change.invert(domDoc).compose(this._domMapping);
+    }
+    findComposition(prev) {
         let { focusNode, focusOffset } = this.wg.observer.selectionRange;
         if (!focusNode)
             return null;
         let before = textNodeBefore(focusNode, focusOffset), after = textNodeAfter(focusNode, focusOffset);
-        let newTarget;
         if (!before || !after || before == after) {
-            newTarget = before || after;
+            return before || after;
         }
         else {
             let tileBefore = Tile.get(before), tileAfter = Tile.get(after);
-            newTarget = !tileBefore || tileBefore.text != before.nodeValue ? before
+            return !tileBefore || tileBefore.text != before.nodeValue ? before
                 : !tileAfter || tileAfter.text != after.nodeValue ? after
-                    : comp.target == after ? after : before;
-        }
-        if (!newTarget)
-            return comp.target = null;
-        if (newTarget != comp.target) {
-            let pos = this.wg.docTile.posBeforeDOM(newTarget);
-            if (pos == null)
-                return comp.target = null;
-            comp.target = newTarget;
-            this.modifiedTextNodes.add(newTarget);
-            comp.targetPos = this.wg.viewState.mapPosPending(pos, -1);
-        }
-        return comp;
-    }
-    markModifiedNodes(range) {
-        let { startContainer: start, startOffset: startOff, endContainer: end, endOffset: endOff } = range;
-        for (;;) {
-            if (start.nodeType == 3 && !this.modifiedTextNodes.has(start))
-                this.modifiedTextNodes.add(start);
-            if (start == end && (start.nodeType != 1 || startOff == endOff))
-                break;
-            if (start.nodeType != 1 || startOff == start.childNodes.length) {
-                startOff = domIndex(start) + 1;
-                start = start.parentNode;
-            }
-            else {
-                start = start.childNodes[startOff];
-                startOff = 0;
-            }
+                    : prev == after ? after : before;
         }
     }
     connect() {
@@ -3888,6 +3967,16 @@ class InputState {
         if (this.mouseSelection)
             this.mouseSelection.disconnect();
     }
+}
+function isSingleChar(doc, from, to) {
+    if (to > from + 10)
+        return false;
+    let after = doc.resolve(from).nodeAfter;
+    return !!after && after.is(Leaf.Text) && from + findClusterBreak(after.param, 0) == to;
+}
+function inlineContext(doc, range) {
+    let from = doc.resolve(range.from), to = doc.resolve(range.to);
+    return from.parent.node.inlineContent && to.parent.start == from.parent.start;
 }
 function bindHandler(handler) {
     return (wg, event) => {
@@ -4153,35 +4242,30 @@ function getCompositionInfo(wg) {
             wrapCursor: wrap
         };
     }
-    let comp = wg.inputState.findComposition();
-    if (!comp)
+    let comp = wg.inputState.composing;
+    if (!comp || !(comp.target = wg.inputState.findComposition(comp.target)))
         return null;
     let value = comp.target.nodeValue;
+    let pos = wg.inputState.posAtDOM(comp.target, 0);
     return {
-        fromB: comp.targetPos, toB: comp.targetPos + value.length,
+        fromB: pos, toB: pos + value.length,
         text: value,
         target: comp.target
     };
-}
-function findCompositionSelection(node, offset, target, targetPos) {
-    if (node == target)
-        return targetPos + offset;
-    if (node.compareDocumentPosition(target) & 2)
-        return targetPos + target.nodeValue.length;
-    return targetPos;
 }
 function compositionEnd(wg) {
     let comp = wg.inputState.composing;
     wg.inputState.composing = null;
     wg.inputState.compositionEndedAt = Date.now();
     if (comp && comp.target) {
-        wg.observer.addDirtyRange(comp.targetPos, comp.targetPos + comp.target.nodeValue.length);
+        let pos = wg.inputState.posAtDOM(comp.target, 0);
+        wg.observer.addDirtyRange(pos, pos + comp.target.nodeValue.length);
         wg.flush();
     }
 }
 function compositionUpdate(wg, event) {
     if (!wg.inputState.composing) {
-        wg.inputState.composing = { changes: 0, target: null, targetPos: 0 };
+        wg.inputState.composing = { changes: 0, target: null };
         let wrap = null;
         if (!wg.inputState.composing.changes && !event.data) {
             let sel = wg.state.selection, rSel = wg.state.sel;
@@ -4199,6 +4283,7 @@ function compositionUpdate(wg, event) {
             }
     }
 }
+function isDeletionInputEvent(type) { return /^delete(Content|Word)/.test(type); }
 const inputTypeCommands = /*@__PURE__*/(() => ({
     historyUndo: undo,
     historyRedo: redo,
@@ -4227,31 +4312,10 @@ const inputTypeCommands = /*@__PURE__*/(() => ({
     formatJustifyLeft: Command.bind(setAlignment, "left"),
     formatJustifyRight: Command.bind(setAlignment, "right")
 }))();
-function interpretDOMPosition(wg, node, offset, bias) {
-    if (node.nodeType == 3 && wg.viewState.pending.length && wg.inputState.modifiedTextNodes.has(node)) {
-        let parent = wg.docTile.nearest(node);
-        if (parent?.isText && parent.dom == node) {
-            let start = parent.posAtStart;
-            return wg.viewState.mapPosPending(start, bias) + offset;
-        }
-    }
-    let pos = wg.docTile.posFromDOM(node, offset);
-    return wg.viewState.mapPosPending(pos, bias);
-}
-function inputEventRange(event, wg, preferSel = false) {
-    let range = event.getTargetRanges()[0];
-    let from = interpretDOMPosition(wg, range.startContainer, range.startOffset, -1);
-    let to = interpretDOMPosition(wg, range.endContainer, range.endOffset, -1);
-    let { pending } = wg.viewState;
-    if (pending.length && preferSel && !wg.inputState.composing && from == to) {
-        let fromMax = interpretDOMPosition(wg, range.startContainer, range.startOffset, 1);
-        if (from <= wg.state.selection.from && fromMax >= wg.state.selection.to)
-            return wg.state.selection;
-    }
-    return { from, to };
-}
 const baseHandlers = {
     keydown(wg, event) {
+        if ((browser.ios || browser.android) && (event.key == "Backspace" || event.key == "Enter"))
+            return false;
         return KeyBinding.runScopeHandlers(wg, event, "editor");
     },
     mousedown(wg, event) {
@@ -4349,100 +4413,45 @@ const baseHandlers = {
     },
     beforeinput(wg, event) {
         let type = event.inputType;
-        let command = inputTypeCommands[type];
-        if (command) {
-            if (browser.android && browser.chrome && (type == "deleteContentBackward" || type == "deleteContentForward")) {
-                wg.inputState.pendingDeletion = inputEventRange(event, wg);
-                wg.inputState.markModifiedNodes(event.getTargetRanges()[0]);
-                return false;
-            }
-            Command.dispatch(wg, command);
-            return true;
+        if (browser.safari && type == "insertText" && wg.inputState.composing)
+            compositionEnd(wg);
+        if (type == "insertCompositionText" && !wg.inputState.composing)
+            wg.inputState.composing = { changes: 0, target: null };
+        let data = {
+            inputType: type,
+            data: event.data,
+            domRange: null,
+        };
+        let ranges = event.getTargetRanges();
+        if (ranges.length) {
+            let r = ranges[0];
+            data.domRange = { from: wg.inputState.getDOMPos(r.startContainer, r.startOffset),
+                to: wg.inputState.getDOMPos(r.endContainer, r.endOffset) };
         }
-        if (type == "insertText") {
-            if (browser.safari && wg.inputState.composing)
-                compositionEnd(wg);
-            let insert = event.data.replace(/\r\n?|\n/g, " ");
-            let { from, to } = inputEventRange(event, wg, true);
-            Command.dispatch(wg, insertText, { from, to, insert, userEvent: "input.type" });
-            return true;
-        }
-        else if (type == "insertReplacementText" || type == "insertFromYank") {
-            let slice = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, true)?.slice;
-            if (slice) {
-                let { from, to } = inputEventRange(event, wg);
-                let sel = wg.state.selection, touchesSel = from <= sel.to && to >= sel.from;
-                wg.dispatch({
-                    changes: { from, to, insert: slice, fit: true },
-                    selection: touchesSel ? (cx, changes) => {
-                        return GardSelection.near(cx, changes.mapPos(to, 1), -1);
-                    } : undefined,
-                    scrollIntoView: touchesSel,
-                    userEvent: "insert.replacementText"
-                });
-                return true;
-            }
-        }
-        else if (type == "insertCompositionText") {
-            if (!wg.inputState.composing)
-                wg.inputState.composing = { changes: 0, target: null, targetPos: 0 };
-            let range = inputEventRange(event, wg);
-            wg.inputState.pendingComposition = { from: range.from, to: range.to, text: event.data };
-        }
-        else if (type == "formatSetBlockTextDirection") {
-            if (event.data == "ltr" || event.data == "rtl") {
-                Command.dispatch(wg, setDirection, event.data);
-                return true;
-            }
-        }
-        return false;
+        wg.inputState.beforeInput(event, wg.inputState.pendingInputEvent = data);
+        wg.scheduleFlush();
+        let allow = type == "insertCompositionText" ||
+            (type == "insertText" || isDeletionInputEvent(type) &&
+                data.domRange && inlineContext(wg.inputState.domDoc, data.domRange));
+        return !allow;
     },
     input(wg, event) {
-        let type = event.inputType;
-        if (type == "insertCompositionText" && wg.inputState.pendingComposition) {
-            if (wg.state.readOnly)
-                return true;
-            let { from, to, text } = wg.inputState.pendingComposition;
-            wg.inputState.pendingComposition = null;
-            let start = !wg.inputState.composing.changes;
-            wg.inputState.composing.changes++;
-            wg.observer.readSelectionRange();
-            let sel = wg.observer.selectionRange;
-            if (!sel.focusNode)
-                return false;
-            let comp = wg.inputState.findComposition();
-            let userEvent = "input.type.compose" + (start ? ".start" : "");
-            if (comp && sel.focusNode) {
-                let anchor = findCompositionSelection(sel.anchorNode, sel.anchorOffset, comp.target, comp.targetPos);
-                let head = sel.empty ? anchor : findCompositionSelection(sel.focusNode, sel.focusOffset, comp.target, comp.targetPos);
-                if (head != anchor || head != from + text.length) {
-                    let { selection } = wg.state;
-                    let marks = (from == selection.from && to == selection.to && wg.state.sel.activeMarks) ||
-                        wg.state.doc.resolve(from).marks(wg.state.doc.resolve(to));
-                    wg.dispatch({
-                        changes: { from, to, insert: [Leaf.Text.of(text, marks)], fit: true },
-                        selection: GardSelection.range(anchor, head),
-                        userEvent
-                    });
-                    return false;
-                }
-            }
-            Command.dispatch(wg, insertText, { from, to, insert: text, userEvent });
+        let pending = wg.inputState.pendingInputEvent;
+        if (!pending || pending.inputType != event.inputType || !pending.domRange)
+            return false;
+        wg.inputState.pendingInputEvent = null;
+        let change;
+        if (event.inputType == "insertCompositionText" || event.inputType == "insertText") {
+            change = { from: pending.domRange.from, to: pending.domRange.to, insert: [Leaf.text(pending.data)] };
+        }
+        else if (isDeletionInputEvent(event.inputType)) {
+            change = { from: pending.domRange.from, to: pending.domRange.to };
+        }
+        else {
             return false;
         }
-        else if (browser.android && browser.chrome && (type == "deleteContentBackward" || type == "deleteContentForward") &&
-            wg.inputState.pendingDeletion) {
-            if (wg.state.readOnly)
-                return true;
-            let { from, to } = wg.inputState.pendingDeletion;
-            wg.inputState.pendingDeletion = null;
-            wg.dispatch({
-                changes: { from, to, fit: true },
-                userEvent: "delete"
-            });
-            return false;
-        }
-        return true;
+        wg.inputState.addDOMChange(ChangeSet.create(wg.inputState.domDoc, change));
+        return false;
     }
 };
 const baseObservers = {
@@ -4572,11 +4581,6 @@ class ViewState {
         this.contentDOMHeight = domRect.height;
         this.editorHeight = wg.scrollDOM.clientHeight;
         this.editorWidth = wg.scrollDOM.clientWidth;
-    }
-    mapPosPending(pos, assoc) {
-        for (let tr of this.pending)
-            pos = tr.changes.mapPos(pos, assoc);
-        return pos;
     }
 }
 
@@ -4762,9 +4766,10 @@ class Wordgard {
         }
     }
     flush() {
-        if (!this.connected || this.inputState.pendingComposition || this.inputState.pendingDeletion)
+        this.observer.readSelectionRange();
+        if (!this.connected)
             return;
-        if (!this.viewState.pending.some(tr => tr.selection))
+        if (!this.viewState.pending.some(tr => tr.selection) || this.inputState.composing)
             this.observer.pollSelection();
         let { flushedState, state } = this.viewState;
         let update = Wordgard.Update.create(this, flushedState, state, this.viewState.pending);
@@ -4960,8 +4965,6 @@ class Wordgard {
         if (this.willFlush && (this.viewState.pending.some(tr => tr.docChanged) || this.observer.dirty)) {
             if (this.flushing == 1)
                 throw new Error("Trying to read from unflushed editor during flush");
-            if (this.inputState.pendingComposition || this.inputState.pendingDeletion)
-                throw new Error("Trying to read editor DOM between beforeinput and input for composition");
             if (this.flushing == 0)
                 this.flush();
         }
@@ -4987,20 +4990,20 @@ class Wordgard {
         return tile.dom;
     }
     posAtDOM(node, offset = 0) {
-        this.ensureFlushed();
-        return this.docTile.posFromDOM(node, offset, 1);
+        return this.inputState.posAtDOM(node, offset, 1);
     }
     nodeFromDOM(node) {
-        this.ensureFlushed();
         let tile = this.docTile.nearest(node, true);
         return tile && tile != this.docTile ? { pos: tile.posBefore, node: tile.node } : null;
     }
     posAtCoords(coords) {
-        this.ensureFlushed();
         let elt = (this.root.elementFromPoint ? this.root : this.dom.ownerDocument)
             .elementFromPoint(coords.x, coords.y);
         let tile = (elt && this.docTile.nearest(elt)) || this.docTile;
-        return tile.posAtCoords(this.state, coords.x, coords.y);
+        let result = tile.posAtCoords(this.state, coords.x, coords.y);
+        for (let tr of this.viewState.pending)
+            result = result.map(tr.changes);
+        return result;
     }
     coordsAtPos(pos, assoc = -1) {
         this.ensureFlushed();

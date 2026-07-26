@@ -3336,7 +3336,7 @@ class ParseContext {
         else if (!match || match.rule.ignore === "skip") {
             let sync, top = this.top;
             if (blockTags.has(name)) {
-                if (top.children.length && top.children[0].type.isInline)
+                if (top.children.length && top.children[0].type.isInline && top.parent)
                     this.close();
                 sync = true;
             }
@@ -3595,12 +3595,14 @@ const blockTags = /*@__PURE__*/(() => new Set(["address", "article", "aside", "b
     "section", "table", "tfoot", "ul"]))();
 function guessParent(content, schema) {
     let rules = parse.Rule.Set.fromSchema(schema);
-    let tags = [];
+    let tags = [], blocks = 0;
     let explore = (node) => {
         if (node.nodeType == 3) {
             tags.push(Leaf.Text);
         }
         else if (node.nodeType == 1) {
+            if (blockTags.has(node.nodeName.toLowerCase()))
+                blocks++;
             let match = rules.matchElement(node);
             if (match && match.rule.tag) {
                 tags.push(Node.Type.get(match.rule.tag));
@@ -3616,6 +3618,8 @@ function guessParent(content, schema) {
     for (let parent of schema.nodes)
         if (parent.isPlot && parent.default) {
             let cost = parent.isDoc ? -1 : 0;
+            if (blocks > 1 && parent.inlineContent)
+                cost += 5;
             for (let child of tags) {
                 let fit = schema.findWrapping(parent, child);
                 cost += fit ? fit.length * 2 : 1000;
