@@ -4916,6 +4916,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Called before the editor handles a DOM event that comes from inside the widget. May return true to indicate that no further handling of the event should happen.">在编辑器处理来自组件内部的 DOM 事件之前调用。可返回 true 以指示不应再对该事件进行任何处理。</p>
 </div>
+<pre class="refcode">  <a href="#editor.Widget.Spec.inFlow" class="def" id="editor.Widget.Spec.inFlow">inFlow</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Set this to false for widgets that either aren't visible or are positioned outside of the regular document flow.">对于不可见或位于常规文档流之外的组件，请将此设置为 false。</p>
+</div>
 <pre class="refcode">}
 </pre>
 </section>
@@ -6748,26 +6753,6 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Input rule that will switch to a heading when one to six hash characters, followed by a space, are typed at the start of a textblock, using the number of hash characters to determine the heading level.">输入规则：当在文本块开头键入一到六个井号字符后跟一个空格时，将切换为标题，并根据井号字符的数量确定标题级别。</p>
 </div>
-<pre class="refcode"><a href="#schema.codeBlock" class="def" id="schema.codeBlock">codeBlock</a>(): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
-</pre>
-<div class="doc indent1">
-<p data-x-en="Extensions to add support for code blocks. Includes the schema element, a key binding, a menu button, and an input rule.">用于添加代码块支持的扩展。包括 <a href="#types.CodeBlock">schema 元素</a>、<a href="#schema.codeBlock.keyBinding">键盘快捷键</a>、<a href="#schema.codeBlock.button">菜单按钮</a> 以及 <a href="#schema.codeBlock.createOnBackticks">输入规则</a>。</p>
-</div>
-<pre class="refcode"><a href="#schema.codeBlock.keyBinding" class="def" id="schema.codeBlock.keyBinding">codeBlock.keyBinding</a>: <a href="#editor.KeyBinding" class="ref">KeyBinding</a>
-</pre>
-<div class="doc indent1">
-<p data-x-en="Binds Ctrl-Shift-\ to switch the selected textblocks to a code block.">将 <code>Ctrl-Shift-\</code> 绑定为将选中的文本块切换为代码块。</p>
-</div>
-<pre class="refcode"><a href="#schema.codeBlock.button" class="def" id="schema.codeBlock.button">codeBlock.button</a>: <a href="#command.Menu.Button" class="ref">Menu.Button</a>
-</pre>
-<div class="doc indent1">
-<p data-x-en="Button for the textblock style menu that switches to a code block.">用于切换为代码块的 <a href="#command.Menu.Submenu.textblockStyle">文本块样式</a> 菜单按钮。</p>
-</div>
-<pre class="refcode"><a href="#schema.codeBlock.createOnBackticks" class="def" id="schema.codeBlock.createOnBackticks">codeBlock.createOnBackticks</a>: <a href="#editor.InputRule" class="ref">InputRule</a>
-</pre>
-<div class="doc indent1">
-<p data-x-en="Input rule that switches the current textblock to a code block when you type three backticks at its start.">输入规则：当您在文本块开头输入三个反引号时，该规则会将当前文本块切换为代码块。</p>
-</div>
 <pre class="refcode"><a href="#schema.alignment" class="def" id="schema.alignment">alignment</a>(): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
 <div class="doc indent1">
@@ -6896,6 +6881,26 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="A menu button that toggles an ordered list wrapper for the selected textblocks.">一个菜单按钮，用于切换所选文本块的有序列表包装器。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlock" class="def" id="schema.codeBlock">codeBlock</a>(): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Extensions to add support for code blocks. Includes the schema element, a key binding, a menu button, and an input rule.">用于添加代码块支持的扩展。包括 <a href="#types.CodeBlock">schema 元素</a>、<a href="#schema.codeBlock.keyBinding">键盘快捷键</a>、<a href="#schema.codeBlock.button">菜单按钮</a> 以及 <a href="#schema.codeBlock.createOnBackticks">输入规则</a>。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlock.keyBinding" class="def" id="schema.codeBlock.keyBinding">codeBlock.keyBinding</a>: <a href="#editor.KeyBinding" class="ref">KeyBinding</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Binds Ctrl-Shift-\ to switch the selected textblocks to a code block.">将 <code>Ctrl-Shift-\</code> 绑定为将选中的文本块切换为代码块。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlock.button" class="def" id="schema.codeBlock.button">codeBlock.button</a>: <a href="#command.Menu.Button" class="ref">Menu.Button</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Button for the textblock style menu that switches to a code block.">用于切换为代码块的 <a href="#command.Menu.Submenu.textblockStyle">文本块样式</a> 菜单按钮。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlock.createOnBackticks" class="def" id="schema.codeBlock.createOnBackticks">codeBlock.createOnBackticks</a>: <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Enter command handler that, when activated at the end of a textblock containing three backticks and an optional language, converts the block into a code block.">输入命令处理器，当在包含三个反引号和可选语言的文本块末尾激活时，将该块转换为代码块。</p>
 </div>
 <pre class="refcode"><a href="#schema.blockDoc" class="def" id="schema.blockDoc">blockDoc</a>(): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>

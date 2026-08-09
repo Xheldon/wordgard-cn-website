@@ -33,20 +33,23 @@ class Widget {
         handleEvent;
         connect;
         disconnect;
+        inFlow;
         constructor(
         render, 
         eq, 
         handleEvent, 
         connect, 
-        disconnect) {
+        disconnect, 
+        inFlow) {
             this.render = render;
             this.eq = eq;
             this.handleEvent = handleEvent;
             this.connect = connect;
             this.disconnect = disconnect;
+            this.inFlow = inFlow;
         }
         static new(spec) {
-            return new Type(spec.render, spec.eq || ((a, b) => a === b), spec.handleEvent || (() => false), spec.connect ?? null, spec.disconnect ?? null);
+            return new Type(spec.render, spec.eq || ((a, b) => a === b), spec.handleEvent || (() => false), spec.connect ?? null, spec.disconnect ?? null, spec.inFlow !== false);
         }
         of(value) { return Widget.new(this, value); }
     }
@@ -73,7 +76,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         }
         Tag.shape = shape;
         (function (shape_1) {
-            function dynamic(type, shape, config) {
+            function dynamic(            type, shape, config) {
                 let tp = Node.Type.get(type);
                 let ext = tagShape.compute(state => {
                     let s = shape(state);
@@ -1425,6 +1428,8 @@ function nonZero(rect) {
     return rect.top < rect.bottom || rect.left < rect.right;
 }
 function singleRect(target, bias, preferWide = false) {
+    if (target.nodeType == 3)
+        target = textRange(target, 0, target.nodeValue.length);
     let rects = target.getClientRects();
     for (let i = bias < 0 ? 0 : rects.length - 1; bias < 0 ? i < rects.length : i >= 0; i -= bias) {
         let rect = rects[i];
@@ -2529,23 +2534,53 @@ class ContentUpdate {
             return tile;
         }
     }
-    addBR() {
-        let node = this.new.node;
-        if (node && node.isPlot && node.isTextblock) {
-            let i = this.new.children.length - 1;
-            let last = i < 0 ? null : this.new.children[i];
-            if (last instanceof WidgetTile && last.widget.type == brHack.type) {
-                let prev = i ? this.new.children[i - 1] : null;
-                if (prev && prev.dom.nodeName != "BR")
-                    this.new.children.pop();
+    ensureBR() {
+        let tile = this.new;
+        if (!tile.isPlotContent)
+            return;
+        while (tile.isNodeInner)
+            tile = tile.parent;
+        let node = tile.node;
+        if (!node || !node.isPlot || !node.isTextblock)
+            return;
+        let hasHack = -1, needsHack = true;
+        for (let parent = this.new, i = parent.children.length;;) {
+            if (i > 0) {
+                let next = parent.children[--i];
+                if (next.isNodeInner || next instanceof WidgetTile && !next.widget.type.inFlow) ;
+                else if (next instanceof WidgetTile && next.widget == brHack && parent == this.new) {
+                    hasHack = i;
+                }
+                else if (next.dom.nodeName == "BR" || next instanceof TextTile && /\n$/.test(next.text)) {
+                    break;
+                }
+                else if (next instanceof CompositeTile && !next.isAtom) {
+                    parent = next;
+                    i = parent.children.length;
+                }
+                else {
+                    needsHack = false;
+                    break;
+                }
             }
-            else if (!last || last.dom.nodeName == "BR") {
-                this.new.addChild(new WidgetTile(brHack, null, 16 | 64, 0));
+            else if (parent == this.new) {
+                break;
             }
+            else {
+                i = parent.parent.children.indexOf(parent);
+                parent = parent.parent;
+            }
+        }
+        if (hasHack > -1) {
+            if (!needsHack)
+                this.new.children.splice(hasHack, 1);
+        }
+        else if (needsHack) {
+            this.new.addChild(new WidgetTile(brHack, null, 16 | 64, 0));
         }
     }
     up() {
-        this.addBR();
+        this.ensureBR();
         this.new = this.new.parent;
     }
     leaveNode() {
@@ -2628,7 +2663,7 @@ class ContentUpdate {
     finish() {
         while (!(this.new instanceof DocTile))
             this.up();
-        this.addBR();
+        this.ensureBR();
         return this.new;
     }
 }
@@ -2705,10 +2740,9 @@ function separateComposition(sections, comp) {
 }
 
 function coordsAtPos(wg, pos, assoc) {
-    let tile = wg.docTile.resolve(pos, assoc);
-    let node = tile.dom, { offset } = tile;
-    if (node.nodeType == 3) {
-        let len = node.nodeValue.length;
+    let { offset, tile, pos: tilePos } = wg.docTile.resolve(pos, assoc);
+    if (tile instanceof TextTile) {
+        let node = tile.dom, len = node.nodeValue.length;
         if (!len)
             return singleRect(textRange(node, 0, 0), 1);
         let from = offset, to = offset, side = assoc < 0 && from || from == len ? 1 : -1;
@@ -2718,39 +2752,45 @@ function coordsAtPos(wg, pos, assoc) {
             from--;
         return flattenV(singleRect(textRange(node, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc));
     }
-    let tagTile = tile.tile;
+    let tagTile = tile;
     while (!tagTile.node)
         tagTile = tagTile.parent;
-    if (tagTile.node.isPlot && tagTile.node.type.orientation == "column") {
-        if (offset && (assoc < 0 || offset == maxOffset(node))) {
-            let before = node.childNodes[offset - 1];
-            if (before.nodeType == 1)
-                return flattenH(before.getBoundingClientRect(), false);
+    let horizontal = tagTile.node.isPlot && tagTile.node.type.orientation == "column";
+    if (tile instanceof WidgetTile) {
+        let after = pos > tilePos + tile.length / 2;
+        if (tile.widget.type.inFlow) {
+            let rect = singleRect(tile.dom, after ? 1 : -1);
+            if (rect.width || rect.height)
+                return horizontal ? flattenH(rect, !after) : flattenV(rect, ltrAt(wg.state, pos, 1) == !after);
         }
-        if (offset < maxOffset(node)) {
-            let after = node.childNodes[offset];
-            if (after.nodeType == 1)
-                return flattenH(after.getBoundingClientRect(), true);
+        if (!tile.parent)
+            return new DOMRect;
+        offset = tile.parent.children.indexOf(tile) + (after ? 1 : 0);
+        tile = tile.parent;
+        assoc = after ? 1 : -1;
+    }
+    for (let pass = 0; pass < 2; pass++) {
+        if (pass == (assoc < 0 ? 0 : 1)) {            for (let i = offset; i > 0; i--) {
+                let before = tile.children[i - 1];
+                if (before instanceof WidgetTile && !before.widget.type.inFlow)
+                    continue;
+                let rect = singleRect(before.dom, 1);
+                if (rect.width || rect.height)
+                    return horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1));
+            }
         }
-        return flattenH(node.getBoundingClientRect(), assoc > 0);
+        else {            for (let i = offset; i < tile.children.length; i++) {
+                let after = tile.children[i];
+                if (after instanceof WidgetTile && !after.widget.type.inFlow)
+                    continue;
+                let rect = singleRect(after.dom, -1);
+                if (rect.width || rect.height)
+                    return horizontal ? flattenH(rect, true) : flattenV(rect, ltrAt(wg.state, pos, 1));
+            }
+        }
     }
-    if (offset && (assoc < 0 || offset == maxOffset(node))) {
-        let before = node.childNodes[offset - 1];
-        let target = before.nodeType == 3 ? textRange(before, Math.max(0, maxOffset(before)), maxOffset(before))
-            : before.nodeType == 1 && (before.nodeName != "BR" || !before.nextSibling) ? before : null;
-        if (target)
-            return flattenV(singleRect(target, 1, true), !ltrAt(wg.state, pos, assoc));
-    }
-    if (offset < maxOffset(node)) {
-        let after = node.childNodes[offset];
-        let target = !after ? null : after.nodeType == 3 ? textRange(after, 0, Math.min(1, maxOffset(after)))
-            : after.nodeType == 1 ? after : null;
-        if (target)
-            return flattenV(singleRect(target, -1, true), ltrAt(wg.state, pos, assoc));
-    }
-    return flattenV(singleRect(node.nodeType == 3
-        ? textRange(node, 0, node.nodeValue.length)
-        : node, -assoc, true), assoc > 0);
+    let rect = singleRect(tile.dom, -assoc);
+    return horizontal ? flattenH(rect, assoc < 0) : flattenV(rect, assoc < 0);
 }
 function flattenV(rect, left) {
     return rect.width ? new DOMRect(left ? rect.left : rect.right, rect.top, 0, rect.height) : rect;
@@ -3434,7 +3474,10 @@ class DOMObserver {
             return null;
         tile.flags |= 8192;
         if (record.type == "attributes" || record.type == "characterData") {
-            if (tile.dom == record.target) {
+            if (tile == this.wg.docTile) {
+                return null;
+            }
+            else if (tile.dom == record.target) {
                 return [tile.posBefore, tile.posAfter];
             }
             else {
@@ -4776,9 +4819,9 @@ class Wordgard {
         this.willFlush = false;
         this.flushing = 1;
         this.lastFlush = Date.now();
-        let domChanges = this.observer.takeDirty();
-        this.viewState.flush();
         try {
+            let domChanges = this.observer.takeDirty();
+            this.viewState.flush();
             this.observer.ignore(() => this.runUpdate(update, domChanges));
             domChanges = null;
             for (let i = 0;; i++) {

@@ -5478,5 +5478,13 @@
   "Get the active tooltip view for a given tooltip or tooltip constructor, if available.": {
     "_translate": "获取给定工具提示或工具提示构造函数的活动工具提示视图（如果可用）。",
     "_note": ""
+  },
+  "Set this to false for widgets that either aren't visible or are positioned outside of the regular document flow.": {
+    "_translate": "对于不可见或位于常规文档流之外的组件，请将此设置为 false。",
+    "_note": ""
+  },
+  "Enter command handler that, when activated at the end of a textblock containing three backticks and an optional language, converts the block into a code block.": {
+    "_translate": "输入命令处理器，当在包含三个反引号和可选语言的文本块末尾激活时，将该块转换为代码块。",
+    "_note": ""
   }
 }

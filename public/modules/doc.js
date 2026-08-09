@@ -415,7 +415,7 @@ const Attributes = /*@__PURE__*/(function (Attributes) {
                 score--;
                 iA += 2;
             }
-            else if (iB < b.length && iA < a.length) {
+            else if (iB < b.length && iA == a.length) {
                 score--;
                 iB += 2;
             }

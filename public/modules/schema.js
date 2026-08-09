@@ -1,8 +1,8 @@
 import { ChangeSet, Leaf, Plot, Elt } from 'wordgard/doc';
 import { GardState, GardSelection, BidiSpan, Transaction } from 'wordgard/state';
-import { Paragraph, Heading, CodeBlock, Direction, Blockquote, HorizontalRule, Alignment, Doc, InlineDoc, BulletList, OrderedList, InlineListItem, ListItem, Strong, Emphasis, Code, Underline, Strikethrough, Superscript, Subscript, ImageSize, ImageAlt, Image, Figure, CaptionedFigure, Color, BackgroundColor, Link, LineBreak } from 'wordgard/types';
+import { Paragraph, Heading, Direction, Blockquote, HorizontalRule, Alignment, Doc, InlineDoc, BulletList, OrderedList, InlineListItem, ListItem, CodeBlock, CodeBlockLanguage, Strong, Emphasis, Code, Underline, Strikethrough, Superscript, Subscript, ImageSize, ImageAlt, Image, Figure, CaptionedFigure, Color, BackgroundColor, Link, LineBreak } from 'wordgard/types';
 import { phrases, imagePhrases, colorNames } from 'wordgard/phrases';
-import { Command, setTextblockType, Menu, setAlignment, setDirection, toggleBlock, listIsActive, toggleList, toggleMark } from 'wordgard/command';
+import { Command, setTextblockType, Menu, setAlignment, setDirection, toggleBlock, listIsActive, toggleList, enter, toggleMark } from 'wordgard/command';
 import { history } from 'wordgard/history';
 import { KeyBinding, InputRule, Wordgard, Panel, Dialog, Decoration, PointSet, Tooltip } from 'wordgard/editor';
 import cr from 'crelt';
@@ -76,25 +76,6 @@ function heading() {
     });
     heading.createOnHash = InputRule.textblockType(/^(#{1,6}) $/, m => Heading.of(m[1].to.pos - m[1].from.pos), true);
 ;return heading})(heading);
-function codeBlock() {
-    return [GardState.schemaElement.of(CodeBlock),
-        codeBlock.button, codeBlock.keyBinding, codeBlock.createOnBackticks];
-}
-;codeBlock = /*@__PURE__*/(function (codeBlock) {
-    codeBlock.keyBinding = KeyBinding.of({
-        key: "Ctrl-Shift-\\",
-        run: Command.bind(setTextblockType, CodeBlock)
-    });
-    codeBlock.button = Menu.Button.define({
-        run: Command.bind(setTextblockType, CodeBlock),
-        active: selectionInType(CodeBlock),
-        label: phrases.ref("code_block"),
-        enable: s => !s.readOnly,
-        parent: Menu.Submenu.textblockStyle,
-        rank: 30
-    });
-    codeBlock.createOnBackticks = InputRule.textblockType(/^```$/, CodeBlock);
-;return codeBlock})(codeBlock);
 function alignment() {
     return [GardState.schemaElement.of(Alignment), alignment.button, alignment.keyBindings];
 }
@@ -294,6 +275,44 @@ function orderedList(config = {}) {
         rank: 30
     });
 ;return orderedList})(orderedList);
+
+function codeBlock() {
+    return [GardState.schemaElement.of(CodeBlock),
+        codeBlock.button, codeBlock.keyBinding, codeBlock.createOnBackticks];
+}
+;codeBlock = /*@__PURE__*/(function (codeBlock) {
+    codeBlock.keyBinding = KeyBinding.of({
+        key: "Ctrl-Shift-\\",
+        run: Command.bind(setTextblockType, CodeBlock)
+    });
+    codeBlock.button = Menu.Button.define({
+        run: Command.bind(setTextblockType, CodeBlock),
+        active: selectionInType(CodeBlock),
+        label: phrases.ref("code_block"),
+        enable: s => !s.readOnly,
+        parent: Menu.Submenu.textblockStyle,
+        rank: 30
+    });
+    codeBlock.createOnBackticks = GardState.prec.high(Command.handler(enter, wg => {
+        let { sel } = wg.state, parent = sel.head.parent;
+        if (!sel.selection.isCursor || !parent.node.isTextblock || sel.head.pos != parent.end ||
+            parent.node.length > 20 || parent.node.type == CodeBlock.type || !parent.parent ||
+            !wg.state.doc.schema.canContain(parent.parent.node.type, CodeBlock.type))
+            return false;
+        let text = wg.state.textblockMap(sel.head.parent);
+        let match = /^```\s*([^\s`]+\s*)?$/.exec(text.text);
+        if (!match)
+            return false;
+        let tag = CodeBlock;
+        if (match[1] && wg.state.schema.has(CodeBlockLanguage))
+            tag = tag.withMarks([CodeBlockLanguage.of(match[1])]);
+        return {
+            changes: { from: parent.before, to: parent.end, insert: [tag] },
+            selection: { anchor: parent.start },
+            scrollIntoView: true
+        };
+    }));
+;return codeBlock})(codeBlock);
 
 function strong() {
     return [GardState.schemaElement.of(Strong), strong.button, strong.keyBinding];
@@ -1169,7 +1188,7 @@ function toggleLink(wg) {
             let url = form && form.elements.namedItem("url")?.value;
             if (url)
                 wg.dispatch({
-                    changes: selection.ranges.map(r => ({ from: r.from, to: r.to, add: Link.of(url) })),
+                    changes: wg.state.selection.ranges.map(r => ({ from: r.from, to: r.to, add: Link.of(url) })),
                     userEvent: "mark.add"
                 });
         });

@@ -159,7 +159,7 @@ function sameCell(a, b) {
     return a != 0 && a == b;
 }
 function computeMap(table) {
-    if (table.tag != Table)
+    if (table.type != Table.type)
         throw new RangeError(`Not a table node: ${table.type.name}`);
     let width = table.content[0].content.reduce((w, c) => w + (c.mark(ColSpan) ?? 1), 0);
     let height = table.content.length;
