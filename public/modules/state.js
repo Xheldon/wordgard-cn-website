@@ -384,18 +384,10 @@ class TextblockMap {
                         sectionPos = pos + ch.length;
                     }
                 }
-                else if (ch.type.spec.cursorInsideBounds) {
+                else {
                     text += " ";
                     scan(ch, pos + 1);
                     text += " ";
-                }
-                else {
-                    flush(pos);
-                    sections.push((1 << 2) | 3);
-                    scan(ch, sectionPos = pos + 1);
-                    flush(pos + ch.length - 1);
-                    sections.push((1 << 2) | 2);
-                    sectionPos = pos + ch.length;
                 }
                 pos += ch.length;
             }
@@ -590,6 +582,10 @@ class GardSelection {
     static cursor(pos, side, goalColumn) {
         return GardSelection.Text.createInner(pos, pos, side, goalColumn);
     }
+    static near(cx, pos, side = 1, goalColumn) {
+        let norm = findNormalAt(cx, pos, side);
+        return GardSelection.cursor(norm.pos, norm.side, goalColumn);
+    }
     static range(anchor, head, headSide, goalColumn) {
         return GardSelection.Text.createInner(anchor, head ?? anchor, headSide, goalColumn);
     }
@@ -597,22 +593,12 @@ class GardSelection {
         return GardSelection.Node.create(pos, node, goalColumn);
     }
     nextNormalCursor(cx, forward = true) {
-        let found = scanNormalFrom(cx, this.head, this.headSide, forward, true);
-        return found && GardSelection.cursor(found.pos, found.side);
-    }
-    normalCursorAtBound(cx, forward = true) {
-        let found = scanNormalFrom(cx, forward ? this.to : this.from, forward ? -1 : 1, forward, false);
+        let found = scanNormalFrom(cx, this.head, this.headSide, forward);
         return found && GardSelection.cursor(found.pos, found.side);
     }
     skipWord(cx, forward = true) {
         let found = skipWord(cx, this.head, this.headSide, forward);
         return found && GardSelection.cursor(found.pos, found.side);
-    }
-    static near(cx, pos, bias = 1) {
-        let norm = scanNormalFrom(cx, pos, bias, bias > 0, false) ??
-            scanNormalFrom(cx, pos, -bias, bias < 0, false) ??
-            { pos: pos, side: -1 };
-        return GardSelection.cursor(norm.pos, norm.side);
     }
     static atStart(cx, block) {
         return cursorAtStart(cx, block);
@@ -621,7 +607,7 @@ class GardSelection {
         let found = block
             ? TextblockMap.get(cx, block.start, block.node).visualSide(false)
             : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(false)
-                : scanNormalFrom(cx, cx.doc.length, -1, false, false) ?? { pos: cx.doc.length, side: -1 };
+                : findNormalAt(cx, cx.doc.length, -1);
         return GardSelection.cursor(found.pos, found.side);
     }
 }
@@ -760,22 +746,20 @@ function cursorAtStart(cx, block) {
     let found = block
         ? TextblockMap.get(cx, block.start, block.node).visualSide(true)
         : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(true)
-            : scanNormalFrom(cx, 0, 1, true, false) ?? { pos: 0, side: 1 };
+            : findNormalAt(cx, 0, 1);
     return GardSelection.cursor(found.pos, found.side);
 }
 function isBarrier(cx, node) {
     if (node.isLeaf)
-        return node.type.isBlock;
+        return node.isBlock;
     let override = node.type.spec.cursorBarrier;
     if (override != null)
         return override;
-    return node.type.isolating || node.type.preserveWhitespace || node.type.isBlock && cx.config.isAtom(node.type);
+    return node.isBlock && (node.type.isolating || node.type.preserveWhitespace || cx.config.isAtom(node.type));
 }
-function scanNormalFrom(cx, from, side, forward, mustMove) {
+function scanNormalFrom(cx, from, side, forward) {
     let pos = cx.doc.resolve(from), pastBarrier = false;
     if (pos.parent.node.inlineContent) {
-        if (!mustMove)
-            return { pos: pos.pos, side };
         let block = pos.textblockParent;
         let map = TextblockMap.get(cx, block.start, block.node);
         let next = cx.config.visualCursorMotion ? map.moveVisually(pos.pos, side, forward) : map.moveLogically(pos.pos, forward);
@@ -813,7 +797,7 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         }
         if (index == (forward ? node.content.length : 0)) {
             let barrier = !next || isBarrier(cx, node);
-            if ((bottom != from || !mustMove) && pastBarrier && barrier)
+            if ((bottom != from) && pastBarrier && barrier)
                 return { pos: bottom, side: forward ? -1 : 1 };
             if (!next)
                 return null;
@@ -827,7 +811,7 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         else {
             let nextNode = node.content[index - (forward ? 0 : 1)];
             let barrier = isBarrier(cx, nextNode);
-            if (pastBarrier && (bottom != from || !mustMove) && barrier)
+            if (pastBarrier && (bottom != from) && barrier)
                 return { pos: bottom, side: forward ? -1 : 1 };
             if (nextNode.isLeaf || cx.config.isAtom(nextNode.type)) {
                 index += step;
@@ -847,12 +831,50 @@ function scanNormalFrom(cx, from, side, forward, mustMove) {
         }
     }
 }
+function findNormalAt(cx, pos, bias) {
+    let res = cx.doc.resolve(pos), lowest = pos;
+    if (res.inText) {
+        let text = res.parent.node.content[res.index].tag.param;
+        let off = bias > 0 ? findClusterBreak(text, res.inText - 1) : findClusterBreak(text, res.inText + 1, false);
+        pos += off - res.inText;
+        if (off > 0 && off < text.length)
+            return { pos, side: bias };
+        res = Pos.create(res.parent, pos, res.index + (off ? 1 : 0), 0);
+    }
+    for (let pass = 0; pass < 2; pass++) {
+        let dir = !pass ? bias : -bias, { parent, index } = res, curPos = pos;
+        for (;;) {
+            if (parent.node.inlineContent)
+                return { pos: curPos, side: bias };
+            if (index == (dir > 0 ? parent.node.content.length : 0)) {
+                if (isBarrier(cx, parent.node) || !parent.parent)
+                    break;
+                lowest = curPos = curPos + dir;
+                index = parent.index + (dir > 0 ? 1 : 0);
+                parent = parent.parent;
+            }
+            else {
+                let next = parent.node.content[index + (dir > 0 ? 0 : -1)];
+                if (next.isLeaf || isBarrier(cx, next))
+                    break;
+                if (!parent.node.inlineContent && next.inlineContent && cx.config.visualCursorMotion) {
+                    let startPos = curPos - (dir > 0 ? 0 : next.length) + 1;
+                    return TextblockMap.get(cx, startPos, next).visualSide(dir > 0);
+                }
+                parent = Pos.Plot.create(parent, next, curPos, index);
+                index = dir > 0 ? 0 : next.content.length;
+                curPos += dir;
+            }
+        }
+    }
+    return { pos: lowest, side: bias };
+}
 function skipWord(cx, start, side, forward) {
     let last = null;
     for (let pos = start, visually = cx.config.visualCursorMotion;;) {
         let block = cx.doc.resolve(pos).textblockParent;
         if (!block) {
-            let next = scanNormalFrom(cx, pos, side, forward, true);
+            let next = scanNormalFrom(cx, pos, side, forward);
             if (!next)
                 return last;
             ({ pos, side } = next);
@@ -1884,6 +1906,7 @@ function scanChanges(changes, doc, corrections) {
                             pos = off;
                             break;
                         }
+                        off = end;
                     }
                     if (queried.has(pos))
                         return;

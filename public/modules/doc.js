@@ -13,7 +13,7 @@ class TextOutput {
                 : node.type.spec.toText ? node.type.spec.toText(node)
                     : this.leafText ? this.leafText(node)
                         : "";
-        if (node.isLeaf ? node.type.isBlock && nodeText : node.isTextblock)
+        if (node.isLeaf ? node.isBlock && nodeText : node.isTextblock)
             this.openBlock();
         if (nodeText != null) {
             this.text += nodeText;
@@ -1184,6 +1184,8 @@ class Leaf extends BaseTag {
     get tokenType() { return Token.Type.Node; }
     get isLeaf() { return true; }
     get isPlot() { return false; }
+    get isInline() { return this.type.isInline; }
+    get isBlock() { return this.type.isBlock; }
     get length() { return this.is(Leaf.Text) ? this.param.length : 1; }
     pushTo(nodes) {
         if (this.is(Leaf.Text)) {
@@ -1291,6 +1293,8 @@ class Plot {
     get isTextblock() { return this.type.isTextblock; }
     get isLeaf() { return false; }
     get isPlot() { return true; }
+    get isInline() { return this.type.isInline; }
+    get isBlock() { return this.type.isBlock; }
     get isDoc() { return this.type.isDoc; }
     get firstChild() {
         return this.content.length ? this.content[0] : null;
@@ -1301,8 +1305,12 @@ class Plot {
     }
     iterate(a, b, c) {
         let [from, to, f] = typeof a == "number" ? [a, b, c] : [0, this.length, a];
-        if (this.isDoc || f(this, 0, null, 0) !== false)
-            this.iterInner(0, from, to, f);
+        if (this.isDoc || f(this, 0, null, 0) !== false) {
+            if (to < from)
+                this.iterBack(this.contentLength, to, from, f);
+            else
+                this.iterInner(0, from, to, f);
+        }
     }
     nodeAt(pos) {
         for (let node of this.content) {
@@ -1333,10 +1341,18 @@ class Plot {
                 break;
             let node = this.content[i], start = pos;
             pos += node.length;
-            if (pos <= from)
-                continue;
-            if (f(node, start, this, i) !== false && node.isPlot)
+            if (pos > from && f(node, start, this, i) !== false && node.isPlot)
                 node.iterInner(start + 1, from, to, f);
+        }
+    }
+    iterBack(contentEnd, from, to, f) {
+        for (let pos = contentEnd, i = this.content.length - 1; i >= 0; i--) {
+            if (pos <= from)
+                break;
+            let node = this.content[i], end = pos;
+            pos -= node.length;
+            if (pos < to && f(node, pos, this, i) !== false && node.isPlot)
+                node.iterBack(end - 1, from, to, f);
         }
     }
     toString() {
@@ -1544,7 +1560,7 @@ function sliceContent(out, content, from, to) {
     }
 }
 function joinText(nodes) {
-    if (!nodes.length || nodes[0].type.isBlock)
+    if (!nodes.length || nodes[0].isBlock)
         return nodes;
     let joined;
     for (let i = 0, last = null; i < nodes.length; i++) {
@@ -1615,7 +1631,7 @@ class Schema {
             if (!node.type.canBeEmpty && node.content.length == 0)
                 throw new ValidationError(`Node ${node.name} with block content may not be empty`);
             for (let ch of node.content) {
-                if (!this.canContain(node.type, ch.type) || node.inlineContent != ch.type.isInline)
+                if (!this.canContain(node.type, ch.type) || node.inlineContent != ch.isInline)
                     throw new ValidationError(`Node type ${node.name} cannot contain child ${ch.name}`);
                 this.validate(ch);
             }
@@ -2945,15 +2961,17 @@ class SectionIter {
     }
     next() {
         let { sections } = this;
+        this.off = 0;
         if (this.i < sections.length) {
             this.len = sections[this.i++];
             this.ins = sections[this.i++];
+            if (this.len == 0 && this.ins < 0)
+                this.next();
         }
         else {
             this.len = 0;
             this.ins = -3;
         }
-        this.off = 0;
     }
     get keep() { return this.ins == -1 || this.ins == -2; }
     get done() { return this.ins == -3; }
@@ -3055,6 +3073,9 @@ function splatContext(top, cx) {
     for (let ch of cx.children)
         top.push(ch);
 }
+function isFitBarrier(plot) {
+    return plot.isolating || plot.isInline;
+}
 function fitReplacement(doc, from, to, slice, context) {
     if (!slice.length)
         return fitDeletion(doc, from, to);
@@ -3085,10 +3106,10 @@ function fitReplacement(doc, from, to, slice, context) {
     let found, foundCost = 1e8;
     let neutral = true, toEnd = true;
     scan: for (let cxFrom = from.parent, cxTo = to.parent, fromDepth = from.depth, toDepth = to.depth, start = from.pos, end = to.pos; cxFrom.parent; cxFrom = cxFrom.parent, start--, fromDepth--) {
-        if (cxFrom.start != start || cxFrom.node.type.isolating)
+        if (cxFrom.start != start || isFitBarrier(cxFrom.node.type))
             break;
         while (toDepth > fromDepth) {
-            if (cxTo.node.type.isolating)
+            if (isFitBarrier(cxTo.node.type))
                 break scan;
             cxTo = cxTo.parent;
             toDepth--;
@@ -3122,17 +3143,22 @@ function fitReplacement(doc, from, to, slice, context) {
     if (found)
         return found;
     if (from.pos == to.pos && !from.inText) {
-        let cx = from.parent, before = from.pos, after = from.pos;
-        for (; cx.parent && !cx.node.type.isolating && (before == cx.start || after == cx.end); cx = cx.parent, before--, after++) {
+        let cx = from.parent;
+        for (let before = from.index ? -1 : from.pos, after = from.pos == from.parent.end ? from.pos : -1; before > -1 || after > -1;) {
             for (let i = -1; i < context.length; i++) {
                 let type = i >= 0 ? context[i].type : firstType;
                 if (!type)
                     continue;
-                if (doc.schema.canContain(cx.parent.node.type, type)) {
-                    let pos = before == cx.start ? cx.before : cx.after;
+                if (doc.schema.canContain(cx.node.type, type)) {
+                    let pos = before > -1 ? before : after;
                     return { from: pos, to: pos, slice: i >= 0 ? closeSlice(doc.schema, slice, context, i + 1, true) : slice };
                 }
             }
+            if (isFitBarrier(cx.node.type) || !cx.parent)
+                break;
+            before = before == cx.start ? before - 1 : -1;
+            after = after == cx.end ? after + 1 : -1;
+            cx = cx.parent;
         }
     }
     for (let i = 0; i < context.length; i++) {
@@ -3147,7 +3173,7 @@ function fitDeletion(doc, from, to) {
     let toDepth = to.depth;
     let covered;
     for (let cx = from.parent, cxTo = to.parent, depth = from.depth, start = from.pos, end = to.pos; cx.parent; start--, cx = cx.parent, depth--) {
-        if (cx.start != start || cx.node.type.isolating)
+        if (cx.start != start || isFitBarrier(cx.node.type))
             break;
         while (toDepth > depth) {
             cxTo = cxTo.parent;
@@ -3336,7 +3362,7 @@ class ParseContext {
         else if (!match || match.rule.ignore === "skip") {
             let sync, top = this.top;
             if (blockTags.has(name)) {
-                if (top.children.length && top.children[0].type.isInline && top.parent)
+                if (top.children.length && top.children[0].isInline && top.parent)
                     this.close();
                 sync = true;
             }

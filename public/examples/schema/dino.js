@@ -99,7 +99,7 @@ export function dino()                      {
 //!editor
 
 import {menuBar} from "wordgard/editor"
-import {basicSchema, image} from "wordgard/schema"
+import {basicSchema} from "wordgard/schema"
 import {history} from "wordgard/history"
 
 const wg = Wordgard.create({
@@ -112,7 +112,6 @@ const wg = Wordgard.create({
     dino(),
     menuBar(),
     history(),
-//    image()
   ],
   parent: document.querySelector("#dino-editor") 
 })

@@ -138,5 +138,17 @@
   "Editing footnotes with nested editors in a tooltip.": {
     "_translate": "在工具提示中使用嵌套编辑器编辑脚注。",
     "_note": ""
+  },
+  "Inline Plots": {
+    "_translate": "内联图表",
+    "_note": ""
+  },
+  "Inline Plots Shows how to use inline plots in your schema.": {
+    "_translate": "<a href=\"inlineplot/\" class=\"blocklink\">\n      <h3>内联图表</h3>\n      <p>演示如何在您的架构中使用内联图表。</p>\n    </a>",
+    "_note": ""
+  },
+  "Shows how to use inline plots in your schema.": {
+    "_translate": "演示如何在您的架构中使用内联图表。",
+    "_note": ""
   }
 }

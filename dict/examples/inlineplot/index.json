@@ -1,0 +1,78 @@
+{
+  "Docs": {
+    "_translate": "文档",
+    "_note": ""
+  },
+  "Examples": {
+    "_translate": "示例",
+    "_note": ""
+  },
+  "Try": {
+    "_translate": "尝试",
+    "_note": ""
+  },
+  "Discuss": {
+    "_translate": "讨论",
+    "_note": ""
+  },
+  "Code": {
+    "_translate": "代码",
+    "_note": ""
+  },
+  "Example: Inline Plots": {
+    "_translate": "示例：内联图表",
+    "_note": ""
+  },
+  "These can be useful for things that form clear, coherent units, like mentions and other named references, or types of markup that you want the user to edit like a node, as opposed to a mark.": {
+    "_translate": "这些功能对于形成清晰、连贯单元的内容非常有用，例如提及和其他命名引用，或者您希望用户像编辑节点（node）而非标记（mark）那样进行编辑的标记类型。",
+    "_note": ""
+  },
+  "Though most types of inline markup are best expressed with marks, Wordgard does support inline plots—nodes with editable content that appear in an inline context.": {
+    "_translate": "尽管大多数类型的行内标记最好使用<a href=\"../../docs/ref/#doc.Mark\">标记</a>来表达，但 Wordgard 也支持行内图表——即出现在行内上下文中的可编辑内容节点。",
+    "_note": ""
+  },
+  "Definition": {
+    "_translate": "定义",
+    "_note": ""
+  },
+  "Inline plots can be rendered as atoms, so that though they contain their own content, that content isn't editable directly in the editor. See the footnote example for an example of that. Inline plots with block content must be displayed as atoms. The editor doesn't support editing block content inside inline content.": {
+    "_translate": "内联图表可以渲染为原子元素，因此尽管它们包含自己的内容，但这些内容无法直接在编辑器中编辑。有关示例，请参阅<a href=\"../footnote/\">脚注示例</a>。包含块级内容的内联图表<em>必须</em>显示为原子元素。编辑器不支持在内联内容内部编辑块级内容。",
+    "_note": ""
+  },
+  "Inline plots are easy enough to define. They work just like block-level plots, except that you set their inline flag.": {
+    "_translate": "内联图形的定义非常简单。它们的工作方式与块级图形完全相同，只需将它们的 <a href=\"../../docs/ref/#doc.Node.Spec.inline\"><code>inline</code></a> 标志设置为 true 即可。",
+    "_note": ""
+  },
+  "For this example, we'll define a node for key names, rendered using the <kbd> element.": {
+    "_translate": "在此示例中，我们将定义一个用于键名的节点，并使用\n<a href=\"https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/kbd\"><code>&lt;kbd&gt;</code></a>\n元素进行渲染。",
+    "_note": ""
+  },
+  "Unlike marks, inline plots introduce additional cursor positions at their start and end—the cursor can be both outside and inside the plot. When those two positions look the same, this will be confusing to users—it looks like the cursor just doesn't move when they press the left or right arrow, and you cannot visually tell whether you are inside or outside of the plot.": {
+    "_translate": "与标记不同，内联图表会在其起始和结束位置引入额外的光标位置——光标既可以位于图表外部，也可以位于内部。当这两个位置看起来相同时，会让用户感到困惑：看起来按下左箭头或右箭头时光标根本没有移动，而且无法从视觉上判断光标是在图表内部还是外部。",
+    "_note": ""
+  },
+  "For this reason, it is strongly recommended to style such plots with some vertical padding, and preferably a border or background or some other way to make it clear where they start or end. This makes sure the inside and outside positions are easy to recognize.": {
+    "_translate": "因此，强烈建议为这类图表添加一些垂直内边距，并最好添加边框、背景或其他视觉元素，以明确标示其起始和结束位置。这样可以确保内部和外部位置易于识别。",
+    "_note": ""
+  },
+  "This style makes <kbd> elements in the editor look like grey boxes with some pseudo-3D shadows.": {
+    "_translate": "此样式使编辑器中的 <code>&lt;kbd&gt;</code> 元素看起来像带有伪 3D 阴影的灰色方框。",
+    "_note": ""
+  },
+  "We'll need a command to allow the user to create and remove these.": {
+    "_translate": "我们需要一个命令，允许用户创建和删除这些内容。",
+    "_note": ""
+  },
+  "toggleKey has three modes of operation. If the selection is inside an existing key node, it removes that. If the selection contains only text, that is wrapped in a key node. And in any other situation, the command just replaces the selection with an empty key node.": {
+    "_translate": "<code>toggleKey</code> 具有三种操作模式。如果选区位于现有的键节点内部，则将其移除。如果选区仅包含文本，则用键节点将其包裹。在其他任何情况下，该命令仅将选区替换为一个空的键节点。",
+    "_note": ""
+  },
+  "Finally, we define a menu item and a key binding, and provide an extension bundle function that ties everything together.": {
+    "_translate": "最后，我们定义一个菜单项和一个键绑定，并提供一个扩展包函数将所有内容整合在一起。",
+    "_note": ""
+  },
+  "If we drop that extension into an editor, it behaves like this:": {
+    "_translate": "如果我们将该扩展放入编辑器中，其行为如下：",
+    "_note": ""
+  }
+}

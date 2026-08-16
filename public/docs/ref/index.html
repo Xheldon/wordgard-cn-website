@@ -250,6 +250,16 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="True when this is a Plot.">当这是一个 <a href="#doc.Plot"><code>Plot</code></a> 时为真。</p>
 </div>
+<pre class="refcode">  <a href="#doc.Node.Shared.isBlock" class="def" id="doc.Node.Shared.isBlock">isBlock</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="True when this node is a block node.">当此节点为块节点时为真。</p>
+</div>
+<pre class="refcode">  <a href="#doc.Node.Shared.isInline" class="def" id="doc.Node.Shared.isInline">isInline</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Indicate whether this is an inline node.">指出这是否是一个内联节点。</p>
+</div>
 <pre class="refcode">  <a href="#doc.Node.Shared.toJSON" class="def" id="doc.Node.Shared.toJSON">toJSON</a>(): <a href="#doc.Node.JSON" class="ref">Node.JSON</a>
 </pre>
 <div class="doc indent2">
@@ -713,6 +723,8 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Iterate though the given range (or the entire document, when given only one argument), and call the given function on every node that overlaps the given range, outer nodes before inner nodes. When the function returns false for a node, descendents of that node are not iterated.">遍历给定的范围（或当仅提供一个参数时遍历整个文档），并对与给定范围重叠的每个节点调用给定的函数，先处理外层节点，再处理内层节点。当函数对某个节点返回 <code>false</code> 时，将不再遍历该节点的后代节点。</p>
+<p data-x-en="When from is greater than to, iteration happens in inverted order, yielding later siblings before earlier ones.">当 <code>from</code> 大于 <code>to</code> 时，迭代将以倒序进行，先返回后面的兄弟节点，再返回前面的兄弟节点。</p>
+<p data-x-en="Note that positions passed to the callback are relative to the start of the node this method is called on. That will usually be the document, in which case they are normal document positions, but you can also call it on an arbitrary plot, in which case they are local positions.">请注意，传递给回调函数的位置是相对于调用此方法的节点起始位置的。这通常是文档，此时它们是常规的文档位置，但您也可以在任意绘图上调用它，此时它们是局部位置。</p>
 </div>
 <pre class="refcode">  <a href="#doc.Plot.nodeAt" class="def" id="doc.Plot.nodeAt">nodeAt</a>(<a href="#doc.Plot.nodeAt.pos" class="def" id="doc.Plot.nodeAt.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#doc.Node" class="ref">Node</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
@@ -1010,11 +1022,6 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="By default, splitting a textblock at the end will revert the new block to the default type of textblock at that position. Setting this to true on a textblock type will prevent that behavior.">默认情况下，在文本块末尾进行拆分时，新块将恢复为该位置文本块的默认类型。将文本块类型的此选项设置为 true 可防止出现该行为。</p>
-</div>
-<pre class="refcode">  <a href="#doc.Plot.Spec.cursorInsideBounds" class="def" id="doc.Plot.Spec.cursorInsideBounds">cursorInsideBounds</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="For inline nodes with inline content, this determines whether there are normalized cursor positions directly inside the node. The default is to only have cursor positions right outside the node.">对于具有内联内容的内联节点，此选项决定节点内部是否存在归一化的光标位置。默认情况下，光标位置仅位于节点外部。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -1437,7 +1444,7 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Convert an element with string content to an HTML string.">将包含字符串内容的元素转换为 HTML 字符串。</p>
 </div>
-<pre class="refcode">  <a href="#doc.Elt.toDOM" class="def" id="doc.Elt.toDOM">toDOM</a>(<a href="#doc.Elt.toDOM.doc" class="def" id="doc.Elt.toDOM.doc">doc</a>?: <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/document">Document</a>): <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Element">Element</a> | <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Text">Text</a>
+<pre class="refcode">  <a href="#doc.Elt.toDOM" class="def" id="doc.Elt.toDOM">toDOM</a>(<a href="#doc.Elt.toDOM.doc" class="def" id="doc.Elt.toDOM.doc">doc</a>?: <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/document">Document</a>): <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Element">Element</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Convert an element (with only string content) to a DOM tree.">将仅包含字符串内容的元素转换为 DOM 树。</p>
@@ -3433,6 +3440,16 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Create a cursor text selection at the given position.">在给定位置创建光标文本选择。</p>
 </div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardSelection.near" class="def" id="state.GardSelection.near">near</a>(
+    <a href="#state.GardSelection.near.cx" class="def" id="state.GardSelection.near.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
+    <a href="#state.GardSelection.near.pos" class="def" id="state.GardSelection.near.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#state.GardSelection.near.side" class="def" id="state.GardSelection.near.side">side</a>: <span class="literal">1</span> | <span class="literal">-1</span> = 1,
+    <a href="#state.GardSelection.near.goalColumn" class="def" id="state.GardSelection.near.goalColumn">goalColumn</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+  ): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Find a normal cursor near the given position.">在给定位置附近查找正常光标。</p>
+</div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardSelection.range" class="def" id="state.GardSelection.range">range</a>(
     <a href="#state.GardSelection.range.anchor" class="def" id="state.GardSelection.range.anchor">anchor</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
     <a href="#state.GardSelection.range.head" class="def" id="state.GardSelection.range.head">head</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
@@ -3460,17 +3477,9 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Find the next normal cursor position after or before this selection's head. Normal cursor positions are:">查找此选区头部之后或之前的下一个正常光标位置。正常光标位置包括：</p>
 <ul>
-<li data-x-en="Any inline position, except one directly inside of an inline plot that doesn't have cursorInsideBounds set.">任何内联位置，但直接位于未设置 <a href="#doc.Plot.Spec.cursorInsideBounds"><code>cursorInsideBounds</code></a> 的内联图表中的位置除外。</li>
+<li data-x-en="Any inline position."><p>任何内联位置。</p></li>
 <li data-x-en="Positions between two cursor barriers, if not already an inline position. Cursor barriers are the sides of the document, any block leaves, or plots that are isolating, whitespace-preserving, or explicitly defined as a cursor barrier.">两个光标屏障之间的位置，如果尚未为内联位置。光标屏障是指文档的两侧、任何块级叶子节点，或是被标记为<a href="#doc.Plot.Spec.isolating">隔离</a>、<a href="#doc.Plot.Spec.preserveWhitespace">保留空白</a>或显式定义为<a href="#doc.Plot.Spec.cursorBarrier">光标屏障</a>的绘图。</li>
 </ul>
-</div>
-<pre class="refcode">  <a href="#state.GardSelection.normalCursorAtBound" class="def" id="state.GardSelection.normalCursorAtBound">normalCursorAtBound</a>(
-    <a href="#state.GardSelection.normalCursorAtBound.cx" class="def" id="state.GardSelection.normalCursorAtBound.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
-    <a href="#state.GardSelection.normalCursorAtBound.forward" class="def" id="state.GardSelection.normalCursorAtBound.forward">forward</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> = true
-  ): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Get a normal cursor at the start or end of this selection.">在此选择的开头或结尾处获取正常光标。</p>
 </div>
 <pre class="refcode">  <a href="#state.GardSelection.skipWord" class="def" id="state.GardSelection.skipWord">skipWord</a>(
     <a href="#state.GardSelection.skipWord.cx" class="def" id="state.GardSelection.skipWord.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
@@ -3479,15 +3488,6 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Move across one word starting from this selection's head.">从此选区的开头向前移动一个单词。</p>
-</div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardSelection.near" class="def" id="state.GardSelection.near">near</a>(
-    <a href="#state.GardSelection.near.cx" class="def" id="state.GardSelection.near.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
-    <a href="#state.GardSelection.near.pos" class="def" id="state.GardSelection.near.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#state.GardSelection.near.bias" class="def" id="state.GardSelection.near.bias">bias</a>: <span class="literal">1</span> | <span class="literal">-1</span> = 1
-  ): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Find a normal selection near the given position.">在给定位置附近查找一个常规选择。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardSelection.atStart" class="def" id="state.GardSelection.atStart">atStart</a>(
     <a href="#state.GardSelection.atStart.cx" class="def" id="state.GardSelection.atStart.cx">cx</a>: <a href="#state.GardSelection.Context" class="ref">GardSelection.Context</a>,
@@ -3881,6 +3881,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="The editable DOM element holding the editor content. You should not, usually, interact with this content directly though the DOM, since the editor will immediately undo most of the changes you make. Instead, dispatch transactions to modify content, and decorations to style it.">持有编辑器内容的可编辑 DOM 元素。通常，您不应直接通过 DOM 与此内容交互，因为编辑器会立即撤销您所做的绝大多数更改。相反，请<a href="#editor.Wordgard.dispatch">分发</a><a href="#state.Transaction">事务</a>来修改内容，并使用<a href="#editor.Decoration">装饰</a>来设置其样式。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Wordgard.connected" class="def" id="editor.Wordgard.connected">connected</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="True when the editor is connected to a DOM document.">当编辑器连接到 DOM 文档时为真。</p>
 </div>
 <pre class="refcode">  <a href="#editor.Wordgard.dispatch" class="def" id="editor.Wordgard.dispatch">dispatch</a>(<a href="#editor.Wordgard.dispatch.tr" class="def" id="editor.Wordgard.dispatch.tr">tr</a>: <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a> | <a href="#state.Transaction" class="ref">Transaction</a>)
 </pre>
@@ -4891,7 +4896,7 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Specifies a widget type.">指定小部件类型。</p>
 </div>
-<pre class="refcode">  <a href="#editor.Widget.Spec.render" class="def" id="editor.Widget.Spec.render">render</a>: (<a href="#editor.Widget.Spec.render.value" class="def" id="editor.Widget.Spec.render.value">value</a>: <a href="#editor.Widget.Spec.Param" class="ref">Param</a>) =&gt; <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Element">Element</a> | <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Text">Text</a>
+<pre class="refcode">  <a href="#editor.Widget.Spec.render" class="def" id="editor.Widget.Spec.render">render</a>: (<a href="#editor.Widget.Spec.render.value" class="def" id="editor.Widget.Spec.render.value">value</a>: <a href="#editor.Widget.Spec.Param" class="ref">Param</a>, <a href="#editor.Widget.Spec.render.wg" class="def" id="editor.Widget.Spec.render.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>) =&gt; <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Element">Element</a> | <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Text">Text</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="How to render the widget as DOM content.">如何将组件渲染为 DOM 内容。</p>
@@ -4911,15 +4916,20 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Called when a widget of this type is removed from an editor that is connected to a document, or when the editor containing the widget is disconnected.">当此类型的部件从连接到文档的编辑器中移除，或包含该部件的编辑器断开连接时调用。</p>
 </div>
-<pre class="refcode">  <a href="#editor.Widget.Spec.handleEvent" class="def" id="editor.Widget.Spec.handleEvent">handleEvent</a>?: (<a href="#editor.Widget.Spec.handleEvent.event" class="def" id="editor.Widget.Spec.handleEvent.event">event</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/DOM/event">Event</a>, <a href="#editor.Widget.Spec.handleEvent.wg" class="def" id="editor.Widget.Spec.handleEvent.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+<pre class="refcode">  <a href="#editor.Widget.Spec.propagateEvent" class="def" id="editor.Widget.Spec.propagateEvent">propagateEvent</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> | ((<a href="#editor.Widget.Spec.propagateEvent.event" class="def" id="editor.Widget.Spec.propagateEvent.event">event</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/DOM/event">Event</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>)
 </pre>
 <div class="doc indent2">
-<p data-x-en="Called before the editor handles a DOM event that comes from inside the widget. May return true to indicate that no further handling of the event should happen.">在编辑器处理来自组件内部的 DOM 事件之前调用。可返回 true 以指示不应再对该事件进行任何处理。</p>
+<p data-x-en="Used to determine whether events originating from the widget's DOM should ignored by the editor. false or a function that returns false for the event will prevent the editor's regular event handling for the event.">用于确定是否应忽略源自小部件 DOM 的事件。如果值为 <code>false</code>，或者是一个返回 <code>false</code> 的函数，则将阻止编辑器对该事件执行常规的事件处理。</p>
 </div>
 <pre class="refcode">  <a href="#editor.Widget.Spec.inFlow" class="def" id="editor.Widget.Spec.inFlow">inFlow</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Set this to false for widgets that either aren't visible or are positioned outside of the regular document flow.">对于不可见或位于常规文档流之外的组件，请将此设置为 false。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Widget.Spec.editable" class="def" id="editor.Widget.Spec.editable">editable</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="By default, widgets are set to be ineditable. Set this to true to suppress that.">默认情况下，小部件被设置为不可编辑。将此值设置为<code>true</code>以禁用该限制。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -6097,7 +6107,7 @@ addEventListener("load", function() {
 <pre class="refcode"><a href="#command.enter" class="def" id="command.enter">enter</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries liftEmptyTextblock, then splitTextblock.">处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试 <code>liftEmptyTextblock</code>，然后尝试 <code>splitTextblock</code>。</p>
+<p data-x-en="The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries liftEmptyBlock, then splitTextblock.">处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试执行 <code>liftEmptyBlock</code>，然后执行 <code>splitTextblock</code>。</p>
 </div>
 <pre class="refcode"><a href="#command.transposeChars" class="def" id="command.transposeChars">transposeChars</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>
 </pre>
@@ -6308,13 +6318,13 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Return a transaction that deletes the element (text cluster or leaf node) after the cursor, if any.">返回一个事务，该事务会删除光标之后的元素（文本簇或叶节点），如果存在的话。</p>
 </div>
-<pre class="refcode"><a href="#command.deleteEmptyTextblock" class="def" id="command.deleteEmptyTextblock">deleteEmptyTextblock</a>(
-  <a href="#command.deleteEmptyTextblock.state" class="def" id="command.deleteEmptyTextblock.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>,
-  <a href="#command.deleteEmptyTextblock.dir" class="def" id="command.deleteEmptyTextblock.dir">dir</a>: <span class="literal">1</span> | <span class="literal">-1</span> = -1
+<pre class="refcode"><a href="#command.deleteEmptyPlot" class="def" id="command.deleteEmptyPlot">deleteEmptyPlot</a>(
+  <a href="#command.deleteEmptyPlot.state" class="def" id="command.deleteEmptyPlot.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>,
+  <a href="#command.deleteEmptyPlot.dir" class="def" id="command.deleteEmptyPlot.dir">dir</a>: <span class="literal">1</span> | <span class="literal">-1</span> = -1
 ): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="If the cursor is inside an empty textblock, return a transaction that deletes the entire block. dir determines which way the cursor moves after the deletion.">如果光标位于空文本块内，则返回一个删除整个块的事务。<code>dir</code> 参数决定删除后光标的移动方向。</p>
+<p data-x-en="If the cursor is inside an empty plot, return a transaction that deletes the entire plot. dir determines which way the cursor moves after the deletion.">如果光标位于一个空地块内，则返回一个删除整个地块的事务。<code>dir</code> 决定了删除后光标移动的方向。</p>
 </div>
 <pre class="refcode"><a href="#command.joinBackward" class="def" id="command.joinBackward">joinBackward</a>(<a href="#command.joinBackward.state" class="def" id="command.joinBackward.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
 </pre>
@@ -6901,6 +6911,29 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Enter command handler that, when activated at the end of a textblock containing three backticks and an optional language, converts the block into a code block.">输入命令处理器，当在包含三个反引号和可选语言的文本块末尾激活时，将该块转换为代码块。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlockLanguage" class="def" id="schema.codeBlockLanguage">codeBlockLanguage</a>(<a href="#schema.codeBlockLanguage.options" class="def" id="schema.codeBlockLanguage.options">options</a>: {
+</pre>
+<pre class="refcode">  <a href="#schema.codeBlockLanguage.options.languages" class="def" id="schema.codeBlockLanguage.options.languages">languages</a>?: <span class="keyword">readonly</span> <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>[]
+</pre>
+<div class="doc indent2">
+<p data-x-en="When given, show a drop-down menu in the corner of code blocks that allows the user to choose a language for block from the given list of strings. The actual mark value will be the lower-case form of the selected language name.">提供时，在代码块的角落显示一个下拉菜单，允许用户从给定的字符串列表中为代码块选择一种语言。实际的标记值将是所选语言名称的小写形式。</p>
+</div>
+<pre class="refcode">} = {}): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Add support for the code block language mark.">添加对代码块 <a href="#types.CodeBlockLanguage">语言标记</a> 的支持。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlockLanguage.selectLanguage" class="def" id="schema.codeBlockLanguage.selectLanguage">codeBlockLanguage.selectLanguage</a>: <a href="#command.Command" class="ref">Command</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="If the selection is in a code block, and language selection is enabled, this command focuses the language field to allow selection via the keyboard.">如果选区位于代码块中，且已启用语言选择，此命令将聚焦于语言字段，以便通过键盘进行选择。</p>
+</div>
+<pre class="refcode"><a href="#schema.codeBlockLanguage.selectLanguageBinding" class="def" id="schema.codeBlockLanguage.selectLanguageBinding">codeBlockLanguage.selectLanguageBinding</a>: <a href="#editor.KeyBinding" class="ref">KeyBinding</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Key binding that binds Shift-Ctrl-l (Shift-Cmd-l on MacOS) to selectLanguage.">将 Shift-Ctrl-l（MacOS 上为 Shift-Cmd-l）绑定到
+<a href="#schema.codeBlockLanguage.selectLanguage"><code>selectLanguage</code></a> 的按键绑定。</p>
 </div>
 <pre class="refcode"><a href="#schema.blockDoc" class="def" id="schema.blockDoc">blockDoc</a>(): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>

@@ -5486,5 +5486,65 @@
   "Enter command handler that, when activated at the end of a textblock containing three backticks and an optional language, converts the block into a code block.": {
     "_translate": "输入命令处理器，当在包含三个反引号和可选语言的文本块末尾激活时，将该块转换为代码块。",
     "_note": ""
+  },
+  "True when this node is a block node.": {
+    "_translate": "当此节点为块节点时为真。",
+    "_note": ""
+  },
+  "Indicate whether this is an inline node.": {
+    "_translate": "指出这是否是一个内联节点。",
+    "_note": ""
+  },
+  "When from is greater than to, iteration happens in inverted order, yielding later siblings before earlier ones.": {
+    "_translate": "当 <code>from</code> 大于 <code>to</code> 时，迭代将以倒序进行，先返回后面的兄弟节点，再返回前面的兄弟节点。",
+    "_note": ""
+  },
+  "Note that positions passed to the callback are relative to the start of the node this method is called on. That will usually be the document, in which case they are normal document positions, but you can also call it on an arbitrary plot, in which case they are local positions.": {
+    "_translate": "请注意，传递给回调函数的位置是相对于调用此方法的节点起始位置的。这通常是文档，此时它们是常规的文档位置，但您也可以在任意绘图上调用它，此时它们是局部位置。",
+    "_note": ""
+  },
+  "Any inline position.": {
+    "_translate": "任何内联位置。",
+    "_note": ""
+  },
+  "Find a normal cursor near the given position.": {
+    "_translate": "在给定位置附近查找正常光标。",
+    "_note": ""
+  },
+  "True when the editor is connected to a DOM document.": {
+    "_translate": "当编辑器连接到 DOM 文档时为真。",
+    "_note": ""
+  },
+  "Used to determine whether events originating from the widget's DOM should ignored by the editor. false or a function that returns false for the event will prevent the editor's regular event handling for the event.": {
+    "_translate": "用于确定是否应忽略源自小部件 DOM 的事件。如果值为 <code>false</code>，或者是一个返回 <code>false</code> 的函数，则将阻止编辑器对该事件执行常规的事件处理。",
+    "_note": ""
+  },
+  "By default, widgets are set to be ineditable. Set this to true to suppress that.": {
+    "_translate": "默认情况下，小部件被设置为不可编辑。将此值设置为<code>true</code>以禁用该限制。",
+    "_note": ""
+  },
+  "The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries liftEmptyBlock, then splitTextblock.": {
+    "_translate": "处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试执行 <code>liftEmptyBlock</code>，然后执行 <code>splitTextblock</code>。",
+    "_note": ""
+  },
+  "If the cursor is inside an empty plot, return a transaction that deletes the entire plot. dir determines which way the cursor moves after the deletion.": {
+    "_translate": "如果光标位于一个空地块内，则返回一个删除整个地块的事务。<code>dir</code> 决定了删除后光标移动的方向。",
+    "_note": ""
+  },
+  "When given, show a drop-down menu in the corner of code blocks that allows the user to choose a language for block from the given list of strings. The actual mark value will be the lower-case form of the selected language name.": {
+    "_translate": "提供时，在代码块的角落显示一个下拉菜单，允许用户从给定的字符串列表中为代码块选择一种语言。实际的标记值将是所选语言名称的小写形式。",
+    "_note": ""
+  },
+  "Add support for the code block language mark.": {
+    "_translate": "添加对代码块 <a href=\"#types.CodeBlockLanguage\">语言标记</a> 的支持。",
+    "_note": ""
+  },
+  "If the selection is in a code block, and language selection is enabled, this command focuses the language field to allow selection via the keyboard.": {
+    "_translate": "如果选区位于代码块中，且已启用语言选择，此命令将聚焦于语言字段，以便通过键盘进行选择。",
+    "_note": ""
+  },
+  "Key binding that binds Shift-Ctrl-l (Shift-Cmd-l on MacOS) to selectLanguage.": {
+    "_translate": "将 Shift-Ctrl-l（MacOS 上为 Shift-Cmd-l）绑定到\n<a href=\"#schema.codeBlockLanguage.selectLanguage\"><code>selectLanguage</code></a> 的按键绑定。",
+    "_note": ""
   }
 }

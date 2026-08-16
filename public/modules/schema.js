@@ -4,7 +4,7 @@ import { Paragraph, Heading, Direction, Blockquote, HorizontalRule, Alignment, D
 import { phrases, imagePhrases, colorNames } from 'wordgard/phrases';
 import { Command, setTextblockType, Menu, setAlignment, setDirection, toggleBlock, listIsActive, toggleList, enter, toggleMark } from 'wordgard/command';
 import { history } from 'wordgard/history';
-import { KeyBinding, InputRule, Wordgard, Panel, Dialog, Decoration, PointSet, Tooltip } from 'wordgard/editor';
+import { KeyBinding, InputRule, Wordgard, Widget, Decoration, Panel, Dialog, PointSet, Tooltip } from 'wordgard/editor';
 import cr from 'crelt';
 
 function blockDoc() {
@@ -313,6 +313,97 @@ function codeBlock() {
         };
     }));
 ;return codeBlock})(codeBlock);
+function codeBlockLanguage(options = {}) {
+    return [
+        GardState.schemaElement.of(CodeBlockLanguage),
+        options.languages ? [
+            languageStyles,
+            languageOptions.of(options.languages),
+            languageSelect,
+            codeBlockLanguage.selectLanguageBinding
+        ] : []
+    ];
+}
+const languageStyles = /*@__PURE__*/Wordgard.styles({
+    pre: {
+        position: "relative",
+        "& select.wg-code-language": {
+            font: "var(--wg-dialog-font)",
+            fontSize: "70%",
+            position: "absolute",
+            top: "2px",
+            right: "4px",
+            border: "none",
+            borderRadius: "4px"
+        }
+    }
+});
+const languageOptions = /*@__PURE__*/GardState.Facet.define({
+    combine: input => input.reduce((a, b) => a.concat(b), [])
+});
+function option(text, selected, value) {
+    let node = document.createElement("option");
+    node.textContent = text;
+    node.value = value;
+    if (selected)
+        node.selected = true;
+    return node;
+}
+const languageWidget = /*@__PURE__*/Widget.define({
+    render({ options, value }, wg) {
+        let sel = document.createElement("select");
+        sel.className = "wg-code-language";
+        sel.tabIndex = -1;
+        sel.appendChild(option("Plain", value == null, ""));
+        let selected = value && options.find(o => o.toLowerCase() == value);
+        if (value && !selected)
+            sel.appendChild(option(value, true, value));
+        for (let opt of options)
+            sel.appendChild(option(opt, opt == selected, opt.toLowerCase()));
+        sel.onchange = () => {
+            let value = sel.value || undefined;
+            let pos = wg.posAtDOM(sel.parentNode);
+            let block = pos > 0 && wg.state.doc.nodeAt(pos - 1);
+            if (block && block.type == CodeBlock.type && block.mark(CodeBlockLanguage) != value) {
+                wg.dispatch({
+                    changes: value ? { from: pos - 1, add: CodeBlockLanguage.of(value) } :
+                        { from: pos - 1, remove: CodeBlockLanguage.isInSet(block.tag.marks) }
+                });
+                wg.focus();
+            }
+        };
+        return sel;
+    },
+    propagateEvent: false,
+    eq(a, b) {
+        return a.value == b.value && a.options.length == b.options.length &&
+            a.options.every((o, i) => o == b.options[i]);
+    },
+    inFlow: false
+});
+const languageSelect = /*@__PURE__*/Decoration.Tag.widget.dynamic(CodeBlock, "end", state => {
+    let options = state.facet(languageOptions);
+    return tag => {
+        return languageWidget.of({ options, value: tag.mark(CodeBlockLanguage) });
+    };
+});
+;codeBlockLanguage = /*@__PURE__*/(function (codeBlockLanguage) {
+    codeBlockLanguage.selectLanguage = wg => {
+        let blk = wg.state.sel.head.textblockParent;
+        if (!blk || blk.node.type != CodeBlock.type)
+            return false;
+        let sel = wg.nodeDOM(blk.before)?.querySelector("select.wg-code-language");
+        if (!sel)
+            return false;
+        sel.focus();
+        sel.showPicker();
+        return true;
+    };
+    codeBlockLanguage.selectLanguageBinding = KeyBinding.of({
+        key: "Shift-Mod-l",
+        run: codeBlockLanguage.selectLanguage
+    });
+;return codeBlockLanguage})(codeBlockLanguage);
 
 function strong() {
     return [GardState.schemaElement.of(Strong), strong.button, strong.keyBinding];
@@ -1199,7 +1290,7 @@ function computeLinkTooltip(state) {
     if (!state.selection.isCursor)
         return null;
     let { head } = state.sel, before = head.nodeBefore, link = before && Link.isInSet(before.marks);
-    if (!link)
+    if (!link || head.matchingParent(plot => state.isAtom(plot.type)))
         return null;
     let start = head.pos - before.length, end = head.pos, siblings = head.parent.node.content;
     for (let index = head.index - 1; index > 0 && link.isInSet(siblings[index - 1].marks);)
@@ -1338,4 +1429,4 @@ function fullSchema() {
     ];
 }
 
-export { ColorPicker, alignment, backgroundColor, basicMarks, basicSchema, blockDoc, blockquote, bulletList, code, codeBlock, color, direction, emphasis, figure, fullSchema, heading, horizontalRule, image, imageResizing, inlineDoc, inlineMarks, inlineSchema, lineBreak, link, orderedList, paragraph, strikethrough, strong, subscript, superscript, underline };
+export { ColorPicker, alignment, backgroundColor, basicMarks, basicSchema, blockDoc, blockquote, bulletList, code, codeBlock, codeBlockLanguage, color, direction, emphasis, figure, fullSchema, heading, horizontalRule, image, imageResizing, inlineDoc, inlineMarks, inlineSchema, lineBreak, link, orderedList, paragraph, strikethrough, strong, subscript, superscript, underline };

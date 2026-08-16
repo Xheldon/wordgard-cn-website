@@ -62,7 +62,7 @@ function liftEmptyBlock(state) {
                 scrollIntoView: true,
                 userEvent: "unwrap.empty"
             };
-        if (level.node.type.isInline || level.node.type.isolating)
+        if (level.node.isInline || level.node.type.isolating)
             break;
         if (index)
             atStart = false;
@@ -150,14 +150,14 @@ function deleteSelection(state) {
         userEvent: "delete.selection"
     });
 }
-function deleteEmptyTextblock(state, dir = -1) {
+function deleteEmptyPlot(state, dir = -1) {
     if (!state.selection.isCursor)
         return false;
-    let block = state.sel.head.textblockParent;
-    if (!block || block.start < block.end || block.before == 0 && block.after == state.doc.length)
+    let plot = state.sel.head.parent;
+    if (!plot.parent || plot.start < plot.end)
         return false;
     return {
-        changes: { from: block.before, to: block.after, fit: true },
+        changes: { from: plot.before, to: plot.after, fit: true },
         selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(state.selection.head), dir),
         scrollIntoView: true,
         userEvent: dir < 0 ? "delete.backward" : "delete.forward"
@@ -174,12 +174,12 @@ function joinBackward(state) {
         if (!scan.parent)
             return false;
         scan = scan.parent;
-        if (scan.node.type.isolating || !scan.node.type.isBlock)
+        if (scan.node.type.isolating || !scan.node.isBlock)
             return false;
     }
     let before = scan.previousSibling, parent = scan.parent.node, pos = scan.start - 1;
     while (before.isLeaf || !before.isTextblock) {
-        if (before.isLeaf || state.isAtom(before.type) || before.type.isolating || !before.type.isBlock)
+        if (before.isLeaf || state.isAtom(before.type) || before.type.isolating || !before.isBlock)
             return false;
         let last = before.content.length - 1;
         if (last < 0)
@@ -216,7 +216,7 @@ function joinListItems(state) {
         let next = scan.parent;
         if (!next)
             return false;
-        if (scan.node.type.isBlock && next.node.type.hasRole(Node.Role.List)) {
+        if (scan.node.isBlock && next.node.type.hasRole(Node.Role.List)) {
             const prev = scan.previousSibling;
             if (!prev || !prev.isLeaf && scan.node.content.some(ch => !state.schema.canContain(prev.type, ch.type)))
                 return false;
@@ -244,12 +244,12 @@ function joinForward(state) {
         if (scan.index < scan.parent.node.content.length - 1)
             break;
         scan = scan.parent;
-        if (scan.node.type.isolating || !scan.node.type.isBlock)
+        if (scan.node.type.isolating || !scan.node.isBlock)
             return false;
     }
     let after = scan.nextSibling, parent = scan.parent.node, pos = scan.after;
     while (after.isLeaf || !after.isTextblock) {
-        if (after.isLeaf || after.type.isolating || state.isAtom(after.type) || !after.type.isBlock || !after.content.length)
+        if (after.isLeaf || after.type.isolating || state.isAtom(after.type) || !after.isBlock || !after.content.length)
             return false;
         parent = after;
         after = after.content[0];
@@ -279,7 +279,7 @@ function deleteBackward(state, word = false) {
     let { parent: scan, index, pos } = sel.head;
     if (!sel.head.inText)
         while (!index) {
-            if (scan.node.type.isolating || !scan.parent)
+            if (scan.node.type.isolating || !scan.parent || (!scan.node.contentLength && scan.node.isInline))
                 return false;
             index = scan.index;
             scan = scan.parent;
@@ -289,12 +289,9 @@ function deleteBackward(state, word = false) {
     for (;;) {
         if (next.isPlot && next.type.isolating)
             return false;
-        if (next.isLeaf || state.isAtom(next.type))
+        if (next.isLeaf || state.isAtom(next.type) || !next.content.length)
             break;
-        let last = next.content.length - 1;
-        if (last < 0)
-            return false;
-        next = next.content[last];
+        next = next.content[next.content.length - 1];
         pos--;
     }
     if (next.is(Leaf.Text)) {
@@ -336,13 +333,14 @@ function deleteBackward(state, word = false) {
     }
     let from = pos - next.length, to = pos;
     let parent = state.doc.resolve(pos).parent;
-    while (parent && parent.node.type.isBlock && parent.node.content.length == 1) {
-        if (!parent.parent)
-            return false;
-        parent = parent.parent;
-        from--;
-        to++;
-    }
+    if (next.isBlock)
+        while (parent && parent.node.isBlock && parent.node.content.length == 1) {
+            if (!parent.parent)
+                return false;
+            parent = parent.parent;
+            from--;
+            to++;
+        }
     return {
         changes: { from, to },
         scrollIntoView: true,
@@ -356,7 +354,7 @@ function deleteForward(state, word = false) {
     let { parent: scan, index, pos } = sel.head;
     if (!sel.head.inText)
         while (index == scan.node.content.length) {
-            if (scan.node.type.isolating || !scan.parent)
+            if (scan.node.type.isolating || !scan.parent || (!scan.node.contentLength && scan.node.isInline))
                 return false;
             index = scan.index + 1;
             scan = scan.parent;
@@ -366,10 +364,8 @@ function deleteForward(state, word = false) {
     for (;;) {
         if (next.isPlot && next.type.isolating)
             return false;
-        if (next.isLeaf || state.isAtom(next.type))
+        if (next.isLeaf || state.isAtom(next.type) || !next.content.length)
             break;
-        if (!next.content.length)
-            return false;
         next = next.content[0];
         pos++;
     }
@@ -412,13 +408,14 @@ function deleteForward(state, word = false) {
     }
     let from = pos, to = pos + next.length;
     let parent = state.doc.resolve(pos).parent;
-    while (parent && parent.node.type.isBlock && parent.node.content.length == 1) {
-        if (!parent.parent)
-            return false;
-        parent = parent.parent;
-        from--;
-        to++;
-    }
+    if (next.isBlock)
+        while (parent && parent.node.isBlock && parent.node.content.length == 1) {
+            if (!parent.parent)
+                return false;
+            parent = parent.parent;
+            from--;
+            to++;
+        }
     return {
         changes: { from, to },
         scrollIntoView: true,
@@ -513,7 +510,7 @@ function findUnwrappable(schema, from, to, query) {
     let outerCandidates = [];
     let { doc } = from;
     doc.iterate(fromStart, toEnd, (node, p, parent) => {
-        if (node.type.isBlock && node.isPlot && !node.inlineContent && parent &&
+        if (node.isBlock && node.isPlot && !node.inlineContent && parent &&
             (fromTextblock ? doc.schema.canContain(parent.type, fromTextblock) : textblockChild(doc.schema, parent.type)) &&
             (!query || schema.matchNode(node.type, query))) {
             let pos = doc.resolveNode(p), depth = pos.depth;
@@ -678,13 +675,13 @@ function autoJoinBlocks(state, tr) {
     let cursor = doc.resolve(0), check = (pos) => {
         cursor = cursor.advance(pos - cursor.pos);
         let before = cursor.nodeBefore, after = cursor.nodeAfter;
-        if (before && after && before.isPlot && before.type.isBlock && after.isPlot && after.type == before.type) {
+        if (before && after && before.isPlot && before.isBlock && after.isPlot && after.type == before.type) {
             let { autoJoin } = after.type.spec;
             if (autoJoin && (typeof autoJoin != "function" || autoJoin(before.tag, after.tag))) {
                 let from = pos - 1, to = pos + 1;
                 for (;;) {
                     let last = before.lastChild, first = after.firstChild;
-                    if (!first || !last || first.isLeaf || last.isLeaf || first.type != last.type || first.type.isInline)
+                    if (!first || !last || first.isLeaf || last.isLeaf || first.type != last.type || first.isInline)
                         break;
                     autoJoin = last.type.spec.autoJoin;
                     if (!autoJoin || (typeof autoJoin == "function" && !autoJoin(last.tag, first.tag)))
@@ -766,15 +763,15 @@ const deleteUnit = ({ state }, dir) => {
     if (state.readOnly)
         return false;
     return deleteSelection(state) || (dir == "forward"
-        ? joinForward(state) || deleteForward(state) || deleteEmptyTextblock(state, 1)
-        : joinListItems(state) || joinBackward(state) || deleteBackward(state) || deleteEmptyTextblock(state, -1));
+        ? joinForward(state) || deleteForward(state) || deleteEmptyPlot(state, 1)
+        : joinListItems(state) || joinBackward(state) || deleteBackward(state) || deleteEmptyPlot(state, -1));
 };
 const deleteWord = ({ state }, dir) => {
     if (state.readOnly)
         return false;
     return deleteSelection(state) || (dir == "forward"
-        ? joinForward(state) || deleteForward(state, true) || deleteEmptyTextblock(state, 1)
-        : joinListItems(state) || joinBackward(state) || deleteBackward(state, true) || deleteEmptyTextblock(state, -1));
+        ? joinForward(state) || deleteForward(state, true) || deleteEmptyPlot(state, 1)
+        : joinListItems(state) || joinBackward(state) || deleteBackward(state, true) || deleteEmptyPlot(state, -1));
 };
 const deleteToLineEnd = (wg, dir) => {
     if (wg.state.readOnly)
@@ -1101,8 +1098,7 @@ function extendSel(base, head) {
 const moveByUnit = ({ state }, { dir, extend }) => {
     let forward = isForward(dir, state), selection = asTextSel(state.selection, forward);
     if (!selection.empty && !extend) {
-        let next = selection.normalCursorAtBound(state, forward);
-        return next ? setSelection(next) : false;
+        return setSelection(GardSelection.near(state, forward ? selection.to : selection.from, forward ? -1 : 1));
     }
     else {
         let next = selection.nextNormalCursor(state, forward);
@@ -1133,10 +1129,10 @@ function nextVertical(wg, sel, forward, distance, allowNode) {
 }
 const moveByLine = (wg, { dir, extend }) => {
     let { state } = wg, { selection } = state, forward = dir == "down";
-    if (state.selection instanceof GardSelection.Node) {
-        let next = !extend && state.selection.normalCursorAtBound(state, forward);
+    if (selection instanceof GardSelection.Node) {
+        let next = !extend && GardSelection.near(state, forward ? selection.to : selection.from, forward ? -1 : 1);
         if (next && !state.doc.resolve(next.head).parent.node.inlineContent)
-            return setSelection(GardSelection.cursor(next.head, next.headSide, state.selection.goalColumn));
+            return setSelection(GardSelection.cursor(next.head, next.headSide, selection.goalColumn));
         selection = GardSelection.cursor(forward ? selection.to : selection.from, undefined, selection.goalColumn);
     }
     else {
@@ -1448,4 +1444,4 @@ const Menu = /*@__PURE__*/(function (Menu) {
     Menu.resolve = resolve;
 ;return Menu})({});
 
-export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyTextblock, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange };
+export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange };

@@ -1,5 +1,5 @@
 import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'wordgard/state';
-import { Attributes, Elt, Node, Leaf, ChangeSet, parse, Slice, Plot, serialize, Pos, ValidationError } from 'wordgard/doc';
+import { Attributes, Elt, Node, Leaf, ChangeSet, parse, Slice, Plot, serialize, Pos, ValidationError, Mark } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
 import { enter, insertLineBreak, selectAll, undo, redo, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
@@ -24,32 +24,40 @@ class Widget {
         return Widget.Type.new(spec).of(null);
     }
     type;
+    render(wg) {
+        return this.type.render(this.value, wg);
+    }
     get hasContent() { return false; }
 }
 ;Widget = /*@__PURE__*/(function (Widget) {
     class Type {
         render;
         eq;
-        handleEvent;
+        propagateEvent;
         connect;
         disconnect;
         inFlow;
+        editable;
         constructor(
         render, 
         eq, 
-        handleEvent, 
+        propagateEvent, 
         connect, 
         disconnect, 
-        inFlow) {
+        inFlow, 
+        editable) {
             this.render = render;
             this.eq = eq;
-            this.handleEvent = handleEvent;
+            this.propagateEvent = propagateEvent;
             this.connect = connect;
             this.disconnect = disconnect;
             this.inFlow = inFlow;
+            this.editable = editable;
         }
         static new(spec) {
-            return new Type(spec.render, spec.eq || ((a, b) => a === b), spec.handleEvent || (() => false), spec.connect ?? null, spec.disconnect ?? null, spec.inFlow !== false);
+            let prop = spec.propagateEvent;
+            let propEvent = typeof prop == "function" ? prop : prop == null ? () => true : () => prop;
+            return new Type(spec.render, spec.eq || ((a, b) => a === b), propEvent, spec.connect ?? null, spec.disconnect ?? null, spec.inFlow !== false, spec.editable === true);
         }
         of(value) { return Widget.new(this, value); }
     }
@@ -106,7 +114,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
             return tagWidget.of({
                 type: Node.Type.get(type),
                 place: getPlace(place),
-                widget: typeof widget == "function" ? memo(widget) : (() => widget)
+                widget: typeof widget == "function" ? memo(widget) : widget
             });
         }
         Tag.widget = widget;
@@ -119,7 +127,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
                     return {
                         type: tp,
                         place: p,
-                        widget: typeof w == "function" ? memo(w) : (() => w)
+                        widget: typeof w == "function" ? memo(w) : w
                     };
                 });
             }
@@ -221,6 +229,15 @@ const baseTagShape = /*@__PURE__*/memo((tag) => {
     return addMarkAttributes(tag.is(Leaf.Text) ? Widget.EditableText.of(tag.param)
         : tag.type.shape.create(tag.param), tag);
 });
+function renderMarks(marks, around) {
+    let result = addMarkAttributes(Elt.create("span", Attributes.none, [around]), Leaf.text(around, marks));
+    for (let i = marks.length - 1; i >= 0; i--) {
+        let mark = marks[i];
+        if (mark.type.element)
+            result = renderMarkWrapper(mark).fill([result]);
+    }
+    return result.toDOM();
+}
 class AttributeRangeDecoration extends Decoration.Range {
     attribute;
     value;
@@ -262,7 +279,7 @@ class ShapeDecoration extends Decoration.Point {
         return this == other || other instanceof ShapeDecoration && other.shape.eq(this.shape);
     }
     get trackMode() { return "after"; }
-    get side() { return 1e9; }
+    get side() { return 1000000000; }
 }
 class WidgetDecoration extends Decoration.Point {
     widget;
@@ -273,7 +290,7 @@ class WidgetDecoration extends Decoration.Point {
         this.widget = widget;
         this.side = side;
         this.trackMode = trackMode;
-        if (side >= 1e9)
+        if (side >= 1000000000)
             throw new Error("Invalid widget side");
     }
     eq(other) {
@@ -297,7 +314,7 @@ class AttributeDecoration extends Decoration.Point {
             selectorEq(other.selector, this.selector);
     }
     get trackMode() { return "after"; }
-    get side() { return 1e9; }
+    get side() { return 1000000000; }
 }
 class WrapperDecoration extends Decoration.Point {
     elt;
@@ -312,7 +329,7 @@ class WrapperDecoration extends Decoration.Point {
             selectorEq(other.selector, this.selector);
     }
     get trackMode() { return "after"; }
-    get side() { return 1e9; }
+    get side() { return 1000000000; }
 }
 const nodeSelectionDeco = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-node" });
 function nodeSelection(state) {
@@ -494,9 +511,14 @@ class PointIterator {
     get side() {
         return this.done ? 1 : this.value.side;
     }
-    goto(pos) {
+    goto(pos, inclusive) {
         this.done = false;
-        this.fill(findAbove(this.set.positions, 0, pos - 1));
+        let i = findAbove(this.set.positions, 0, pos - 1);
+        if (!inclusive) {
+            while (i < this.set.values.length && this.set.values[i].side < 1000000000)
+                i++;
+        }
+        this.fill(i);
     }
 }
 function addDel(deleted, i) {
@@ -585,8 +607,8 @@ class RangeSet {
     compareRange(fromA, b, fromB, len, change) {
         let a = this, toB = fromB + len;
         if (a != b || fromA != fromB) {
-            let iA = findAbove(a.from, 0, fromA - 1), lA = a.from.length;
-            let iB = findAbove(b.from, 0, fromB - 1), lB = b.from.length;
+            let iA = findAbove(a.to, 0, fromA - 1), lA = a.from.length;
+            let iB = findAbove(b.to, 0, fromB - 1), lB = b.from.length;
             let off = fromB - fromA;
             let sameVals = a.values == b.values;
             for (;;) {
@@ -972,11 +994,14 @@ class DecoIterator {
     pos;
     rangeIter = [];
     pointIter = [];
+    endWidgets;
     constructor(state, decoSet) {
         this.state = state;
         this.decoSet = decoSet;
         this.tagShapes = state.facet(tagShape);
         this.globalWidgets = state.facet(tagWidget);
+        this.endWidgets = this.globalWidgets
+            .some(w => (w.place == 1 || w.place == 3) && typeof w.widget == "function");
         this.globalWrappers = state.facet(tagWrapper);
         this.globalAttrs = state.facet(tagAttribute);
         this.pos = state.doc.resolve(0);
@@ -995,17 +1020,22 @@ class DecoIterator {
     widgets(tag, place, walker) {
         for (let src of this.globalWidgets) {
             if (src.place == place && tag.type == src.type) {
-                let widget = src.widget(tag);
+                let widget = typeof src.widget == "function" ? src.widget(tag) : src.widget;
                 if (widget)
                     walker.widget(widget, place == 0 || place == 3 ? 1 : -1);
             }
         }
     }
+    hasEndWidget(type) {
+        return this.globalWidgets.some(tw => tw.type == type &&
+            (tw.place == 3 || tw.place == 1) &&
+            typeof tw.widget == "function");
+    }
     walk(from, inclusiveStart, to, walker) {
         for (let i of this.rangeIter)
             i.goto(from);
         for (let i of this.pointIter)
-            i.goto(inclusiveStart ? from : from + 1);
+            i.goto(from, inclusiveStart);
         let iter = new HeapIterator(this.rangeIter.filter(i => !i.done), this.pointIter.filter(i => !i.done), from, to);
         let pos = this.pos.advance(from - this.pos.pos), started = inclusiveStart;
         let atomParent;
@@ -1227,7 +1257,7 @@ function rmDOM(dom) {
 function isBlockElement(node) {
     let tile = node.wgTile;
     if (tile?.node)
-        return tile.node.type.isBlock;
+        return tile.node.isBlock;
     return node.nodeType == 1 && /^(DIV|P|LI|UL|OL|BLOCKQUOTE|DD|DT|H\d|SECTION|PRE)$/.test(node.nodeName);
 }
 function isBlocking(node) {
@@ -1567,7 +1597,7 @@ class Tile {
         let last = this.children.length - 1;
         return last < 0 ? null : this.children[last];
     }
-    handleEvent(event, wg) { return false; }
+    ignoreEvent(event) { return false; }
     get ignoreMutations() { return false; }
     toString() { return this.dom.nodeName + (this.children.length ? `(${this.children})` : ""); }
     sync() { }
@@ -1643,7 +1673,7 @@ class CompositeTile extends Tile {
             orientation = node.type.orientation == "row" ? 0 : 1;
             if (node.isTextblock)
                 textblock = TextblockMap.get(state, start, node);
-            else if (node.type.isBlock)
+            else if (node.isBlock)
                 textblock = null;
         }
         else if (node && node.isText) {
@@ -1754,18 +1784,18 @@ class DocTile extends CompositeTile {
         this.cursorWrapper = cursorWrapper;
         this.decoSet = decoSet;
     }
-    static create(state, dom) {
+    static create(state, dom, wg) {
         return new DocTile(state, dom, null, { points: new Map, ranges: new Map })
-            .updateRanges(state, getDecoSet(state), [0, state.doc.length], false);
+            .updateRanges(state, getDecoSet(state), [0, state.doc.length], wg);
     }
     get isDoc() { return true; }
     get node() { return this.state.doc; }
-    update(state, changes, connected = false, composition) {
+    update(state, changes, wg, composition) {
         let decoSet = getDecoSet(state);
         let changed = findChangedRanges(this.state, this.decoSet, state, decoSet, changes);
-        return this.updateRanges(state, decoSet, changed, connected, composition);
+        return this.updateRanges(state, decoSet, changed, wg, composition);
     }
-    updateRanges(state, decoSet, sections, connected, composition) {
+    updateRanges(state, decoSet, sections, wg, composition) {
         let wrapper = composition?.wrapCursor || null;
         if ((!sections.length || sections.length == 2 && sections[1] == -1) && eqArray(wrapper, this.cursorWrapper))
             return this;
@@ -1776,7 +1806,7 @@ class DocTile extends CompositeTile {
             else
                 sections = separated;
         }
-        let builder = new ContentUpdate(state, this, new DecoIterator(state, decoSet), wrapper);
+        let builder = new ContentUpdate(state, this, wg, new DecoIterator(state, decoSet), wrapper);
         for (let i = 0, posB = 0, startCovered = false; i < sections.length;) {
             let len = sections[i++], ins = sections[i++];
             if (composition && posB == composition.fromB && ins >= 0) {
@@ -1802,7 +1832,7 @@ class DocTile extends CompositeTile {
         }
         let result = builder.finish();
         result.sync();
-        if (connected) {
+        if (wg.connected) {
             for (let ch of this.children)
                 ch.disconnect(builder.reused);
             for (let tile of builder.toConnect)
@@ -1856,7 +1886,8 @@ class DocTile extends CompositeTile {
                     else if (pos == end)
                         i = j + 1;
                 }
-                if (ch.isPlotContent && !ch.boundary ? pos >= off && pos <= end : pos > off && pos < end) {
+                if (!ch.isPoint &&
+                    ((ch.isPlotContent || ch.isNodeInner) && !ch.boundary ? pos >= off && pos <= end : pos > off && pos < end)) {
                     if (ch instanceof TextTile)
                         return new TilePos(ch, pos - off, pos);
                     else if (ch.isAtom) {
@@ -2031,17 +2062,19 @@ class EltTile extends CompositeTile {
 class WidgetTile extends Tile {
     widget;
     _node;
-    constructor(widget, _node, flags, length = 0, dom) {
-        super(dom || widget.type.render(widget.value), flags);
+    constructor(widget, _node, flags, dom, length = 0) {
+        super(dom, flags);
         this.widget = widget;
         this._node = _node;
         this.length = length;
+        if (dom.nodeType == 1 && !widget.type.editable && dom.contentEditable == "inherit")
+            dom.contentEditable = "false";
     }
     get isNodeOuter() { return !!this._node; }
     get isAtom() { return true; }
     get node() { return this._node; }
     get children() { return noChildren; }
-    handleEvent(event, wg) { return this.widget.type.handleEvent(event, wg); }
+    ignoreEvent(event) { return !this.widget.type.propagateEvent(event); }
     connect() {
         this.widget.type.connect?.(this.widget.value, this.dom);
     }
@@ -2232,6 +2265,7 @@ class TilePointer {
 }
 class ContentUpdate {
     state;
+    wg;
     deco;
     old;
     new;
@@ -2240,8 +2274,9 @@ class ContentUpdate {
     keepWalker;
     toConnect = [];
     partialNode = null;
-    constructor(state, old, deco, cursorWrapper) {
+    constructor(state, old, wg, deco, cursorWrapper) {
         this.state = state;
+        this.wg = wg;
         this.deco = deco;
         this.old = new TilePointer(old, 0, null);
         this.new = new DocTile(state, old.dom, cursorWrapper, deco.decoSet);
@@ -2321,6 +2356,54 @@ class ContentUpdate {
         };
     }
     keep(len, includeStart, includeEnd) {
+        let cut = [], end = this.posB + len;
+        if (this.deco.endWidgets)
+            for (let nw = this.new, { tile, index, parent } = this.old, pos = this.posB; pos < end;) {
+                if (tile instanceof TextTile) {
+                    pos += tile.length - index;
+                    ({ tile, index, parent } = parent);
+                    index++;
+                }
+                else if (index < tile.children.length) {
+                    pos += tile.children[index].length;
+                    index++;
+                }
+                else {
+                    if (tile.node) {
+                        while (!nw.node && nw.parent)
+                            nw = nw.parent;
+                        if (!nw.parent)
+                            break;
+                        if (!nw.node.tag.eq(tile.node.tag) &&
+                            (this.deco.hasEndWidget(tile.node.type) || this.deco.hasEndWidget(nw.node.type)))
+                            cut.push(pos);
+                        nw = nw.parent;
+                        if (!nw)
+                            break;
+                        pos++;
+                    }
+                    if (!parent)
+                        break;
+                    ({ tile, index, parent } = parent);
+                    index++;
+                }
+            }
+        for (let i = cut.length; i;) {
+            let from = cut[--i], to = Math.min(from + 1, includeEnd ? end : end - 1);
+            while (i && cut[i - 1] == from - 1) {
+                from--;
+                i--;
+            }
+            if (from > this.posB)
+                this.keepInner(from - this.posB, includeStart, false);
+            this.update(to - from, true);
+            includeStart = false;
+            len = end - to;
+        }
+        if (len)
+            this.keepInner(len, includeStart, includeEnd);
+    }
+    keepInner(len, includeStart, includeEnd) {
         if (!includeStart) {
             this.old = this.old.walk(0, 1);
             this.openOldWrappers();
@@ -2343,7 +2426,7 @@ class ContentUpdate {
                 if (mark.type.element) {
                     this.openWrapper(renderMarkWrapper(mark), mark.spanning, false);
                 }
-            this.new.addChild(new WidgetTile(imgHack, null, 16 | 32));
+            this.new.addChild(new WidgetTile(imgHack, null, 16 | 32, imgHack.render(this.wg)));
             return;
         }
         let found = [];
@@ -2460,7 +2543,7 @@ class ContentUpdate {
                         : endOld && this.posB == end ? endOld.matchingWidget(widget, sideFlag, this.reused)
                             : null;
                 if (!tile) {
-                    tile = new WidgetTile(widget, null, 16 | sideFlag, 0);
+                    tile = new WidgetTile(widget, null, 16 | sideFlag, widget.render(this.wg));
                     if (widget.type.connect)
                         this.toConnect.push(tile);
                 }
@@ -2497,6 +2580,9 @@ class ContentUpdate {
     }
     buildNodeShape(node, shape, reuse, afterContent = 0) {
         if (shape instanceof Elt) {
+            if (node && !shape.hasContent && Attributes.get(shape.attrs, "contenteditable") == null &&
+                !/^(br|hr|img|input|wbr)$/i.test(shape.tagName))
+                shape = Elt.create(shape.tagName, Attributes.merge(shape.attrs, ["contenteditable", "false"]), shape.children);
             let reusable, dom, strict = true;
             if (reusable = this.findReusableTile(shape, reuse, strict) || this.findReusableTile(shape, reuse, strict = false)) {
                 this.reused.set(reusable, 2);
@@ -2528,21 +2614,26 @@ class ContentUpdate {
                 dom = reusable.dom;
             }
             let flags = (node ? 512 : 16 | 1) | afterContent;
-            let tile = new WidgetTile(shape, node, flags, node ? node.length : 0, dom);
+            let tile = new WidgetTile(shape, node, flags, dom || shape.render(this.wg), node ? node.length : 0);
             if (shape.type.connect)
                 this.toConnect.push(tile);
             return tile;
         }
     }
-    ensureBR() {
+    ensureHackNode() {
         let tile = this.new;
         if (!tile.isPlotContent)
             return;
         while (tile.isNodeInner)
             tile = tile.parent;
         let node = tile.node;
-        if (!node || !node.isPlot || !node.isTextblock)
+        if (!node || !node.isPlot || !(node.isTextblock || node.isInline))
             return;
+        if (node.isInline) {
+            if (!this.new.children.length)
+                this.new.addChild(new WidgetTile(imgHack, null, 16 | 64, imgHack.render(this.wg)));
+            return;
+        }
         let hasHack = -1, needsHack = true;
         for (let parent = this.new, i = parent.children.length;;) {
             if (i > 0) {
@@ -2576,11 +2667,11 @@ class ContentUpdate {
                 this.new.children.splice(hasHack, 1);
         }
         else if (needsHack) {
-            this.new.addChild(new WidgetTile(brHack, null, 16 | 64, 0));
+            this.new.addChild(new WidgetTile(brHack, null, 16 | 64, brHack.render(this.wg)));
         }
     }
     up() {
-        this.ensureBR();
+        this.ensureHackNode();
         this.new = this.new.parent;
     }
     leaveNode() {
@@ -2663,7 +2754,7 @@ class ContentUpdate {
     finish() {
         while (!(this.new instanceof DocTile))
             this.up();
-        this.ensureBR();
+        this.ensureHackNode();
         return this.new;
     }
 }
@@ -2704,10 +2795,16 @@ function updateAttributes(dom, a, b) {
     return changed;
 }
 const brHack = /*@__PURE__*/Widget.create({
-    render() { return document.createElement("br"); }
+    render() { return document.createElement("br"); },
+    editable: true
 });
 const imgHack = /*@__PURE__*/Widget.create({
-    render() { return document.createElement("img"); }
+    render() {
+        let img = document.createElement("img");
+        img.className = "wg-buffer";
+        return img;
+    },
+    editable: true
 });
 function separateComposition(sections, comp) {
     let result = [], { fromB, toB } = comp;
@@ -2739,18 +2836,26 @@ function separateComposition(sections, comp) {
     return result;
 }
 
+class Coords {
+    ref;
+    rect;
+    constructor(ref, rect) {
+        this.ref = ref;
+        this.rect = rect;
+    }
+}
 function coordsAtPos(wg, pos, assoc) {
     let { offset, tile, pos: tilePos } = wg.docTile.resolve(pos, assoc);
     if (tile instanceof TextTile) {
         let node = tile.dom, len = node.nodeValue.length;
         if (!len)
-            return singleRect(textRange(node, 0, 0), 1);
+            return new Coords(tile, singleRect(textRange(node, 0, 0), 1));
         let from = offset, to = offset, side = assoc < 0 && from || from == len ? 1 : -1;
         if (side < 0)
             to++;
         else
             from--;
-        return flattenV(singleRect(textRange(node, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc));
+        return new Coords(tile, flattenV(singleRect(textRange(node, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc)));
     }
     let tagTile = tile;
     while (!tagTile.node)
@@ -2761,10 +2866,10 @@ function coordsAtPos(wg, pos, assoc) {
         if (tile.widget.type.inFlow) {
             let rect = singleRect(tile.dom, after ? 1 : -1);
             if (rect.width || rect.height)
-                return horizontal ? flattenH(rect, !after) : flattenV(rect, ltrAt(wg.state, pos, 1) == !after);
+                return new Coords(tile, horizontal ? flattenH(rect, !after) : flattenV(rect, ltrAt(wg.state, pos, 1) == !after));
         }
         if (!tile.parent)
-            return new DOMRect;
+            return new Coords(tile, new DOMRect);
         offset = tile.parent.children.indexOf(tile) + (after ? 1 : 0);
         tile = tile.parent;
         assoc = after ? 1 : -1;
@@ -2776,7 +2881,7 @@ function coordsAtPos(wg, pos, assoc) {
                     continue;
                 let rect = singleRect(before.dom, 1);
                 if (rect.width || rect.height)
-                    return horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1));
+                    return new Coords(before, horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1)));
             }
         }
         else {            for (let i = offset; i < tile.children.length; i++) {
@@ -2785,12 +2890,12 @@ function coordsAtPos(wg, pos, assoc) {
                     continue;
                 let rect = singleRect(after.dom, -1);
                 if (rect.width || rect.height)
-                    return horizontal ? flattenH(rect, true) : flattenV(rect, ltrAt(wg.state, pos, 1));
+                    return new Coords(after, horizontal ? flattenH(rect, true) : flattenV(rect, ltrAt(wg.state, pos, 1)));
             }
         }
     }
     let rect = singleRect(tile.dom, -assoc);
-    return horizontal ? flattenH(rect, assoc < 0) : flattenV(rect, assoc < 0);
+    return new Coords(tile, horizontal ? flattenH(rect, assoc < 0) : flattenV(rect, assoc < 0));
 }
 function flattenV(rect, left) {
     return rect.width ? new DOMRect(left ? rect.left : rect.right, rect.top, 0, rect.height) : rect;
@@ -3063,6 +3168,13 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         borderLeft: "1.8px solid currentColor",
         marginLeft: "-0.9px",
     },
+    ".wg-cursor-v.wg-cursor-bold": {
+        borderLeft: "2.4px solid currentColor",
+        marginLeft: "-1.2px",
+    },
+    ".wg-cursor-v.wg-cursor-italic": {
+        transform: "rotate(10deg)"
+    },
     ".wg-cursor-h": {
         borderTop: "1.8px solid currentColor",
         marginTop: "-0.9px",
@@ -3072,6 +3184,10 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         "&::selection, & *::selection": {
             backgroundColor: "transparent"
         }
+    },
+    ".wg-buffer": {
+        verticalAlign: "bottom",
+        height: "1em",
     },
     "wg-placeholder": {
         opacity: "0.6",
@@ -3177,6 +3293,32 @@ function readDOMSelection(wg, range) {
     let head = range.anchorNode == range.focusNode && range.anchorOffset == range.focusOffset ? anchor
         : wg.posAtDOM(range.focusNode, range.focusOffset);
     return GardSelection.range(anchor, head);
+}
+function selectionFromTouch(event, wg) {
+    let pos = wg.posAtCoords({ x: event.touches[0].clientX, y: event.touches[0].clientY });
+    if (pos.target != null) {
+        let target = wg.state.doc.nodeAt(pos.target);
+        if (target && target.type.isSelectable && wg.state.isAtom(target.type))
+            return GardSelection.node(pos.target, target);
+    }
+    return GardSelection.near(wg.state, pos.pos, pos.side);
+}
+function rangeForClick(wg, pos, type) {
+    if (type < 3 && pos.target != null) {
+        let target = wg.state.doc.nodeAt(pos.target);
+        if (target && target.type.isSelectable && wg.state.isAtom(target.type))
+            return GardSelection.node(pos.target, target);
+    }
+    if (type == 1) {        return GardSelection.near(wg.state, pos.pos, pos.side || -1);
+    }
+    else if (type == 2) {        return wg.state.wordAt(pos.pos, pos.side || 1);
+    }
+    else {        let cx = wg.state.doc.resolve(pos.pos), block = cx.textblockParent;
+        if (block)
+            return GardSelection.range(block.start, block.end);
+        else
+            return GardSelection.near(wg.state, pos.pos, pos.side || -1);
+    }
 }
 const Y_STEP = 5;
 function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
@@ -3405,7 +3547,13 @@ class DOMObserver {
             this.selectionChanged = false;
             let sel = readDOMSelection(this.wg, this.selectionRange);
             if (!sel.eqPos(this.wg.state.selection)) {
-                let userEvent = this.wg.inputState.lastTouchTime > Date.now() - 100 ? "select.pointer" : "select";
+                let userEvent = "select";
+                if (this.wg.inputState.lastTouchTime > Date.now() - 100) {
+                    userEvent = "select.pointer";
+                    let event = this.wg.inputState.lastTouchEvent;
+                    if (event.touches.length == 1 && sel.isCursor)
+                        sel = selectionFromTouch(event, this.wg);
+                }
                 this.wg.dispatch({ selection: sel, userEvent });
             }
         }
@@ -3775,6 +3923,7 @@ class InputState {
     lastKeyCode = 0;
     lastKeyTime = 0;
     lastTouchTime = 0;
+    lastTouchEvent = null;
     lastScrollTop = 0;
     lastScrollLeft = 0;
     lastContextMenu = 0;
@@ -3885,7 +4034,7 @@ class InputState {
         let inText = node.nodeType == 3;
         let ref = this.wg.docTile.posFromDOM(node, inText ? 0 : offset);
         let dir = -1;
-        let textBefore = textNodeBefore(node.parentNode, domIndex(node));
+        let textBefore = node.parentNode && textNodeBefore(node.parentNode, domIndex(node));
         let prev = textBefore && Tile.get(textBefore);
         if (prev instanceof TextTile && prev.length < prev.dom.nodeValue.length)
             dir = 1;
@@ -3908,8 +4057,8 @@ class InputState {
         let type = event.inputType, range;
         let { wg } = this, sel = wg.state.selection;
         if (data.domRange) {
-            range = { from: this.domMapping.mapPos(data.domRange.from),
-                to: this.domMapping.mapPos(data.domRange.to) };
+            range = { from: snapToSel(wg.state, this.domMapping.mapPos(data.domRange.from)),
+                to: snapToSel(wg.state, this.domMapping.mapPos(data.domRange.to)) };
             if (!this.domMapping.empty && type == "insertText" && !this.composing && range.from == range.to) {
                 let fromMax = this.domMapping.mapPos(data.domRange.from, 1);
                 if (range.from <= sel.from && fromMax >= sel.to)
@@ -3918,7 +4067,7 @@ class InputState {
         }
         let command = inputTypeCommands[type];
         if ((type == "deleteContentBackward" || type == "deleteContentForward") && range &&
-            (sel.empty
+            range.from != range.to &&            (sel.empty
                 ? !isSingleChar(this.domDoc, data.domRange.from, data.domRange.to) ||
                     sel.head != (type == "deleteContentBackward" ? range.to : range.from)
                 : sel.from != range.from || sel.to != range.to)) {
@@ -4003,6 +4152,10 @@ class InputState {
                     : prev == after ? after : before;
         }
     }
+    recordTouch(e) {
+        this.lastTouchTime = Date.now();
+        this.lastTouchEvent = e;
+    }
     connect() {
         this.ensureHandlers(this.wg.state);
     }
@@ -4010,6 +4163,39 @@ class InputState {
         if (this.mouseSelection)
             this.mouseSelection.disconnect();
     }
+}
+function snapToSel(state, pos) {
+    let { head, anchor } = state.selection;
+    if (pos == head || pos == anchor)
+        return pos;
+    if (onlyInlineNodeBoundsBetween(state.doc, head, pos))
+        return head;
+    if (head != anchor && onlyInlineNodeBoundsBetween(state.doc, head, pos))
+        return anchor;
+    return pos;
+}
+function onlyInlineNodeBoundsBetween(doc, a, b) {
+    if (a > b)
+        [a, b] = [b, a];
+    let { parent, index, inText } = doc.resolve(a);
+    if (inText)
+        return false;
+    for (; a < b; a++) {
+        if (index == parent.node.content.length) {
+            if (!parent.node.isInline)
+                return false;
+            index = parent.index + 1;
+            parent = parent.parent;
+        }
+        else {
+            let next = parent.node.content[index];
+            if (!next.isPlot || !next.isInline)
+                return false;
+            parent = Pos.Plot.create(parent, next, a, index);
+            index = 0;
+        }
+    }
+    return true;
 }
 function isSingleChar(doc, from, to) {
     if (to > from + 10)
@@ -4185,35 +4371,22 @@ function isInPrimarySelection(wg, event) {
     }
     return false;
 }
+const focusEvents = /*@__PURE__*/(() => new Set(["input", "beforeinput", "keydown", "keyup", "keypress", "copy", "cut", "paste"]))();
 function eventBelongsToEditor(wg, event) {
-    if (!event.bubbles)
-        return true;
     if (event.defaultPrevented)
         return false;
+    if (!event.bubbles)
+        return true;
+    let active = wg.root.activeElement;
     for (let node = event.target, tile; node != wg.contentDOM; node = node.parentNode)
-        if (!node || node.nodeType == 11 || (tile = Tile.get(node)) && tile.handleEvent(event, wg))
+        if (!node || node.nodeType == 11 ||
+            (tile = Tile.get(node)) && tile.ignoreEvent(event) ||
+            node == active && focusEvents.has(event.type))
             return false;
     return true;
 }
 function queryPos(wg, event) {
     return wg.posAtCoords({ x: event.clientX, y: event.clientY });
-}
-function rangeForClick(wg, pos, type) {
-    if (type < 3 && pos.target != null) {
-        let target = wg.state.doc.nodeAt(pos.target);
-        if (target && target.type.isSelectable && wg.state.isAtom(target.type))
-            return GardSelection.node(pos.target, target);
-    }
-    if (type == 1) {        return GardSelection.near(wg.state, pos.pos, pos.side || -1);
-    }
-    else if (type == 2) {        return wg.state.wordAt(pos.pos, pos.side || 1);
-    }
-    else {        let cx = wg.state.doc.resolve(pos.pos), block = cx.textblockParent;
-        if (block)
-            return GardSelection.range(block.start, block.end);
-        else
-            return GardSelection.near(wg.state, pos.pos, pos.side || -1);
-    }
 }
 function basicMouseSelection(wg, event) {
     let start = queryPos(wg, event), type = event.detail;
@@ -4310,10 +4483,13 @@ function compositionUpdate(wg, event) {
     if (!wg.inputState.composing) {
         wg.inputState.composing = { changes: 0, target: null };
         let wrap = null;
-        if (!wg.inputState.composing.changes && !event.data) {
+        if (!event.data) {
             let sel = wg.state.selection, rSel = wg.state.sel;
             if (sel.empty && (sel instanceof GardSelection.Text && sel.marks || !rSel.head.inText && rSel.head.index) &&
                 !eqArray(rSel.head.nodeBefore?.tag.marks, rSel.activeMarks))
+                wrap = rSel.activeMarks;
+            else if (sel.head > 0 && onlyInlineNodeBoundsBetween(wg.state.doc, sel.head - 1, sel.head) ||
+                sel.head < wg.state.doc.length && onlyInlineNodeBoundsBetween(wg.state.doc, sel.head, sel.head + 1))
                 wrap = rSel.activeMarks;
         }
         if (wrap)
@@ -4502,12 +4678,8 @@ const baseObservers = {
         wg.inputState.lastScrollTop = wg.scrollDOM.scrollTop;
         wg.inputState.lastScrollLeft = wg.scrollDOM.scrollLeft;
     },
-    touchstart(wg, e) {
-        wg.inputState.lastTouchTime = Date.now();
-    },
-    touchmove(wg) {
-        wg.inputState.lastTouchTime = Date.now();
-    },
+    touchstart(wg, e) { wg.inputState.recordTouch(e); },
+    touchmove(wg, e) { wg.inputState.recordTouch(e); },
     focus(wg) {
         if (!wg.scrollDOM.scrollTop && (wg.inputState.lastScrollTop || wg.inputState.lastScrollLeft)) {
             wg.scrollDOM.scrollTop = wg.inputState.lastScrollTop;
@@ -4630,9 +4802,34 @@ class ViewState {
 const cursorBlinkRate = /*@__PURE__*/GardState.Facet.define({
     combine: inputs => inputs.length ? Math.min(...inputs) : 1200
 });
-class cursorLayer {
+class CursorStyle {
+    height;
+    align;
+    color;
+    bold;
+    italic;
+    constructor(height, align, color, bold, italic) {
+        this.height = height;
+        this.align = align;
+        this.color = color;
+        this.bold = bold;
+        this.italic = italic;
+    }
+    static read(node, height) {
+        let win = node.ownerDocument.defaultView || window;
+        let elt = node.nodeType == 1 ? node : node.parentNode;
+        let style = win.getComputedStyle(elt);
+        return new CursorStyle(height, style.verticalAlign, style.color, +style.fontWeight > 400, style.fontStyle == "italic");
+    }
+    eq(other) {
+        return other && this.height == other.height && this.align == other.align &&
+            this.color == other.color && this.bold == other.bold && this.italic == other.italic;
+    }
+}
+class CursorLayer {
     layer;
-    pos = null;
+    info = null;
+    cached = null;
     constructor(wg) {
         this.layer = wg.scrollDOM.appendChild(document.createElement("wg-cursor-layer"));
         this.positionCursor = this.positionCursor.bind(this);
@@ -4655,48 +4852,135 @@ class cursorLayer {
         this.layer.remove();
     }
     positionCursor(wg) {
-        let pos = cursorPos(wg), cur = this.pos;
-        if (!pos ? cur : !cur || cur.left != pos.left || cur.top != pos.top || cur.size != pos.size) {
-            this.pos = pos;
-            wg.scheduleDOMWrite(() => {
-                let cursor = this.layer.firstChild;
-                if (!pos) {
-                    if (cursor)
-                        cursor.remove();
-                }
-                else {
-                    if (!cursor)
-                        cursor = this.layer.appendChild(document.createElement("wg-cursor"));
-                    cursor.className = "wg-cursor-" + (pos.horiz ? "h" : "v");
-                    cursor.style.top = pos.top + "px";
-                    cursor.style.left = pos.left + "px";
-                    cursor.style.width = pos.horiz ? pos.size + "px" : "";
-                    cursor.style.height = pos.horiz ? "" : pos.size + "px";
-                }
-            });
-        }
+        getCursorInfo(wg, this, info => {
+            let cur = this.info;
+            if (!info ? cur : !cur || cur.left != info.left || cur.top != info.top || cur.size != info.size ||
+                (cur.style ? !cur.style.eq(info.style) : info.style)) {
+                this.info = info;
+                wg.scheduleDOMWrite(() => {
+                    let cursor = this.layer.firstChild;
+                    if (!info) {
+                        if (cursor)
+                            cursor.remove();
+                    }
+                    else {
+                        if (!cursor)
+                            cursor = this.layer.appendChild(document.createElement("wg-cursor"));
+                        cursor.className = "wg-cursor-" + (info.horiz ? "h" : "v");
+                        cursor.style.top = info.top + "px";
+                        cursor.style.left = info.left + "px";
+                        cursor.style.width = info.horiz ? info.size + "px" : "";
+                        cursor.style.height = info.horiz ? "" : info.size + "px";
+                        cursor.style.borderLeftColor = info.style ? info.style.color : "";
+                        cursor.classList.toggle("wg-cursor-bold", info.style?.bold ?? false);
+                        cursor.classList.toggle("wg-cursor-italic", info.style?.italic ?? false);
+                    }
+                });
+            }
+        });
     }
 }
+function alignOffset(align, height) {
+    if (align == "super")
+        return height * 0.36;
+    if (align == "sub")
+        return height * -0.17;
+    if (align.endsWith("px"))
+        return +align.slice(0, align.length - 2);
+    if (align.endsWith("%"))
+        return height * (+align.slice(0, align.length - 1)) * 100;
+    return 0;
+}
+function vertOverlap(a, b) {
+    let margin = a.height / 3;
+    return a.top < b.bottom + margin && a.bottom > b.top + margin;
+}
 const VertWidth = 30, VertGap = 5;
-function cursorPos(wg) {
+function getCursorInfo(wg, plugin, cont) {
     let { state } = wg;
     if (!state.selection.isCursor)
-        return null;
-    let { head, headSide } = state.selection;
-    let { left, right, top, bottom } = wg.coordsAtPos(head, headSide);
-    let horiz = top == bottom, size = horiz ? right - left : bottom - top;
-    if (horiz && size > VertWidth) {
-        size = VertWidth;
-        if (!wg.state.textLTR)
-            left = right - size;
+        return cont(null);
+    let { head, headSide } = state.selection, { sel } = wg.state;
+    let { ref, rect } = coordsAtPos(wg, head, headSide);
+    let doc = wg.contentDOM.getBoundingClientRect();
+    if (!sel.head.parent.node.inlineContent) {
+        let width = Math.min(VertWidth, rect.width), top = rect.top;
         let other = wg.coordsAtPos(head, headSide > 0 ? -1 : 1);
         if (other.top == other.bottom && other.top != top) {
             let move = Math.min(VertGap, Math.abs(other.top - top) / 2);
-            top = bottom = top + move * (other.top < top ? -1 : 1);
+            top = top + move * (other.top < top ? -1 : 1);
         }
+        return cont({
+            left: (wg.state.textLTR ? rect.left : rect.right - width) - doc.left,
+            top: top - doc.top,
+            size: width,
+            horiz: true, style: null
+        });
     }
-    let doc = wg.contentDOM.getBoundingClientRect();
-    return { left: left - doc.left, top: top - doc.top, size, horiz };
+    let finish = (style, vertRect) => {
+        if (style && (!plugin.cached || plugin.cached.style != style))
+            plugin.cached = { style, marks, parent: sel.head.parent.node.tag };
+        let height = style ? style.height : rect.height;
+        let bot = rect.bottom;
+        if (vertRect && vertOverlap(vertRect, rect)) {
+            bot = vertRect.bottom;
+        }
+        else {
+            let win = ref.dom.ownerDocument.defaultView || window;
+            let refAlign = win.getComputedStyle((ref.dom.nodeType == 1 ? ref.dom : ref.dom.parentNode)).verticalAlign;
+            if (style && refAlign != style.align) {
+                bot += alignOffset(refAlign, rect.height) - alignOffset(style.align, style.height);
+            }
+        }
+        cont({
+            left: rect.left - doc.left,
+            top: bot - height - doc.top,
+            size: height,
+            horiz: false, style
+        });
+    };
+    let marks = sel.activeMarks;
+    if (ref instanceof TextTile) {
+        let node = ref.posBefore < head ? state.sel.head.nodeBefore : state.sel.head.nodeAfter;
+        if (node && node.isText && Mark.sameSet(node.marks, marks))
+            return finish(CursorStyle.read(ref.dom, rect.height), rect);
+    }
+    let pos = sel.head.parent.start, foundRect, foundNode;
+    scan: for (let sibling of sel.head.parent.node.content) {
+        if (sibling.isText && Mark.sameSet(sibling.marks, marks)) {
+            let { tile } = wg.docTile.resolve(pos, 1);
+            if (tile instanceof TextTile) {
+                let rects = textRange(tile.dom, 0, tile.length).getClientRects();
+                foundNode = tile.dom;
+                for (let i = 0; i < rects.length; i++) {
+                    foundRect = rects[i];
+                    if (vertOverlap(foundRect, rect))
+                        break scan;
+                }
+            }
+        }
+        pos += sibling.length;
+    }
+    if (foundNode)
+        return finish(CursorStyle.read(foundNode, foundRect.height), foundRect);
+    if (plugin.cached && Mark.sameSet(plugin.cached.marks, marks) && plugin.cached.parent.eq(sel.head.parent.node.tag))
+        return finish(plugin.cached.style);
+    if (!marks.length)
+        return finish(null);
+    let target = sel.head.parent.node.isDoc ? wg.contentDOM : wg.nodeDOM(sel.head.parent.before);
+    wg.scheduleDOMWrite(() => {
+        let temp = renderMarks(marks, "M");
+        temp.style.position = "absolute";
+        wg.observer.ignore(() => target.insertBefore(temp, target.firstChild));
+        wg.scheduleDOMRead(() => {
+            wg.scheduleDOMWrite(() => wg.observer.ignore(() => temp.remove()));
+            let inner = temp;
+            while (inner.firstChild)
+                inner = inner.firstChild;
+            let r = textRange(inner, 0, 1).getClientRects()[0];
+            finish(CursorStyle.read(inner, r.height), r);
+        });
+    });
 }
 function setBlinkRate(state, dom) {
     dom.style.animationDuration = state.facet(cursorBlinkRate) + "ms";
@@ -4756,7 +5040,7 @@ class Wordgard {
         for (let plugin of this.plugins)
             plugin.update(this);
         this.inputState = new InputState(this);
-        this.docTile = DocTile.create(this.state, this.contentDOM);
+        this.docTile = DocTile.create(this.state, this.contentDOM, this);
         this.updateAttrs();
         this.observer = new DOMObserver(this);
         if (spec.parent)
@@ -4899,7 +5183,7 @@ class Wordgard {
                 this.mountStyles();
             this.updateAttrs();
         }
-        this.docTile = prevDocTile.update(update.state, changes, this.connected, composition);
+        this.docTile = prevDocTile.update(update.state, changes, this, composition);
         if ((composition?.wrapCursor || !composition && (prevDocTile != this.docTile || update.selectionSet)) && this.hasFocus)
             setDOMSelection(this);
         this.observer.clear();
@@ -5050,7 +5334,7 @@ class Wordgard {
     }
     coordsAtPos(pos, assoc = -1) {
         this.ensureFlushed();
-        return coordsAtPos(this, pos, assoc);
+        return coordsAtPos(this, pos, assoc).rect;
     }
     coordsForElement(pos) {
         this.ensureFlushed();
@@ -5299,7 +5583,7 @@ function attrsFromFacet(wg, facet, base) {
     Wordgard.Update = Update;
 ;return Wordgard})(Wordgard);
 const editorPlugin = /*@__PURE__*/GardState.Facet.define();
-const cursorPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(cursorLayer);
+const cursorPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(CursorLayer);
 class PluginInstance {
     spec;
     mustUpdate = null;
