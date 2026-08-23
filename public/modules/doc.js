@@ -2278,7 +2278,7 @@ class ChangeSet {
                     len += this.sections[i];
                     i += 2;
                 }
-                gap(posA, posA + len, posB, posB + len);
+                gap(posA, posA + len, posB, posB + len, i == this.sections.length);
                 posB += len;
             }
             else {

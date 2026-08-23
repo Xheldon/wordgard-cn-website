@@ -68,6 +68,18 @@ class Widget {
     Widget.EditableText = Widget.define({
         render: s => document.createTextNode(s)
     });
+    Widget.img = Widget.create({
+        render() {
+            let img = document.createElement("img");
+            img.className = "wg-buffer";
+            return img;
+        },
+        editable: true
+    });
+    Widget.br = Widget.create({
+        render() { return document.createElement("br"); },
+        editable: true
+    });
 ;return Widget})(Widget);
 const Decoration = /*@__PURE__*/(function (Decoration) {
     (function (Tag) {
@@ -366,8 +378,8 @@ class PointSet {
         let positions = this.positions.slice();
         let pos = 0, i = 0;
         let deleted = [], deletions = 0;
-        changes.iterGaps((fromA, toA, fromB) => {
-            let off = fromB - fromA, end = toA - 1;
+        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
+            let off = fromB - fromA, end = last ? toA : toA - 1;
             if (end > pos) {
                 let nextI = findAbove(positions, i, end);
                 if (off)
@@ -377,7 +389,7 @@ class PointSet {
                     i = nextI;
                 pos = end;
             }
-        }, (_fromA, toA) => {
+        }, (_fromA, toA, fromB, toB) => {
             let nextI = findAbove(positions, i, toA + 1);
             for (; i < nextI; i++) {
                 let mapped = changes.mapPos(positions[i], this.values[i].side < 0 ? -1 : 1, this.values[i].trackMode);
@@ -402,14 +414,11 @@ class PointSet {
         let posA = this.positions, posB = other.positions;
         let pos = new Array(posA.length, posB.length), values = new Array(pos.length);
         for (let i = 0, a = 0, b = 0;;) {
-            let nextA = a < posA.length ? posA[a] : 1e9;
-            let nextB = b < posB.length ? posB[b] : 1e9;
-            let cmp = nextA - nextB || this.values[a].side - other.values[b].side;
-            if (cmp < 0) {
+            if (a < posA.length && (b == posB.length || (posA[a] - posB[b] || this.values[a].side - other.values[b].side) < 0)) {
                 pos[i] = posA[a];
                 values[i++] = this.values[a++];
             }
-            else if (nextB < 1e9) {
+            else if (b < posB.length) {
                 pos[i] = posB[b];
                 values[i++] = other.values[b++];
             }
@@ -465,9 +474,8 @@ class PointSet {
                 for (let i = positions.length;;) {
                     positions[i] = positions[i - 1];
                     values[i] = values[i - 1];
-                    if (--i < 0)
-                        break;
-                    if (!i-- || (positions[i] - pos || values[i].side - value.side) <= 0) {
+                    --i;
+                    if (!i || (positions[i - 1] - pos || values[i - 1].side - value.side) <= 0) {
                         positions[i] = pos;
                         values[i] = value;
                         break;
@@ -567,10 +575,10 @@ class RangeSet {
         let from = this.from.slice(), to = this.to.slice();
         let pos = 0, i = 0;
         let deleted = [], deletions = 0;
-        changes.iterGaps((fromA, toA, fromB) => {
-            let off = fromB - fromA, end = toA - 1;
+        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
+            let off = fromB - fromA, end = last ? toA : toA - 1;
             if (end > pos) {
-                let nextI = findAbove(from, i, end);
+                let nextI = findAbove(to, i, end);
                 if (off)
                     for (; i < nextI; i++) {
                         from[i] += off;
@@ -581,7 +589,7 @@ class RangeSet {
                 pos = end;
             }
         }, (_fromA, toA) => {
-            let nextI = findAbove(to, i, toA + 1);
+            let nextI = findAbove(from, i, toA);
             for (; i < nextI; i++) {
                 let value = this.values[i];
                 let mappedFrom = changes.mapPos(from[i], value.inclusiveStart ? -1 : 1);
@@ -600,6 +608,32 @@ class RangeSet {
         if (!deletions)
             return new RangeSet(this.values, from, to);
         return new RangeSet(applyDel(deleted, deletions, this.values), applyDel(deleted, deletions, from), applyDel(deleted, deletions, to));
+    }
+    merge(other) {
+        if (!this.length)
+            return other;
+        if (!other.length)
+            return this;
+        let fromA = this.from, fromB = other.from;
+        let from = new Array(fromA.length + fromB.length);
+        let to = new Array(from.length), values = new Array(from.length);
+        for (let i = 0, a = 0, b = 0, at = 0;;) {
+            if (a < fromA.length && (b == fromB.length || fromA[a] < fromB[b])) {
+                if ((from[i] = fromA[a]) < at)
+                    throw new Error("Overlapping ranges");
+                at = to[i] = this.to[a];
+                values[i++] = this.values[a++];
+            }
+            else if (b < fromB.length) {
+                if ((from[i] = fromB[b]) < at)
+                    throw new Error("Overlapping ranges");
+                at = to[i] = other.to[b];
+                values[i++] = other.values[b++];
+            }
+            else {
+                return new RangeSet(values, from, to);
+            }
+        }
     }
     iter() {
         return new RangeIterator(this);
@@ -648,6 +682,7 @@ class RangeSet {
                 throw new Error("Ranges must be added in order and cannot overlap");
             from.push(f);
             to.push(t);
+            curPos = t;
             values.push(value);
         });
         return new RangeSet(values, from, to);
@@ -1018,6 +1053,8 @@ class DecoIterator {
         }
     }
     widgets(tag, place, walker) {
+        if (place == 2 && tag.type.isInline)
+            walker.widget(Widget.img, -1);
         for (let src of this.globalWidgets) {
             if (src.place == place && tag.type == src.type) {
                 let widget = typeof src.widget == "function" ? src.widget(tag) : src.widget;
@@ -1025,6 +1062,8 @@ class DecoIterator {
                     walker.widget(widget, place == 0 || place == 3 ? 1 : -1);
             }
         }
+        if (place == 3 && tag.type.isInline)
+            walker.widget(Widget.img, 1);
     }
     hasEndWidget(type) {
         return this.globalWidgets.some(tw => tw.type == type &&
@@ -1597,6 +1636,12 @@ class Tile {
         let last = this.children.length - 1;
         return last < 0 ? null : this.children[last];
     }
+    get nodeParent() {
+        let tile = this;
+        while (!tile.node)
+            tile = tile.parent;
+        return tile;
+    }
     ignoreEvent(event) { return false; }
     get ignoreMutations() { return false; }
     toString() { return this.dom.nodeName + (this.children.length ? `(${this.children})` : ""); }
@@ -1711,6 +1756,12 @@ class CompositeTile extends Tile {
             return null;
         let { closest, rect } = result;
         let pos = this.posBeforeChild(closest, start);
+        if (closest.node && closest.node.isPlot && closest.node.isInline) {
+            if (x > rect.right)
+                return CoordPos.create(pos + closest.length, -1);
+            if (x < rect.left)
+                return CoordPos.create(pos, 1);
+        }
         return closest.posAtCoordsInner(pos + closest.boundary, state, x, Math.max(rect.top, Math.min(rect.bottom, y)), textblock, 0);
     }
     posAtCoordsCol(start, state, x, y, textblock) {
@@ -1996,6 +2047,8 @@ class DocTile extends CompositeTile {
                 dom = dom.parentNode;
             domBefore = dom.previousSibling;
         }
+        if (elt.node && elt.node.isInline && elt.node.isPlot && (!domBefore || !domBefore.nextSibling))
+            return domBefore ? elt.posAfter : elt.posBefore;
         while (domBefore && !((eltBefore = domBefore.wgTile) && eltBefore.parent == elt))
             domBefore = domBefore.previousSibling;
         return domBefore ? elt.posBeforeChild(eltBefore) + eltBefore.length : elt.posAtStart;
@@ -2190,7 +2243,7 @@ class TilePointer {
                 }
                 if (!dist && next.isNodeInner && !nodeBoundary)
                     break;
-                if (next.length <= dist) {
+                if (next.length < dist || next.length == dist && (next.isPoint || next.boundary)) {
                     if (walker)
                         walker.skip(next, 0, next.length);
                     dist -= next.length;
@@ -2426,7 +2479,7 @@ class ContentUpdate {
                 if (mark.type.element) {
                     this.openWrapper(renderMarkWrapper(mark), mark.spanning, false);
                 }
-            this.new.addChild(new WidgetTile(imgHack, null, 16 | 32, imgHack.render(this.wg)));
+            this.new.addChild(new WidgetTile(Widget.img, null, 16 | 32, Widget.img.render(this.wg)));
             return;
         }
         let found = [];
@@ -2629,17 +2682,12 @@ class ContentUpdate {
         let node = tile.node;
         if (!node || !node.isPlot || !(node.isTextblock || node.isInline))
             return;
-        if (node.isInline) {
-            if (!this.new.children.length)
-                this.new.addChild(new WidgetTile(imgHack, null, 16 | 64, imgHack.render(this.wg)));
-            return;
-        }
         let hasHack = -1, needsHack = true;
         for (let parent = this.new, i = parent.children.length;;) {
             if (i > 0) {
                 let next = parent.children[--i];
                 if (next.isNodeInner || next instanceof WidgetTile && !next.widget.type.inFlow) ;
-                else if (next instanceof WidgetTile && next.widget == brHack && parent == this.new) {
+                else if (next instanceof WidgetTile && next.widget == Widget.br && parent == this.new) {
                     hasHack = i;
                 }
                 else if (next.dom.nodeName == "BR" || next instanceof TextTile && /\n$/.test(next.text)) {
@@ -2667,7 +2715,7 @@ class ContentUpdate {
                 this.new.children.splice(hasHack, 1);
         }
         else if (needsHack) {
-            this.new.addChild(new WidgetTile(brHack, null, 16 | 64, brHack.render(this.wg)));
+            this.new.addChild(new WidgetTile(Widget.br, null, 16 | 64, Widget.br.render(this.wg)));
         }
     }
     up() {
@@ -2794,18 +2842,6 @@ function updateAttributes(dom, a, b) {
     }
     return changed;
 }
-const brHack = /*@__PURE__*/Widget.create({
-    render() { return document.createElement("br"); },
-    editable: true
-});
-const imgHack = /*@__PURE__*/Widget.create({
-    render() {
-        let img = document.createElement("img");
-        img.className = "wg-buffer";
-        return img;
-    },
-    editable: true
-});
 function separateComposition(sections, comp) {
     let result = [], { fromB, toB } = comp;
     let lenI = 0, dLen = 0;
@@ -3542,19 +3578,21 @@ class DOMObserver {
             this.wg.scheduleFlush();
     }
     pollSelection() {
+        let { wg } = this;
         if (this.selectionChanged &&
-            (this.wg.hasFocus || !this.wg.focusable) && hasSelection(this.wg.contentDOM, this.selectionRange)) {
+            (wg.hasFocus || !wg.focusable) && hasSelection(wg.contentDOM, this.selectionRange)) {
             this.selectionChanged = false;
-            let sel = readDOMSelection(this.wg, this.selectionRange);
-            if (!sel.eqPos(this.wg.state.selection)) {
+            let fromTouch = wg.inputState.lastTouchTime > Date.now() - 100;
+            let sel = readDOMSelection(wg, this.selectionRange);
+            if (!sel.eqPos(wg.state.selection)) {
                 let userEvent = "select";
-                if (this.wg.inputState.lastTouchTime > Date.now() - 100) {
+                if (fromTouch) {
                     userEvent = "select.pointer";
-                    let event = this.wg.inputState.lastTouchEvent;
+                    let event = wg.inputState.lastTouchEvent;
                     if (event.touches.length == 1 && sel.isCursor)
-                        sel = selectionFromTouch(event, this.wg);
+                        sel = selectionFromTouch(event, wg);
                 }
-                this.wg.dispatch({ selection: sel, userEvent });
+                wg.dispatch({ selection: sel, userEvent });
             }
         }
     }
@@ -4057,8 +4095,8 @@ class InputState {
         let type = event.inputType, range;
         let { wg } = this, sel = wg.state.selection;
         if (data.domRange) {
-            range = { from: snapToSel(wg.state, this.domMapping.mapPos(data.domRange.from)),
-                to: snapToSel(wg.state, this.domMapping.mapPos(data.domRange.to)) };
+            range = { from: this.domMapping.mapPos(data.domRange.from),
+                to: this.domMapping.mapPos(data.domRange.to) };
             if (!this.domMapping.empty && type == "insertText" && !this.composing && range.from == range.to) {
                 let fromMax = this.domMapping.mapPos(data.domRange.from, 1);
                 if (range.from <= sel.from && fromMax >= sel.to)
@@ -4163,39 +4201,6 @@ class InputState {
         if (this.mouseSelection)
             this.mouseSelection.disconnect();
     }
-}
-function snapToSel(state, pos) {
-    let { head, anchor } = state.selection;
-    if (pos == head || pos == anchor)
-        return pos;
-    if (onlyInlineNodeBoundsBetween(state.doc, head, pos))
-        return head;
-    if (head != anchor && onlyInlineNodeBoundsBetween(state.doc, head, pos))
-        return anchor;
-    return pos;
-}
-function onlyInlineNodeBoundsBetween(doc, a, b) {
-    if (a > b)
-        [a, b] = [b, a];
-    let { parent, index, inText } = doc.resolve(a);
-    if (inText)
-        return false;
-    for (; a < b; a++) {
-        if (index == parent.node.content.length) {
-            if (!parent.node.isInline)
-                return false;
-            index = parent.index + 1;
-            parent = parent.parent;
-        }
-        else {
-            let next = parent.node.content[index];
-            if (!next.isPlot || !next.isInline)
-                return false;
-            parent = Pos.Plot.create(parent, next, a, index);
-            index = 0;
-        }
-    }
-    return true;
 }
 function isSingleChar(doc, from, to) {
     if (to > from + 10)
@@ -4488,8 +4493,7 @@ function compositionUpdate(wg, event) {
             if (sel.empty && (sel instanceof GardSelection.Text && sel.marks || !rSel.head.inText && rSel.head.index) &&
                 !eqArray(rSel.head.nodeBefore?.tag.marks, rSel.activeMarks))
                 wrap = rSel.activeMarks;
-            else if (sel.head > 0 && onlyInlineNodeBoundsBetween(wg.state.doc, sel.head - 1, sel.head) ||
-                sel.head < wg.state.doc.length && onlyInlineNodeBoundsBetween(wg.state.doc, sel.head, sel.head + 1))
+            else if (sel.empty && inlineBoundNear(wg.state.sel.head))
                 wrap = rSel.activeMarks;
         }
         if (wrap)
@@ -4501,6 +4505,13 @@ function compositionUpdate(wg, event) {
                 wg.inputState.wrappingComposition = null;
             }
     }
+}
+function inlineBoundNear(pos) {
+    let { parent, index, inText } = pos;
+    if (inText || !parent.node.inlineContent)
+        return false;
+    return (index ? parent.node.content[index - 1].isPlot : parent.node.isInline) ||
+        (index < parent.node.content.length ? parent.node.content[index].isPlot : parent.node.isInline);
 }
 function isDeletionInputEvent(type) { return /^delete(Content|Word)/.test(type); }
 const inputTypeCommands = /*@__PURE__*/(() => ({

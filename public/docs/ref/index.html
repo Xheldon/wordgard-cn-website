@@ -1833,7 +1833,8 @@ addEventListener("load", function() {
       <a href="#doc.ChangeSet.iterGaps.gap.fromA" class="def" id="doc.ChangeSet.iterGaps.gap.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
       <a href="#doc.ChangeSet.iterGaps.gap.toA" class="def" id="doc.ChangeSet.iterGaps.gap.toA">toA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
       <a href="#doc.ChangeSet.iterGaps.gap.fromB" class="def" id="doc.ChangeSet.iterGaps.gap.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-      <a href="#doc.ChangeSet.iterGaps.gap.toB" class="def" id="doc.ChangeSet.iterGaps.gap.toB">toB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+      <a href="#doc.ChangeSet.iterGaps.gap.toB" class="def" id="doc.ChangeSet.iterGaps.gap.toB">toB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#doc.ChangeSet.iterGaps.gap.last" class="def" id="doc.ChangeSet.iterGaps.gap.last">last</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
     ) =&gt; <span class="keyword">void</span>,
     <a href="#doc.ChangeSet.iterGaps.change" class="def" id="doc.ChangeSet.iterGaps.change">change</a>?: (
       <a href="#doc.ChangeSet.iterGaps.change.fromA" class="def" id="doc.ChangeSet.iterGaps.change.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
@@ -3477,7 +3478,7 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Find the next normal cursor position after or before this selection's head. Normal cursor positions are:">查找此选区头部之后或之前的下一个正常光标位置。正常光标位置包括：</p>
 <ul>
-<li data-x-en="Any inline position."><p>任何内联位置。</p></li>
+<li data-x-en="Any inline position.">任何内联位置。</li>
 <li data-x-en="Positions between two cursor barriers, if not already an inline position. Cursor barriers are the sides of the document, any block leaves, or plots that are isolating, whitespace-preserving, or explicitly defined as a cursor barrier.">两个光标屏障之间的位置，如果尚未为内联位置。光标屏障是指文档的两侧、任何块级叶子节点，或是被标记为<a href="#doc.Plot.Spec.isolating">隔离</a>、<a href="#doc.Plot.Spec.preserveWhitespace">保留空白</a>或显式定义为<a href="#doc.Plot.Spec.cursorBarrier">光标屏障</a>的绘图。</li>
 </ul>
 </div>
@@ -5057,6 +5058,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges.">调整给定变更集中的范围位置。返回包含更新后范围的集合。</p>
+</div>
+<pre class="refcode">  <a href="#editor.RangeSet.merge" class="def" id="editor.RangeSet.merge">merge</a>(<a href="#editor.RangeSet.merge.other" class="def" id="editor.RangeSet.merge.other">other</a>: <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
+</pre>
+<div class="doc indent2">
+<p data-x-en="Merge this set with another set.">将此集合与另一个集合合并。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.RangeSet.create" class="def" id="editor.RangeSet.create">create</a>&lt;<a href="#editor.RangeSet.create.T" class="def" id="editor.RangeSet.create.T">T</a> <span class="keyword">extends</span> <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a>&gt;(<a href="#editor.RangeSet.create.source" class="def" id="editor.RangeSet.create.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
     <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,

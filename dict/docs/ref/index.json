@@ -5546,5 +5546,9 @@
   "Key binding that binds Shift-Ctrl-l (Shift-Cmd-l on MacOS) to selectLanguage.": {
     "_translate": "将 Shift-Ctrl-l（MacOS 上为 Shift-Cmd-l）绑定到\n<a href=\"#schema.codeBlockLanguage.selectLanguage\"><code>selectLanguage</code></a> 的按键绑定。",
     "_note": ""
+  },
+  "Merge this set with another set.": {
+    "_translate": "将此集合与另一个集合合并。",
+    "_note": ""
   }
 }
