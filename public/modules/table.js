@@ -205,10 +205,11 @@ function computeMap(table) {
         }
         pos++;
     }
-    for (let row = 0, i = width; row < height; row++, i += width) {
+    for (let row = 0, i = 0; row < height; row++) {
         let missing = 0;
-        while (missing < width && map[i - missing - 1] == 0)
-            missing++;
+        for (let col = 0; col < width; col++)
+            if (map[i++] == 0)
+                missing++;
         if (missing)
             (problems || (problems = [])).push({ type: "missing", row, n: missing });
     }

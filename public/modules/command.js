@@ -79,6 +79,35 @@ function liftEmptyBlock(state) {
     }
     return false;
 }
+function enterInCode(state) {
+    let { sel } = state, { head } = sel;
+    if (!head.parent.node.inlineContent || !head.parent.node.type.preserveWhitespace ||
+        head.parent.start != sel.anchor.parent.start || !state.schema.lineBreak)
+        return false;
+    if (sel.selection.empty && head.parent.parent && !head.inText && head.index > 1 &&
+        head.nodeBefore.type == state.schema.lineBreak.type &&
+        (head.pos == head.parent.end || head.nodeAfter.type == state.schema.lineBreak.type) &&
+        head.parent.node.content[head.index - 2].type == state.schema.lineBreak.type) {
+        let textblock = state.schema.defaultContentPlot(head.parent.parent.node.type);
+        if (textblock?.type.inlineContent)
+            return {
+                changes: {
+                    from: head.pos - 2, to: head.pos + 1,
+                    insert: head.pos == head.parent.end ? [Plot.End, textblock, Plot.End]
+                        : [Plot.End, textblock, Plot.End, head.parent.node.tag]
+                },
+                selection: GardSelection.cursor(head.pos, -1),
+                scrollIntoView: true,
+                userEvent: "split.textblock"
+            };
+    }
+    return {
+        changes: { from: sel.from.pos, to: sel.to.pos, insert: [state.schema.lineBreak] },
+        selection: GardSelection.cursor(sel.from.pos + 1, -1),
+        scrollIntoView: true,
+        userEvent: "input"
+    };
+}
 function splitTextblock(state, splitListItem = true) {
     let { from, to } = state.sel.replacementRange, { schema } = state.doc;
     let before = from.textblockParent;
@@ -757,7 +786,7 @@ const enter = ({ state }) => {
             userEvent: "insert.textblock"
         };
     }
-    return liftEmptyBlock(state) || splitTextblock(state);
+    return enterInCode(state) || liftEmptyBlock(state) || splitTextblock(state);
 };
 const deleteUnit = ({ state }, dir) => {
     if (state.readOnly)
@@ -1159,8 +1188,11 @@ const moveByPage = (wg, { dir, extend }) => {
     return moved ? setSelection(extend ? extendSel(selection, moved) : moved) : false;
 };
 const moveToLineSide = (wg, { dir, extend }) => {
-    let pos = wg.moveToLineBoundary(wg.state.selection, isForward(dir, wg.state));
-    return pos ? setSelection(extend ? extendSel(wg.state.selection, pos) : pos) : false;
+    let forward = isForward(dir, wg.state), { selection } = wg.state;
+    let pos = wg.moveToLineBoundary(selection, forward);
+    return pos ? setSelection(extend ? extendSel(selection, pos) : pos)
+        : extend || selection.empty ? false
+            : setSelection(GardSelection.near(wg.state, forward ? selection.to : selection.from));
 };
 const moveToTextblockSide = (wg, { dir, extend }) => {
     let { state } = wg, block = state.sel.head.textblockParent;
@@ -1444,4 +1476,4 @@ const Menu = /*@__PURE__*/(function (Menu) {
     Menu.resolve = resolve;
 ;return Menu})({});
 
-export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange };
+export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, enterInCode, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange };

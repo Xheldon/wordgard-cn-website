@@ -854,14 +854,14 @@ function findNormalAt(cx, pos, bias) {
                 parent = parent.parent;
             }
             else {
-                let next = parent.node.content[index + (dir > 0 ? 0 : -1)];
+                let nextIndex = index + (dir > 0 ? 0 : -1), next = parent.node.content[nextIndex];
                 if (next.isLeaf || isBarrier(cx, next))
                     break;
                 if (!parent.node.inlineContent && next.inlineContent && cx.config.visualCursorMotion) {
                     let startPos = curPos - (dir > 0 ? 0 : next.length) + 1;
                     return TextblockMap.get(cx, startPos, next).visualSide(dir > 0);
                 }
-                parent = Pos.Plot.create(parent, next, curPos, index);
+                parent = Pos.Plot.create(parent, next, curPos, nextIndex);
                 index = dir > 0 ? 0 : next.content.length;
                 curPos += dir;
             }

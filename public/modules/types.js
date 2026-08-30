@@ -1,6 +1,12 @@
-import { Node, Plot, Elt, ValidationError, Mark, Leaf, parse } from 'wordgard/doc';
+import { Node, Leaf, Plot, Elt, ValidationError, Mark, parse } from 'wordgard/doc';
 
 const G = /*@__PURE__*/(() => Node.Group)();
+const LineBreak = /*@__PURE__*/(() => Leaf.define("LineBreak", {
+    inline: true,
+    role: Node.Role.LineBreak,
+    toText: () => "\n",
+    shape: { element: "br" }
+}))();
 const Paragraph = /*@__PURE__*/(() => Plot.define("Paragraph", {
     inlineContent: true,
     group: G.Content,
@@ -27,7 +33,7 @@ const Heading = /*@__PURE__*/(() => Plot.Type.define("Heading", {
     ]
 }))();
 const CodeBlock = /*@__PURE__*/(() => Plot.define("CodeBlock", {
-    inlineContent: true,
+    inlineContent: [Leaf.Text, LineBreak],
     group: G.Content,
     role: Node.Role.Code,
     shape: { element: "pre" },
@@ -80,12 +86,6 @@ const HorizontalRule = /*@__PURE__*/(() => Leaf.define("HorizontalRule", {
     shape: { element: "hr" },
     toText: () => "---",
     selectable: true
-}))();
-const LineBreak = /*@__PURE__*/(() => Leaf.define("LineBreak", {
-    inline: true,
-    role: Node.Role.LineBreak,
-    toText: () => "\n",
-    shape: { element: "br" }
 }))();
 const Cell = /*@__PURE__*/(() => Plot.define("Cell", {
     inlineContent: true,

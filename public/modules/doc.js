@@ -1001,7 +1001,7 @@ class Pos {
     }
     Pos.Plot = Plot;
 ;return Pos})(Pos);
-const posCache = /*@__PURE__*/(() => new Map())(), cacheSize = 8;
+const posCache = /*@__PURE__*/(() => new WeakMap())(), cacheSize = 8;
 let cachePos = 0;
 function cacheFor(doc) {
     let found = posCache.get(doc);
@@ -2158,8 +2158,43 @@ class ChangeSet {
         return fix ? set.compose(fix) : set;
     }
     compose(other) {
-        let { sections, data } = compose(this.sections, other.sections, this.data, other.data);
-        return new ChangeSet(sections, data);
+        let sectionsA = this.sections, dataA = this.data;
+        let sectionsB = other.sections, dataB = other.data;
+        let sections = [], data = [];
+        let a = new SectionIter(sectionsA, dataA), b = new SectionIter(sectionsB, dataB);
+        for (let open = false;;) {
+            if (a.done && b.done) {
+                return new ChangeSet(sections, data);
+            }
+            else if (a.ins == 0) {                addSection(sections, data, a.len, 0, a.slice, open);
+                a.next();
+            }
+            else if (b.len == 0 && !b.done) {                addSection(sections, data, 0, b.ins, b.slice, open);
+                b.next();
+            }
+            else if (a.done || b.done) {
+                throw new ValidationError("Mismatched change set lengths");
+            }
+            else {
+                let len = Math.min(a.len2, b.len), sectionLen = sections.length;
+                if (a.keep && b.keep) {
+                    let mods = combineMods(a.mods, b.mods);
+                    addSection(sections, data, len, mods ? -2 : -1, mods, open);
+                }
+                else if (a.keep) {
+                    addSection(sections, data, len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
+                }
+                else if (b.keep) {
+                    addSection(sections, data, a.off ? 0 : a.len, len, applyModsToSlice(a.slicePart(len), b.mods), open);
+                }
+                else {
+                    addSection(sections, data, a.off ? 0 : a.len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
+                }
+                open = (a.ins > len || b.ins >= 0 && b.len > len) && (open || sections.length > sectionLen);
+                a.forward2(len);
+                b.forward(len);
+            }
+        }
     }
     invert(doc) {
         let sections = [], data = [];
@@ -2380,9 +2415,6 @@ class ChangeSet {
         }
         return result;
     }
-    static composeSections(a, b) {
-        return compose(a, b).sections;
-    }
     static transform(doc, a, b) {
         let { set: mA, fix } = transform(a, b, doc, true, true);
         let mB = transform(b, a, doc, false, false).set;
@@ -2578,43 +2610,6 @@ function transform(setA, setB, doc, before, fit) {
                 set: ChangeSet.new(sections, data),
                 fix: fitter && fitter.finish()
             };
-        }
-    }
-}
-function compose(sectionsA, sectionsB, dataA, dataB) {
-    let sections = [], data = dataA ? [] : null;
-    let a = new SectionIter(sectionsA, dataA), b = new SectionIter(sectionsB, dataB);
-    for (let open = false;;) {
-        if (a.done && b.done) {
-            return { sections, data };
-        }
-        else if (a.ins == 0) {            addSection(sections, data, a.len, 0, a.slice, open);
-            a.next();
-        }
-        else if (b.len == 0 && !b.done) {            addSection(sections, data, 0, b.ins, b.slice, open);
-            b.next();
-        }
-        else if (a.done || b.done) {
-            throw new ValidationError("Mismatched change set lengths");
-        }
-        else {
-            let len = Math.min(a.len2, b.len), sectionLen = sections.length;
-            if (a.keep && b.keep) {
-                let mods = combineMods(a.mods, b.mods);
-                addSection(sections, data, len, (data ? mods : a.ins == -2 || b.ins == -2) ? -2 : -1, mods, open);
-            }
-            else if (a.keep) {
-                addSection(sections, data, len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
-            }
-            else if (b.keep) {
-                addSection(sections, data, a.off ? 0 : a.len, len, data ? applyModsToSlice(a.slicePart(len), b.mods) : null, open);
-            }
-            else {
-                addSection(sections, data, a.off ? 0 : a.len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
-            }
-            open = (a.ins > len || b.ins >= 0 && b.len > len) && (open || sections.length > sectionLen);
-            a.forward2(len);
-            b.forward(len);
         }
     }
 }
@@ -2977,10 +2972,10 @@ class SectionIter {
     get done() { return this.ins == -3; }
     get len2() { return this.ins < 0 ? this.len : this.ins; }
     get mods() {
-        return this.data ? this.data[(this.i - 2) >> 1] : null;
+        return this.data[(this.i - 2) >> 1];
     }
     get slice() {
-        return this.data ? this.data[(this.i - 2) >> 1] : Slice.empty;
+        return this.data[(this.i - 2) >> 1];
     }
     slicePart(len) {
         return this.slice.slice(this.off, len == null ? undefined : this.off + len);
@@ -3009,7 +3004,7 @@ function addSection(sections, data, len, ins, value, forceJoin = false) {
         return;
     let last = sections.length - 2;
     if (last >= 0 && ins <= 0 && ins == sections[last + 1]) {
-        let lastValue = data ? data[data.length - 1] : null;
+        let lastValue = data[data.length - 1];
         let match = ins == 0 ? true
             : value ? lastValue && compareModifications(lastValue, value)
                 : !lastValue;
@@ -3021,13 +3016,11 @@ function addSection(sections, data, len, ins, value, forceJoin = false) {
     if (forceJoin || last >= 0 && len == 0 && sections[last] == 0) {
         sections[last] += len;
         sections[last + 1] += ins;
-        if (data)
-            data[data.length - 1] = data[data.length - 1].concat(value);
+        data[data.length - 1] = data[data.length - 1].concat(value);
     }
     else {
         sections.push(len, ins);
-        if (data)
-            data.push(value);
+        data.push(value);
     }
 }
 function finishCx(cx, schema) {

@@ -1,10 +1,166 @@
 import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'wordgard/state';
-import { Attributes, Elt, Node, Leaf, ChangeSet, parse, Slice, Plot, serialize, Pos, ValidationError, Mark } from 'wordgard/doc';
+import { Attributes, Elt, Node, Leaf, parse, Slice, Plot, serialize, Pos, ChangeSet, ValidationError, Mark } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
 import { enter, insertLineBreak, selectAll, undo, redo, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
 import { PhraseSet, phrases } from 'wordgard/phrases';
 import { history } from 'wordgard/history';
+
+function eqArray(a, b) {
+    if (!a || !b)
+        return a == b;
+    if (a == b)
+        return true;
+    if (a.length != b.length)
+        return false;
+    for (let i = 0; i < a.length; i++)
+        if (!a[i].eq(b[i]))
+            return false;
+    return true;
+}
+const exceptionSink = /*@__PURE__*/GardState.Facet.define();
+function logException(state, exception, context) {
+    let handler = state.facet(exceptionSink);
+    if (handler.length)
+        handler[0](exception);
+    else if (window.onerror)
+        window.onerror(String(exception), context, undefined, undefined, exception);
+    else if (context)
+        console.error(context + ":", exception);
+    else
+        console.error(exception);
+}
+function findAbove(array, start, n) {
+    let from = start, to = array.length;
+    for (;;) {
+        if (from == to)
+            return from;
+        let mid = (from + to) >> 1;
+        if (array[mid] > n)
+            to = mid;
+        else
+            from = mid + 1;
+    }
+}
+
+function addUpdated(sections, updated) {
+    let result = [];
+    let j = 0, [uFrom, uTo] = updated.length ? [updated[j++], updated[j++]] : [1e9, 1e9];
+    for (let i = 0, pos = 0; i < sections.length;) {
+        let len = sections[i++], ins = sections[i++];
+        if (ins == -1) {
+            let end = pos + len;
+            while (uFrom < end) {
+                if (uTo > pos) {
+                    if (uFrom > pos)
+                        addSection(result, uFrom - pos, -1);
+                    addSection(result, Math.min(uTo, end) - Math.max(pos, uFrom), -2);
+                    pos = uTo;
+                }
+                if (uTo >= end)
+                    break;
+                if (j == updated.length) {
+                    uFrom = uTo = 1e9;
+                    break;
+                }
+                uFrom = updated[j++];
+                uTo = updated[j++];
+            }
+            if (pos < end)
+                addSection(result, end - pos, -1);
+            pos = end;
+        }
+        else {
+            addSection(result, len, ins);
+            pos += len;
+        }
+    }
+    return result;
+}
+function addSection(sections, len, ins) {
+    let last = sections.length - 1;
+    if (last >= 0) {
+        let lastIns = sections[last];
+        if (lastIns >= 0 && ins >= 0) {
+            sections[last - 1] += len;
+            sections[last] += ins;
+            return;
+        }
+        if (lastIns < 0 && lastIns == ins) {
+            sections[last - 1] += len;
+            return;
+        }
+    }
+    sections.push(len, ins);
+}
+function separateChange(changes, fromB, toB) {
+    let result = [];
+    let lenI = 0, dLen = 0;
+    for (let posB = 0, done = false, i = 0; i < changes.length;) {
+        let len = changes[i++], ins = changes[i++], endB = posB + (ins < 0 ? len : ins);
+        if (fromB > endB || toB < posB) {
+            result.push(len, ins);
+        }
+        else {
+            if (ins >= 0) {
+                if (posB < fromB || endB > toB)
+                    return null;
+                dLen = len - ins;
+            }
+            if (posB < fromB)
+                result.push(fromB - posB, ins);
+            if (!done) {
+                lenI = result.length;
+                result.push(0, toB - fromB);
+                done = true;
+            }
+            if (endB > toB)
+                result.push(endB - toB, ins);
+        }
+        posB = endB;
+    }
+    result[lenI] = (toB - fromB) + dLen;
+    return result;
+}
+function isEmpty(changes) {
+    return changes.length == 0 || changes.length == 2 && changes[1] == -1;
+}
+function addRange(ranges, from, to) {
+    if (!ranges.length || ranges[ranges.length - 1] < from) {
+        ranges.push(from, to);
+        return;
+    }
+    let i = findAbove(ranges, 0, from) & -2, j = i;
+    if (j && ranges[j - 1] == from) {
+        j -= 2;
+        from = ranges[j];
+    }
+    while (i < ranges.length && ranges[i] <= to) {
+        from = Math.min(from, ranges[i++]);
+        to = Math.max(to, ranges[i++]);
+    }
+    ranges.splice(j, i - j, from, to);
+}
+function joinRanges(ranges) {
+    if (ranges.length == 1)
+        return ranges[0];
+    let result = [], index = ranges.map(() => 0);
+    for (;;) {
+        let minI = -1, minFrom = -1;
+        for (let i = 0; i < ranges.length; i++) {
+            let idx = index[i], set = ranges[i];
+            if (idx < set.length && (minI < 0 || set[idx] < minFrom)) {
+                minI = i;
+                minFrom = set[idx];
+            }
+        }
+        if (minI < 0)
+            return result;
+        let idx = index[minI], set = ranges[minI];
+        addRange(result, set[idx], set[idx + 1]);
+        index[minI] += 2;
+    }
+}
 
 class Widget {
     value;
@@ -62,10 +218,10 @@ class Widget {
         of(value) { return Widget.new(this, value); }
     }
     Widget.Type = Type;
-    Widget.Text = Widget.define({
+    Widget.text = Widget.define({
         render: s => document.createTextNode(s)
     });
-    Widget.EditableText = Widget.define({
+    Widget.editableText = Widget.define({
         render: s => document.createTextNode(s)
     });
     Widget.img = Widget.create({
@@ -238,7 +394,7 @@ function applyDeco(shape, deco, tag) {
     return shape;
 }
 const baseTagShape = /*@__PURE__*/memo((tag) => {
-    return addMarkAttributes(tag.is(Leaf.Text) ? Widget.EditableText.of(tag.param)
+    return addMarkAttributes(tag.is(Leaf.Text) ? Widget.editableText.of(tag.param)
         : tag.type.shape.create(tag.param), tag);
 });
 function renderMarks(marks, around) {
@@ -349,18 +505,6 @@ function nodeSelection(state) {
         return PointSet.create([[state.selection.from, nodeSelectionDeco]]);
     return PointSet.empty;
 }
-function findAbove(array, start, n) {
-    let from = start, to = array.length;
-    for (;;) {
-        if (from == to)
-            return from;
-        let mid = (from + to) >> 1;
-        if (array[mid] > n)
-            to = mid;
-        else
-            from = mid + 1;
-    }
-}
 const none = [];
 class PointSet {
     values;
@@ -372,16 +516,17 @@ class PointSet {
         this.positions = positions;
     }
     get length() { return this.positions.length; }
-    map(changes) {
+    get size() { return this.positions.length ? this.positions[this.positions.length - 1] : 0; }
+    map(changes, start = 0) {
         if (changes.empty)
             return this;
         let positions = this.positions.slice();
-        let pos = 0, i = 0;
+        let pos = start, i = 0, startB = start && changes.mapPos(start, -1);
         let deleted = [], deletions = 0;
         changes.iterGaps((fromA, toA, fromB, _toB, last) => {
             let off = fromB - fromA, end = last ? toA : toA - 1;
             if (end > pos) {
-                let nextI = findAbove(positions, i, end);
+                let nextI = findAbove(positions, i, end - start);
                 if (off)
                     for (; i < nextI; i++)
                         positions[i] += off;
@@ -389,16 +534,16 @@ class PointSet {
                     i = nextI;
                 pos = end;
             }
-        }, (_fromA, toA, fromB, toB) => {
-            let nextI = findAbove(positions, i, toA + 1);
+        }, (_fromA, toA) => {
+            let nextI = findAbove(positions, i, toA + 1 + start);
             for (; i < nextI; i++) {
-                let mapped = changes.mapPos(positions[i], this.values[i].side < 0 ? -1 : 1, this.values[i].trackMode);
+                let mapped = changes.mapPos(positions[i] + start, this.values[i].side < 0 ? -1 : 1, this.values[i].trackMode);
                 if (mapped == null) {
                     addDel(deleted, i);
                     deletions++;
                 }
                 else
-                    positions[i] = mapped;
+                    positions[i] = mapped - startB;
             }
             pos = toA + 1;
         });
@@ -406,17 +551,20 @@ class PointSet {
             return new PointSet(this.values, positions);
         return new PointSet(applyDel(deleted, deletions, this.values), applyDel(deleted, deletions, positions));
     }
-    merge(other) {
+    merge(other, maskFrom, maskTo = maskFrom) {
         if (!this.length)
             return other;
-        if (!other.length)
+        if (!other.length && maskFrom == null)
             return this;
         let posA = this.positions, posB = other.positions;
-        let pos = new Array(posA.length, posB.length), values = new Array(pos.length);
+        let pos = new Array((maskFrom == null ? posA.length : 0) + posB.length), values = new Array(pos.length);
         for (let i = 0, a = 0, b = 0;;) {
             if (a < posA.length && (b == posB.length || (posA[a] - posB[b] || this.values[a].side - other.values[b].side) < 0)) {
-                pos[i] = posA[a];
-                values[i++] = this.values[a++];
+                if (maskFrom == null || maskFrom > posA[a] || maskTo < posA[a]) {
+                    pos[i] = posA[a];
+                    values[i++] = this.values[a];
+                }
+                a++;
             }
             else if (b < posB.length) {
                 pos[i] = posB[b];
@@ -500,14 +648,15 @@ class PointIterator {
         this.set = set;
         this.fill(0);
     }
+    get to() { return this.from; }
     fill(i) {
         this.i = i;
         if (i < this.set.positions.length) {
-            this.pos = this.set.positions[i];
+            this.from = this.set.positions[i];
             this.value = this.set.values[i];
         }
         else {
-            this.pos = 1e8;
+            this.from = 1e8;
             this.value = null;
             this.done = true;
         }
@@ -569,16 +718,17 @@ class RangeSet {
         this.to = to;
     }
     get length() { return this.from.length; }
-    map(changes) {
+    get size() { return this.to.length ? this.to[this.to.length - 1] : 0; }
+    map(changes, start = 0) {
         if (changes.empty || !this.length)
             return this;
         let from = this.from.slice(), to = this.to.slice();
-        let pos = 0, i = 0;
+        let pos = start, i = 0, startB = start && changes.mapPos(start, -1);
         let deleted = [], deletions = 0;
         changes.iterGaps((fromA, toA, fromB, _toB, last) => {
             let off = fromB - fromA, end = last ? toA : toA - 1;
             if (end > pos) {
-                let nextI = findAbove(to, i, end);
+                let nextI = findAbove(to, i, end - start);
                 if (off)
                     for (; i < nextI; i++) {
                         from[i] += off;
@@ -589,18 +739,18 @@ class RangeSet {
                 pos = end;
             }
         }, (_fromA, toA) => {
-            let nextI = findAbove(from, i, toA);
+            let nextI = findAbove(from, i, toA - start);
             for (; i < nextI; i++) {
                 let value = this.values[i];
-                let mappedFrom = changes.mapPos(from[i], value.inclusiveStart ? -1 : 1);
-                let mappedTo = changes.mapPos(to[i], value.inclusiveEnd ? 1 : -1);
+                let mappedFrom = changes.mapPos(from[i] + start, value.inclusiveStart ? -1 : 1);
+                let mappedTo = changes.mapPos(to[i] + start, value.inclusiveEnd ? 1 : -1);
                 if (mappedFrom >= mappedTo) {
                     addDel(deleted, i);
                     deletions++;
                 }
                 else {
-                    from[i] = mappedFrom;
-                    to[i] = mappedTo;
+                    from[i] = mappedFrom - startB;
+                    to[i] = mappedTo - startB;
                 }
             }
             pos = toA + 1;
@@ -609,20 +759,23 @@ class RangeSet {
             return new RangeSet(this.values, from, to);
         return new RangeSet(applyDel(deleted, deletions, this.values), applyDel(deleted, deletions, from), applyDel(deleted, deletions, to));
     }
-    merge(other) {
+    merge(other, maskFrom, maskTo = maskFrom) {
         if (!this.length)
             return other;
-        if (!other.length)
+        if (!other.length && maskFrom == null)
             return this;
         let fromA = this.from, fromB = other.from;
-        let from = new Array(fromA.length + fromB.length);
+        let from = new Array((maskFrom == null ? fromA.length : 0) + fromB.length);
         let to = new Array(from.length), values = new Array(from.length);
         for (let i = 0, a = 0, b = 0, at = 0;;) {
             if (a < fromA.length && (b == fromB.length || fromA[a] < fromB[b])) {
-                if ((from[i] = fromA[a]) < at)
-                    throw new Error("Overlapping ranges");
-                at = to[i] = this.to[a];
-                values[i++] = this.values[a++];
+                if (maskFrom == null || maskFrom >= this.to[a] || maskTo <= this.from[a]) {
+                    if ((from[i] = fromA[a]) < at)
+                        throw new Error("Overlapping ranges");
+                    at = to[i] = this.to[a];
+                    values[i++] = this.values[a];
+                }
+                a++;
             }
             else if (b < fromB.length) {
                 if ((from[i] = fromB[b]) < at)
@@ -718,31 +871,87 @@ class RangeIterator {
         this.fill(findAbove(this.set.to, 0, pos));
     }
 }
-function addRange(ranges, from, to) {
-    let last = ranges.length - 1;
-    if (last < 0 || ranges[last] < from)
-        ranges.push(from, to);
-    else
-        ranges[last] = Math.max(to, ranges[last]);
-}
-function joinRanges(ranges) {
-    if (ranges.length == 1)
-        return ranges[0];
-    let result = [], index = ranges.map(() => 0);
-    for (;;) {
-        let minI = -1, minFrom = -1;
-        for (let i = 0; i < ranges.length; i++) {
-            let idx = index[i], set = ranges[i];
-            if (idx < set.length && (minI < 0 || set[idx] < minFrom)) {
-                minI = i;
-                minFrom = set[idx];
+class MultiSet {
+    sets;
+    pos;
+    constructor(sets, pos) {
+        this.sets = sets;
+        this.pos = pos;
+    }
+    map(changes) {
+        if (changes.empty)
+            return this;
+        let pos = this.pos.slice(), sets = this.sets.slice(), i = 0;
+        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
+            while (i < sets.length && (last || pos[i] + sets[i].length < fromA)) {
+                pos[i++] += fromB - fromA;
             }
+        }, (_fromA, toA) => {
+            while (i < sets.length && pos[i] <= toA) {
+                sets[i] = sets[i].map(changes, pos[i]);
+                pos[i] = changes.mapPos(pos[i], -1);
+                i++;
+            }
+        });
+        return new MultiSet(sets, pos);
+    }
+    iter() {
+        return new MultiIterator(this);
+    }
+    static empty = /*@__PURE__*/(() => new MultiSet([], []))();
+    static create(f) {
+        let sets = [], pos = [], at = 0;
+        f((p, set) => {
+            if (p < at)
+                throw new Error("Overlapping sets in MultiSet.create");
+            sets.push(set);
+            pos.push(p);
+            at = p + set.size;
+        });
+        return sets.length ? new MultiSet(sets, pos) : MultiSet.empty;
+    }
+}
+const empty = {
+    from: 1e9, to: 1e9,
+    value: null,
+    done: true,
+    next() { },
+    goto() { }
+};
+class MultiIterator {
+    set;
+    get value() { return this.cur.value; }
+    get done() { return this.cur.done; }
+    get from() { return this.cur.from + this.offset; }
+    get to() { return this.cur.to + this.offset; }
+    i = 0;
+    constructor(set) {
+        this.set = set;
+        this.nextSet();
+    }
+    next() {
+        this.cur.next();
+        while (this.cur != empty && this.cur.done)
+            this.nextSet();
+    }
+    nextSet() {
+        if (this.i == this.set.sets.length) {
+            this.offset = 0;
+            this.cur = empty;
         }
-        if (minI < 0)
-            return result;
-        let idx = index[minI], set = ranges[minI];
-        addRange(result, set[idx], set[idx + 1]);
-        index[minI] += 2;
+        else {
+            this.offset = this.set.pos[this.i];
+            this.cur = this.set.sets[this.i].iter();
+            this.i++;
+        }
+    }
+    goto(pos, inclusive = false) {
+        let i = 0;
+        while (i < this.set.pos.length && this.set.pos[i] + this.set.sets[i].size)
+            i++;
+        this.i = i;
+        this.nextSet();
+        this.cur.goto(pos - this.offset, inclusive);
     }
 }
 function compareDecoSet(setA, setB, cmp) {
@@ -782,8 +991,11 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             compareDecoSet(prevDeco.points, deco.points, (a, b) => {
                 (a || PointSet.empty).compareRange(posA, b || PointSet.empty, posB, len, (pos, val) => {
                     add(pos, Math.min(pos + (val instanceof WidgetDecoration ? 0 : 1), endB));
-                    if (val instanceof ShapeDecoration && !globalChange)
-                        shapeChanges.push(pos);
+                    if (val instanceof ShapeDecoration && !globalChange) {
+                        let idx = findAbove(shapeChanges, 0, pos - 1);
+                        if (idx == shapeChanges.length || shapeChanges[idx] != pos)
+                            shapeChanges.splice(idx, 0, pos);
+                    }
                 });
             });
             let joined = joinRanges(ranges), pos = posB, end = pos + len, j = 0;
@@ -816,15 +1028,12 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
         return addAtomicityChanges(result, prevState, shapeChanges);
     return result;
 }
-function addAtomicityChanges(sections, prev, changes) {
+function addAtomicityChanges(changes, prev, nodes) {
     let added = [];
-    let scan = prev.doc.resolve(0), last = -1, sectionPos = 0, sectionI = 0, off = 0;
-    for (let posB of changes.sort()) {
-        if (posB == last)
-            continue;
-        last = posB;
+    let scan = prev.doc.resolve(0), sectionPos = 0, sectionI = 0, off = 0;
+    for (let posB of nodes) {
         while (posB >= sectionPos) {
-            let len = sections[sectionI++], ins = sections[sectionI++];
+            let len = changes[sectionI++], ins = changes[sectionI++];
             if (ins < 0) {
                 sectionPos += len;
             }
@@ -841,35 +1050,7 @@ function addAtomicityChanges(sections, prev, changes) {
             continue;
         added.push(posA, posA + node.length);
     }
-    if (!added.length)
-        return sections;
-    let changedSections = [], pos = 0;
-    for (let i = 0; i < added.length;) {
-        let from = added[i++], to = added[i++];
-        if (from > pos)
-            changedSections.push(from - pos, -1);
-        changedSections.push(to - from, to - from);
-        pos = to;
-    }
-    if (pos < prev.doc.length)
-        changedSections.push(prev.doc.length - pos, -1);
-    return ChangeSet.composeSections(changedSections, sections);
-}
-function addSection(sections, len, ins) {
-    let last = sections.length - 1;
-    if (last >= 0) {
-        let lastIns = sections[last];
-        if (lastIns >= 0 && ins >= 0) {
-            sections[last - 1] += len;
-            sections[last] += ins;
-            return;
-        }
-        if (lastIns < 0 && lastIns == ins) {
-            sections[last - 1] += len;
-            return;
-        }
-    }
-    sections.push(len, ins);
+    return added.length ? addUpdated(changes, added) : changes;
 }
 class HeapIterator {
     rangeHeap;
@@ -907,7 +1088,7 @@ class HeapIterator {
                 ? [rangeHeap[0].from, rangeHeap[0].value.inclusiveStart ? -1 : 1]
                 : [1e9, 0];
             let [endPos, endSide] = active.length ? [active[0].to, active[0].value.inclusiveEnd ? 1 : -1] : [1e9, 0];
-            let { pos: pointPos, side: pointSide } = pointHeap.length ? pointHeap[0] : { pos: 1e9, side: 1 };
+            let { from: pointPos, side: pointSide } = pointHeap.length ? pointHeap[0] : { from: 1e9, side: 1 };
             let nextPos = Math.min(startPos, endPos, pointPos);
             if (this.to == this.end && nextPos > this.to) {
                 this.done = true;
@@ -984,7 +1165,7 @@ function cmpRangeTo(a, b) {
     return a.to - b.to || cmpBool(a.value.inclusiveEnd, b.value.inclusiveEnd);
 }
 function cmpPoint(a, b) {
-    return a.pos - b.pos || a.side - b.side;
+    return a.from - b.from || a.side - b.side;
 }
 function nodeWrappers(schema, tag, active, atom) {
     let wrappers;
@@ -1231,31 +1412,6 @@ function compareSetPrec(setA, setB, array) {
                 return 1;
         }
     return 0;
-}
-
-function eqArray(a, b) {
-    if (!a || !b)
-        return a == b;
-    if (a == b)
-        return true;
-    if (a.length != b.length)
-        return false;
-    for (let i = 0; i < a.length; i++)
-        if (!a[i].eq(b[i]))
-            return false;
-    return true;
-}
-const exceptionSink = /*@__PURE__*/GardState.Facet.define();
-function logException(state, exception, context) {
-    let handler = state.facet(exceptionSink);
-    if (handler.length)
-        handler[0](exception);
-    else if (window.onerror)
-        window.onerror(String(exception), context, undefined, undefined, exception);
-    else if (context)
-        console.error(context + ":", exception);
-    else
-        console.error(exception);
 }
 
 function getSelection(root) {
@@ -1645,7 +1801,6 @@ class Tile {
     ignoreEvent(event) { return false; }
     get ignoreMutations() { return false; }
     toString() { return this.dom.nodeName + (this.children.length ? `(${this.children})` : ""); }
-    sync() { }
     connect() {
         for (let ch of this.children)
             ch.connect();
@@ -1661,11 +1816,24 @@ class Tile {
             tile = tile.parent;
         return tile;
     }
+    markDirty() {
+        if (!(this.flags & 8192)) {
+            this.flags |= 8192;
+            this.parent?.markDirty();
+        }
+    }
     posAtCoords(state, x, y) {
         let nodeTile = this.nearestNode();
         return nodeTile.posAtCoordsInner(nodeTile.posAtStart, state, x, y, null, 1);
     }
     static get(node) { return node.wgTile; }
+}
+function checkSync(tile) {
+    if ((tile.flags & 256) && !(tile.flags & 8192))
+        return false;
+    tile.flags |= 256;
+    tile.flags &= -8193;
+    return true;
 }
 class CompositeTile extends Tile {
     children = [];
@@ -1684,9 +1852,8 @@ class CompositeTile extends Tile {
         child.parent = this;
     }
     sync() {
-        if (this.flags & 256)
+        if (!checkSync(this))
             return;
-        this.flags |= 256;
         let len = this.boundary * 2;
         for (let ch of this.children) {
             ch.sync();
@@ -1738,7 +1905,7 @@ class CompositeTile extends Tile {
     posAtCoordsRow(start, state, x, y, textblock) {
         let result = rowScan(x, y, add => {
             for (let child of this.children) {
-                if (child.isPoint)
+                if (child instanceof WidgetTile && !child.widget.type.inFlow)
                     continue;
                 let rects, { dom } = child;
                 if (dom.nodeType == 1)
@@ -1756,6 +1923,8 @@ class CompositeTile extends Tile {
             return null;
         let { closest, rect } = result;
         let pos = this.posBeforeChild(closest, start);
+        if (closest.dom.nodeName == "BR")
+            return CoordPos.create(pos, 1);
         if (closest.node && closest.node.isPlot && closest.node.isInline) {
             if (x > rect.right)
                 return CoordPos.create(pos + closest.length, -1);
@@ -1846,29 +2015,29 @@ class DocTile extends CompositeTile {
         let changed = findChangedRanges(this.state, this.decoSet, state, decoSet, changes);
         return this.updateRanges(state, decoSet, changed, wg, composition);
     }
-    updateRanges(state, decoSet, sections, wg, composition) {
+    updateRanges(state, decoSet, changes, wg, composition) {
         let wrapper = composition?.wrapCursor || null;
-        if ((!sections.length || sections.length == 2 && sections[1] == -1) && eqArray(wrapper, this.cursorWrapper))
+        if (isEmpty(changes) && eqArray(wrapper, this.cursorWrapper))
             return this;
         if (composition) {
-            let separated = separateComposition(sections, composition);
+            let separated = separateChange(changes, composition.fromB, composition.toB);
             if (!separated)
                 composition = null;
             else
-                sections = separated;
+                changes = separated;
         }
         let builder = new ContentUpdate(state, this, wg, new DecoIterator(state, decoSet), wrapper);
-        for (let i = 0, posB = 0, startCovered = false; i < sections.length;) {
-            let len = sections[i++], ins = sections[i++];
+        for (let i = 0, posB = 0, startCovered = false; i < changes.length;) {
+            let len = changes[i++], ins = changes[i++];
             if (composition && posB == composition.fromB && ins >= 0) {
                 if (!startCovered)
-                    builder.update(0, false);
+                    builder.update(0, true);
                 builder.composition(composition, len);
-                if (ins && (startCovered = i == sections.length || sections[i + 1] == -1))
-                    builder.update(0, false);
+                if (ins && (startCovered = i == changes.length || changes[i + 1] == -1))
+                    builder.update(0, true);
             }
             else if (ins == -1) {
-                builder.keep(len, !startCovered, i == sections.length);
+                builder.keep(len, !startCovered, i == changes.length);
                 startCovered = false;
             }
             else if (ins == -2) {
@@ -2116,18 +2285,27 @@ class WidgetTile extends Tile {
     widget;
     _node;
     constructor(widget, _node, flags, dom, length = 0) {
+        if (!widget.type.editable) {
+            if (dom.nodeType != 1) {
+                let span = document.createElement("span");
+                span.appendChild(dom);
+                dom = span;
+            }
+            if (dom.contentEditable == "inherit")
+                dom.contentEditable = "false";
+        }
         super(dom, flags);
         this.widget = widget;
         this._node = _node;
         this.length = length;
-        if (dom.nodeType == 1 && !widget.type.editable && dom.contentEditable == "inherit")
-            dom.contentEditable = "false";
     }
     get isNodeOuter() { return !!this._node; }
     get isAtom() { return true; }
     get node() { return this._node; }
     get children() { return noChildren; }
     ignoreEvent(event) { return !this.widget.type.propagateEvent(event); }
+    get ignoreMutations() { return !this.widget.type.editable; }
+    sync() { checkSync(this); }
     connect() {
         this.widget.type.connect?.(this.widget.value, this.dom);
     }
@@ -2136,7 +2314,7 @@ class WidgetTile extends Tile {
             this.widget.type.disconnect?.(this.widget.value, this.dom);
     }
     toString() {
-        return this.widget.type == Widget.EditableText || this.widget.type == Widget.Text
+        return this.widget.type == Widget.editableText || this.widget.type == Widget.text
             ? JSON.stringify(this.widget.value) : super.toString();
     }
     posAtCoordsInner(start, state, x, y, textblock, orientation) {
@@ -2161,9 +2339,8 @@ class TextTile extends Tile {
     get isNodeOuter() { return true; }
     get isAtom() { return true; }
     sync() {
-        if (this.flags & 256)
+        if (!checkSync(this))
             return;
-        this.flags |= 256;
         if (this.dom.nodeValue != this.text)
             this.dom.nodeValue = this.text;
     }
@@ -2655,7 +2832,7 @@ class ContentUpdate {
                     tile.flags |= 2;
                 }
                 else {
-                    tile.addChild(this.buildNodeShape(null, typeof ch == "string" ? Widget.Text.of(ch) : ch, reusable ? reusable.children : reuse, afterContentInner));
+                    tile.addChild(this.buildNodeShape(null, typeof ch == "string" ? Widget.text.of(ch) : ch, reusable ? reusable.children : reuse, afterContentInner));
                 }
             }
             return tile;
@@ -2690,7 +2867,7 @@ class ContentUpdate {
                 else if (next instanceof WidgetTile && next.widget == Widget.br && parent == this.new) {
                     hasHack = i;
                 }
-                else if (next.dom.nodeName == "BR" || next instanceof TextTile && /\n$/.test(next.text)) {
+                else if (next.dom.nodeName == "BR") {
                     break;
                 }
                 else if (next instanceof CompositeTile && !next.isAtom) {
@@ -2842,35 +3019,6 @@ function updateAttributes(dom, a, b) {
     }
     return changed;
 }
-function separateComposition(sections, comp) {
-    let result = [], { fromB, toB } = comp;
-    let lenI = 0, dLen = 0;
-    for (let posB = 0, done = false, i = 0; i < sections.length;) {
-        let len = sections[i++], ins = sections[i++], endB = posB + (ins < 0 ? len : ins);
-        if (fromB > endB || toB < posB) {
-            result.push(len, ins);
-        }
-        else {
-            if (ins >= 0) {
-                if (posB < fromB || endB > toB)
-                    return null;
-                dLen = len - ins;
-            }
-            if (posB < fromB)
-                result.push(fromB - posB, ins);
-            if (!done) {
-                lenI = result.length;
-                result.push(0, comp.text.length);
-                done = true;
-            }
-            if (endB > toB)
-                result.push(endB - toB, ins);
-        }
-        posB = endB;
-    }
-    result[lenI] = comp.text.length + dLen;
-    return result;
-}
 
 class Coords {
     ref;
@@ -2883,15 +3031,13 @@ class Coords {
 function coordsAtPos(wg, pos, assoc) {
     let { offset, tile, pos: tilePos } = wg.docTile.resolve(pos, assoc);
     if (tile instanceof TextTile) {
-        let node = tile.dom, len = node.nodeValue.length;
-        if (!len)
-            return new Coords(tile, singleRect(textRange(node, 0, 0), 1));
-        let from = offset, to = offset, side = assoc < 0 && from || from == len ? 1 : -1;
+        let from = offset, to = offset;
+        let side = from == 0 ? -1 : from == tile.length ? 1 : -assoc;
         if (side < 0)
             to++;
         else
             from--;
-        return new Coords(tile, flattenV(singleRect(textRange(node, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc)));
+        return new Coords(tile, flattenV(singleRect(textRange(tile.dom, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc)));
     }
     let tagTile = tile;
     while (!tagTile.node)
@@ -2915,6 +3061,8 @@ function coordsAtPos(wg, pos, assoc) {
                 let before = tile.children[i - 1];
                 if (before instanceof WidgetTile && !before.widget.type.inFlow)
                     continue;
+                if (before.dom.nodeName == "BR")
+                    break;
                 let rect = singleRect(before.dom, 1);
                 if (rect.width || rect.height)
                     return new Coords(before, horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1)));
@@ -3641,11 +3789,7 @@ class DOMObserver {
         return records;
     }
     addDirtyRange(from, to) {
-        let sections = from ? [from, -1] : [], len = this.wg.flushedState.doc.length;
-        sections.push(to - from, -2);
-        if (to < len)
-            sections.push(len - to, -1);
-        this.dirty = this.dirty ? ChangeSet.composeSections(this.dirty, sections) : sections;
+        addRange(this.dirty || (this.dirty = []), from, to);
     }
     processRecords(records) {
         for (let record of records) {
@@ -3658,7 +3802,7 @@ class DOMObserver {
         let tile = this.wg.docTile.nearest(record.target);
         if (!tile || tile.ignoreMutations)
             return null;
-        tile.flags |= 8192;
+        tile.markDirty();
         if (record.type == "attributes" || record.type == "characterData") {
             if (tile == this.wg.docTile) {
                 return null;
@@ -4065,11 +4209,13 @@ class InputState {
         this.domChanges = null;
     }
     getDOMPos(node, offset) {
+        if (!this.domChanges)
+            return this.wg.docTile.posFromDOM(node, offset);
         if (node.nodeType == 1 && offset && node.childNodes[offset - 1].nodeType == 3) {
             node = node.childNodes[offset - 1];
             offset = node.nodeValue.length;
         }
-        let inText = node.nodeType == 3;
+        let inText = node.nodeType == 3 && !this.wg.docTile.nearest(node)?.isPoint;
         let ref = this.wg.docTile.posFromDOM(node, inText ? 0 : offset);
         let dir = -1;
         let textBefore = node.parentNode && textNodeBefore(node.parentNode, domIndex(node));
@@ -4185,9 +4331,11 @@ class InputState {
         }
         else {
             let tileBefore = Tile.get(before), tileAfter = Tile.get(after);
-            return !tileBefore || tileBefore.text != before.nodeValue ? before
-                : !tileAfter || tileAfter.text != after.nodeValue ? after
-                    : prev == after ? after : before;
+            if (tileBefore instanceof TextTile && tileBefore.text != before.nodeValue)
+                return before;
+            if (tileAfter instanceof TextTile && tileAfter.text != after.nodeValue)
+                return after;
+            return !tileBefore ? before : !tileAfter ? after : prev == after ? after : before;
         }
     }
     recordTouch(e) {
@@ -4491,9 +4639,9 @@ function compositionUpdate(wg, event) {
         if (!event.data) {
             let sel = wg.state.selection, rSel = wg.state.sel;
             if (sel.empty && (sel instanceof GardSelection.Text && sel.marks || !rSel.head.inText && rSel.head.index) &&
-                !eqArray(rSel.head.nodeBefore?.tag.marks, rSel.activeMarks))
-                wrap = rSel.activeMarks;
-            else if (sel.empty && inlineBoundNear(wg.state.sel.head))
+                !eqArray(rSel.head.nodeBefore?.tag.marks, rSel.activeMarks) ||
+                sel.empty && inlineBoundNear(wg.state.sel.head) ||
+                !inEditableDOM(wg, wg.observer.selectionRange.focusNode))
                 wrap = rSel.activeMarks;
         }
         if (wrap)
@@ -4512,6 +4660,12 @@ function inlineBoundNear(pos) {
         return false;
     return (index ? parent.node.content[index - 1].isPlot : parent.node.isInline) ||
         (index < parent.node.content.length ? parent.node.content[index].isPlot : parent.node.isInline);
+}
+function inEditableDOM(wg, node) {
+    if (!node)
+        return false;
+    let tile = wg.docTile.nearest(node);
+    return tile ? !(tile.isPoint || tile instanceof WidgetTile) : false;
 }
 function isDeletionInputEvent(type) { return /^delete(Content|Word)/.test(type); }
 const inputTypeCommands = /*@__PURE__*/(() => ({
@@ -4652,16 +4806,17 @@ const baseHandlers = {
             data: event.data,
             domRange: null,
         };
-        let ranges = event.getTargetRanges();
+        let ranges = event.getTargetRanges(), editable = true;
         if (ranges.length) {
-            let r = ranges[0];
-            data.domRange = { from: wg.inputState.getDOMPos(r.startContainer, r.startOffset),
-                to: wg.inputState.getDOMPos(r.endContainer, r.endOffset) };
+            let r = ranges[0], empty = r.collapsed;
+            let from = wg.inputState.getDOMPos(r.startContainer, r.startOffset);
+            data.domRange = { from, to: empty ? from : wg.inputState.getDOMPos(r.endContainer, r.endOffset) };
+            editable = inEditableDOM(wg, r.startContainer) && (empty || inEditableDOM(wg, r.endContainer));
         }
         wg.inputState.beforeInput(event, wg.inputState.pendingInputEvent = data);
         wg.scheduleFlush();
         let allow = type == "insertCompositionText" ||
-            (type == "insertText" || isDeletionInputEvent(type) &&
+            editable && (type == "insertText" || isDeletionInputEvent(type) &&
                 data.domRange && inlineContext(wg.inputState.domDoc, data.domRange));
         return !allow;
     },
@@ -4904,7 +5059,7 @@ function alignOffset(align, height) {
 }
 function vertOverlap(a, b) {
     let margin = a.height / 3;
-    return a.top < b.bottom + margin && a.bottom > b.top + margin;
+    return a.top < b.bottom - margin && a.bottom > b.top + margin;
 }
 const VertWidth = 30, VertGap = 5;
 function getCursorInfo(wg, plugin, cont) {
@@ -5184,7 +5339,7 @@ class Wordgard {
     }
     runUpdate(update, domChanges) {
         let composition = this.composing ? getCompositionInfo(this) : null;
-        let changes = domChanges ? ChangeSet.composeSections(domChanges, update.changes.sections) : update.changes.sections;
+        let changes = domChanges ? addUpdated(update.changes.sections, domChanges) : update.changes.sections;
         let prevDocTile = this.docTile;
         if (!update.empty) {
             this.updatePlugins(update);
@@ -5895,6 +6050,7 @@ class BarButton {
         this.item = item;
         this.dom = document.createElement("button");
         this.dom.className = "wg-menu-button";
+        this.dom.type = "button";
         this.dom.tabIndex = -1;
         labelButton(wg, this.dom, item.label);
         if (item.description) {
@@ -5980,6 +6136,7 @@ class BarSubmenu {
         this.item = item;
         this.dom = document.createElement("wg-submenu");
         this.button = this.dom.appendChild(document.createElement("button"));
+        this.button.type = "button";
         this.button.tabIndex = -1;
         this.button.className = "wg-menu-button";
         this.button.setAttribute("aria-haspopup", "true");

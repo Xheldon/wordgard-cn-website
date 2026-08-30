@@ -3,7 +3,15 @@ import { ChangeSet } from 'wordgard/doc';
 import { Command, undo as undo$1, redo as redo$1, Menu } from 'wordgard/command';
 import { phrases } from 'wordgard/phrases';
 
-const fromHistory = /*@__PURE__*/Transaction.Annotation.define();
+const fromHistory = /*@__PURE__*/Transaction.Effect.define({
+    map(value, change) {
+        return {
+            side: value.side,
+            startDoc: change.apply(value.startDoc),
+            rest: !value.rest ? null : value.rest.addMapping(change, value.startDoc)
+        };
+    }
+});
 const historyConfig = /*@__PURE__*/GardState.Facet.define({
     combine(configs) {
         return GardState.Facet.combineConfig(configs, {
@@ -23,13 +31,13 @@ const historyField_ = /*@__PURE__*/GardState.Field.define({
     },
     update(state, tr) {
         let config = tr.state.facet(historyConfig);
-        let fromHist = tr.annotation(fromHistory);
+        let fromHist = tr.effects.find(e => e.is(fromHistory));
         if (fromHist) {
-            let from = fromHist.side, event = eventFromTransaction(tr);
-            let other = from == 0 ? state.undone : state.done;
+            let { side, rest } = fromHist.value, event = eventFromTransaction(tr);
+            let other = side == 0 ? state.undone : state.done;
             if (event)
                 other = new Branch(event.changes, event.effects, null, tr.startState.selection, other);
-            return new HistoryState(from == 0 ? fromHist.rest : other, from == 0 ? other : fromHist.rest);
+            return new HistoryState(side == 0 ? rest : other, side == 0 ? other : rest);
         }
         let isolate = tr.annotation(history.isolate);
         if (isolate == true || isolate == "before")
@@ -239,8 +247,7 @@ class HistoryState {
         return {
             changes: branch.changes,
             selection: branch.startSelection,
-            effects: branch.effects,
-            annotations: fromHistory.of({ side, rest: branch.next }),
+            effects: branch.effects.concat(fromHistory.of({ side, startDoc: branch.changes.apply(state.doc), rest: branch.next })),
             userEvent: side == 0 ? "undo" : "redo",
             scrollIntoView: true
         };

@@ -646,6 +646,7 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="The type of text leaves. Represents a series of characters with a given set of marks. The only leaf with a length that isn't always 1. Adjacent text leaves with the same marks are merged automatically.">文本叶类型。表示具有一组给定标记的字符序列。它是唯一长度不总是为 1 的叶节点。具有相同标记的相邻文本叶节点会自动合并。</p>
+<p data-x-en="Text leaves must not include newline or return characters. Line breaks in the document are modeled with LineBreak nodes.">文本节点不得包含换行符或回车符。文档中的换行由 <a href="#types.LineBreak"><code>LineBreak</code></a> 节点表示。</p>
 </div>
 <section class="class">
 <pre class="refcode"><span class="keyword">class</span> <a href="#doc.Plot" class="def heading" id="doc.Plot">Plot</a> <span class="keyword">implements</span> <a href="#doc.Node.Shared" class="ref">Node.Shared</a> {
@@ -4970,15 +4971,19 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="The number of points in this set.">该集合中的点数。</p>
 </div>
-<pre class="refcode">  <a href="#editor.PointSet.map" class="def" id="editor.PointSet.map">map</a>(<a href="#editor.PointSet.map.changes" class="def" id="editor.PointSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
+<pre class="refcode">  <a href="#editor.PointSet.map" class="def" id="editor.PointSet.map">map</a>(<a href="#editor.PointSet.map.changes" class="def" id="editor.PointSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.PointSet.map.start" class="def" id="editor.PointSet.map.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。</p>
 </div>
-<pre class="refcode">  <a href="#editor.PointSet.merge" class="def" id="editor.PointSet.merge">merge</a>(<a href="#editor.PointSet.merge.other" class="def" id="editor.PointSet.merge.other">other</a>: <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
+<pre class="refcode">  <a href="#editor.PointSet.merge" class="def" id="editor.PointSet.merge">merge</a>(
+    <a href="#editor.PointSet.merge.other" class="def" id="editor.PointSet.merge.other">other</a>: <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;,
+    <a href="#editor.PointSet.merge.maskFrom" class="def" id="editor.PointSet.merge.maskFrom">maskFrom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.PointSet.merge.maskTo" class="def" id="editor.PointSet.merge.maskTo">maskTo</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a> = maskFrom
+  ): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
-<p data-x-en="Returns the union of this set and the given set.">返回此集合与给定集合的并集。</p>
+<p data-x-en="Returns the union of this set and the given set. If maskFrom/maskTo are given, drop any points from this between or at those positions.">返回此集合与给定集合的并集。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则删除 <code>this</code> 中位于这些位置之间或处于这些位置的点。</p>
 </div>
 <pre class="refcode">  <a href="#editor.PointSet.at" class="def" id="editor.PointSet.at">at</a>(<a href="#editor.PointSet.at.pos" class="def" id="editor.PointSet.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.PointSet.T" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
 </pre>
@@ -5054,15 +5059,19 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
 </div>
-<pre class="refcode">  <a href="#editor.RangeSet.map" class="def" id="editor.RangeSet.map">map</a>(<a href="#editor.RangeSet.map.changes" class="def" id="editor.RangeSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
+<pre class="refcode">  <a href="#editor.RangeSet.map" class="def" id="editor.RangeSet.map">map</a>(<a href="#editor.RangeSet.map.changes" class="def" id="editor.RangeSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.RangeSet.map.start" class="def" id="editor.RangeSet.map.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges.">调整给定变更集中的范围位置。返回包含更新后范围的集合。</p>
 </div>
-<pre class="refcode">  <a href="#editor.RangeSet.merge" class="def" id="editor.RangeSet.merge">merge</a>(<a href="#editor.RangeSet.merge.other" class="def" id="editor.RangeSet.merge.other">other</a>: <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
+<pre class="refcode">  <a href="#editor.RangeSet.merge" class="def" id="editor.RangeSet.merge">merge</a>(
+    <a href="#editor.RangeSet.merge.other" class="def" id="editor.RangeSet.merge.other">other</a>: <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;,
+    <a href="#editor.RangeSet.merge.maskFrom" class="def" id="editor.RangeSet.merge.maskFrom">maskFrom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.RangeSet.merge.maskTo" class="def" id="editor.RangeSet.merge.maskTo">maskTo</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a> = maskFrom
+  ): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
-<p data-x-en="Merge this set with another set.">将此集合与另一个集合合并。</p>
+<p data-x-en="Merge this set with another set. If maskFrom/maskTo are given, any ranges overlapping the masked range in this are not included in the merged set.">将此集合与另一个集合合并。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则 <code>this</code> 中与掩码范围重叠的任何范围都不会包含在合并后的集合中。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.RangeSet.create" class="def" id="editor.RangeSet.create">create</a>&lt;<a href="#editor.RangeSet.create.T" class="def" id="editor.RangeSet.create.T">T</a> <span class="keyword">extends</span> <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a>&gt;(<a href="#editor.RangeSet.create.source" class="def" id="editor.RangeSet.create.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
     <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
@@ -6113,7 +6122,7 @@ addEventListener("load", function() {
 <pre class="refcode"><a href="#command.enter" class="def" id="command.enter">enter</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries liftEmptyBlock, then splitTextblock.">处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试执行 <code>liftEmptyBlock</code>，然后执行 <code>splitTextblock</code>。</p>
+<p data-x-en="The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries enterInCode, then liftEmptyBlock, and finally splitTextblock.">处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试 <a href="#command.enterInCode"><code>enterInCode</code></a>，然后尝试 <a href="#command.liftEmptyBlock"><code>liftEmptyBlock</code></a>，最后尝试 <a href="#command.splitTextblock"><code>splitTextblock</code></a>。</p>
 </div>
 <pre class="refcode"><a href="#command.transposeChars" class="def" id="command.transposeChars">transposeChars</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>
 </pre>
@@ -6302,6 +6311,12 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Split the textblock at the cursor position, if any. If the textblock is the first child of a list item, also split that item, unless splitListItem is false.">在光标位置（如有）拆分文本块。如果该文本块是列表项的第一个子元素，则同时拆分该项，除非 <code>splitListItem</code> 为 false。</p>
+</div>
+<pre class="refcode"><a href="#command.enterInCode" class="def" id="command.enterInCode">enterInCode</a>(<a href="#command.enterInCode.state" class="def" id="command.enterInCode.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="If the selection is in a preserveWhitespace textblock, replace the selected content with a line break.">如果选区位于 <a href="#doc.Plot.Spec.preserveWhitespace"><code>preserveWhitespace</code></a> 文本块中，则将所选内容替换为 <a href="#doc.Schema.lineBreak">换行符</a>。</p>
+<p data-x-en="If the selection additionally is a cursor on an otherwise empty line after a blank line, split or trunctate (if at end) the parent textblock and create a blank default text block in place of the empty line.">如果选区是一个位于空行之后的光标，且该行本身为空，则分割或截断（若位于末尾）父文本块，并在空行处创建一个空白的默认文本块。</p>
 </div>
 <pre class="refcode"><a href="#command.deleteSelection" class="def" id="command.deleteSelection">deleteSelection</a>(<a href="#command.deleteSelection.state" class="def" id="command.deleteSelection.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
 </pre>

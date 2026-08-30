@@ -5550,5 +5550,29 @@
   "Merge this set with another set.": {
     "_translate": "将此集合与另一个集合合并。",
     "_note": ""
+  },
+  "Returns the union of this set and the given set. If maskFrom/maskTo are given, drop any points from this between or at those positions.": {
+    "_translate": "返回此集合与给定集合的并集。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则删除 <code>this</code> 中位于这些位置之间或处于这些位置的点。",
+    "_note": ""
+  },
+  "Text leaves must not include newline or return characters. Line breaks in the document are modeled with LineBreak nodes.": {
+    "_translate": "文本节点不得包含换行符或回车符。文档中的换行由 <a href=\"#types.LineBreak\"><code>LineBreak</code></a> 节点表示。",
+    "_note": ""
+  },
+  "Merge this set with another set. If maskFrom/maskTo are given, any ranges overlapping the masked range in this are not included in the merged set.": {
+    "_translate": "将此集合与另一个集合合并。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则 <code>this</code> 中与掩码范围重叠的任何范围都不会包含在合并后的集合中。",
+    "_note": ""
+  },
+  "The command that handles enter presses. The default handler will, if the selection is not in an inline context, insert an empty default textblock in its position. Otherwise it first tries enterInCode, then liftEmptyBlock, and finally splitTextblock.": {
+    "_translate": "处理回车键按下的命令。默认处理程序会在选择项不在内联上下文时，在其位置插入一个空的默认文本块。否则，它首先尝试 <a href=\"#command.enterInCode\"><code>enterInCode</code></a>，然后尝试 <a href=\"#command.liftEmptyBlock\"><code>liftEmptyBlock</code></a>，最后尝试 <a href=\"#command.splitTextblock\"><code>splitTextblock</code></a>。",
+    "_note": ""
+  },
+  "If the selection is in a preserveWhitespace textblock, replace the selected content with a line break.": {
+    "_translate": "如果选区位于 <a href=\"#doc.Plot.Spec.preserveWhitespace\"><code>preserveWhitespace</code></a> 文本块中，则将所选内容替换为 <a href=\"#doc.Schema.lineBreak\">换行符</a>。",
+    "_note": ""
+  },
+  "If the selection additionally is a cursor on an otherwise empty line after a blank line, split or trunctate (if at end) the parent textblock and create a blank default text block in place of the empty line.": {
+    "_translate": "如果选区是一个位于空行之后的光标，且该行本身为空，则分割或截断（若位于末尾）父文本块，并在空行处创建一个空白的默认文本块。",
+    "_note": ""
   }
 }
