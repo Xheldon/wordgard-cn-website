@@ -4636,11 +4636,12 @@ addEventListener("load", function() {
 <li data-x-en="Ctrl-e to moveToTextblockSide ({dir: &quot;forward&quot;})"><code>Ctrl-e</code> 用于 <a href="#command.moveToTextblockSide"><code>moveToTextblockSide</code></a>（<code>{dir: "forward"}</code>）</li>
 <li data-x-en="Ctrl-d to deleteUnit (&quot;forward&quot;)"><code>Ctrl-d</code> 用于 <a href="#command.deleteUnit"><code>deleteUnit</code></a>（<code>"forward"</code>）</li>
 <li data-x-en="Ctrl-h to deleteUnit (&quot;backward&quot;)"><code>Ctrl-h</code> 用于 <a href="#command.deleteUnit"><code>deleteUnit</code></a>（<code>"backward"</code>）</li>
-<li data-x-en="Ctrl-k to deleteToLineEnd (&quot;forward&quot;)"><code>Ctrl-k</code> 对应 <a href="#command.deleteToLineEnd"><code>deleteToLineEnd</code></a>（<code>"forward"</code>）</li>
+<li data-x-en="Ctrl-k to killToLineEnd"><code>Ctrl-k</code> 用于 <a href="#command.killToLineEnd"><code>killToLineEnd</code></a></li>
 <li data-x-en="Ctrl-Alt-h to deleteWord (&quot;backward&quot;)"><code>Ctrl-Alt-h</code> 对应 <a href="#command.deleteWord"><code>deleteWord</code></a>（<code>"backward"</code>）</li>
 <li data-x-en="Ctrl-o to insertLineBreak"><code>Ctrl-o</code> 用于 <a href="#command.insertLineBreak"><code>insertLineBreak</code></a></li>
 <li data-x-en="Ctrl-t to transposeChars"><code>Ctrl-t</code> 用于 <a href="#command.transposeChars"><code>transposeChars</code></a></li>
 <li data-x-en="Ctrl-v to moveByPage ({dir: &quot;down&quot;})"><code>Ctrl-v</code> 用于 <a href="#command.moveByPage"><code>moveByPage</code></a>（<code>{dir: "down"}</code>）</li>
+<li data-x-en="Ctrl-y to yankKilled"><code>Ctrl-y</code> 用于 <a href="#command.yankKilled"><code>yankKilled</code></a></li>
 </ul>
 </div>
 <div class="doc">
@@ -6222,6 +6223,17 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Delete the selection, or if that is empty, the line around the cursor.">删除所选内容，如果未选择任何内容，则删除光标所在的行。</p>
+</div>
+<pre class="refcode"><a href="#command.killToLineEnd" class="def" id="command.killToLineEnd">killToLineEnd</a>: <a href="#command.Command" class="ref">Command</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Command similar to forward deleteToLineEnd for macOS's Ctrl-k binding. If there's no content left on the line, this will delete the node (generally a line break) after the cursor of, if at end of textblock, join it to the next textblock.">类似于 macOS 中 Ctrl-k 绑定的 `deleteToLineEnd` 命令。如果行上没有剩余内容，此操作将删除光标后的节点（通常为换行符）；如果位于文本块末尾，则将其与下一个文本块合并。</p>
+<p data-x-en="Content deleted by this command is added to a ‘kill buffer’, and can be reinserted with yankKilled. Multiple kill actions in sequence will accumulate the deleted content in the buffer. Doing anything else and then running this command again will reset the buffer to hold only the newly killed content.">此命令删除的内容会被添加到“剪贴缓冲区”，并可通过 <a href="#command.yankKilled"><code>yankKilled</code></a> 重新插入。连续执行多次删除操作会将删除的内容累积到该缓冲区中。若执行其他操作后再运行此命令，缓冲区将被重置，仅保留新删除的内容。</p>
+</div>
+<pre class="refcode"><a href="#command.yankKilled" class="def" id="command.yankKilled">yankKilled</a>: <a href="#command.Command" class="ref">Command</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Insert the content killed by the most recent killToLineEnd command (or sequence thereof) at the cursor position.">将最近一次 <a href="#command.killToLineEnd"><code>killToLineEnd</code></a> 命令（或其序列）所删除的内容插入到光标位置。</p>
 </div>
 <div class="doc">
 <h3 id="h-block-manipulation-commands">Block Manipulation Commands</h3>

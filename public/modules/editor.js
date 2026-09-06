@@ -2,7 +2,7 @@ import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'w
 import { Attributes, Elt, Node, Leaf, parse, Slice, Plot, serialize, Pos, ChangeSet, ValidationError, Mark } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
-import { enter, insertLineBreak, selectAll, undo, redo, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
+import { enter, insertLineBreak, selectAll, undo, redo, killToLineEnd, yankKilled, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
 import { PhraseSet, phrases } from 'wordgard/phrases';
 import { history } from 'wordgard/history';
 
@@ -2281,19 +2281,19 @@ class EltTile extends CompositeTile {
         return new EltTile(elt, node, flags, length, dom || elt.outerDOM());
     }
 }
+function setUneditable(dom) {
+    if (dom.nodeType != 1) {
+        let span = document.createElement("span");
+        span.appendChild(dom);
+        dom = span;
+    }
+    if (dom.contentEditable == "inherit" && !/^(br|hr|img|input|wbr)$/i.test(dom.nodeName))
+        dom.contentEditable = "false";
+}
 class WidgetTile extends Tile {
     widget;
     _node;
     constructor(widget, _node, flags, dom, length = 0) {
-        if (!widget.type.editable) {
-            if (dom.nodeType != 1) {
-                let span = document.createElement("span");
-                span.appendChild(dom);
-                dom = span;
-            }
-            if (dom.contentEditable == "inherit")
-                dom.contentEditable = "false";
-        }
         super(dom, flags);
         this.widget = widget;
         this._node = _node;
@@ -2773,7 +2773,10 @@ class ContentUpdate {
                         : endOld && this.posB == end ? endOld.matchingWidget(widget, sideFlag, this.reused)
                             : null;
                 if (!tile) {
-                    tile = new WidgetTile(widget, null, 16 | sideFlag, widget.render(this.wg));
+                    let dom = widget.render(this.wg);
+                    if (!widget.type.editable)
+                        setUneditable(dom);
+                    tile = new WidgetTile(widget, null, 16 | sideFlag, dom);
                     if (widget.type.connect)
                         this.toConnect.push(tile);
                 }
@@ -2808,11 +2811,13 @@ class ContentUpdate {
         }
         return null;
     }
-    buildNodeShape(node, shape, reuse, afterContent = 0) {
+    buildNodeShape(node, shape, reuse, inEditable = true, afterContent = 0) {
         if (shape instanceof Elt) {
-            if (node && !shape.hasContent && Attributes.get(shape.attrs, "contenteditable") == null &&
-                !/^(br|hr|img|input|wbr)$/i.test(shape.tagName))
-                shape = Elt.create(shape.tagName, Attributes.merge(shape.attrs, ["contenteditable", "false"]), shape.children);
+            if (inEditable && !shape.hasContent) {
+                if (Attributes.get(shape.attrs, "contenteditable") == null && !/^(br|hr|img|input|wbr)$/i.test(shape.tagName))
+                    shape = Elt.create(shape.tagName, Attributes.merge(shape.attrs, ["contenteditable", "false"]), shape.children);
+                inEditable = false;
+            }
             let reusable, dom, strict = true;
             if (reusable = this.findReusableTile(shape, reuse, strict) || this.findReusableTile(shape, reuse, strict = false)) {
                 this.reused.set(reusable, 2);
@@ -2832,7 +2837,7 @@ class ContentUpdate {
                     tile.flags |= 2;
                 }
                 else {
-                    tile.addChild(this.buildNodeShape(null, typeof ch == "string" ? Widget.text.of(ch) : ch, reusable ? reusable.children : reuse, afterContentInner));
+                    tile.addChild(this.buildNodeShape(null, typeof ch == "string" ? Widget.text.of(ch) : ch, reusable ? reusable.children : reuse, inEditable, afterContentInner));
                 }
             }
             return tile;
@@ -2843,8 +2848,13 @@ class ContentUpdate {
                 this.reused.set(reusable, 2);
                 dom = reusable.dom;
             }
+            else {
+                dom = shape.render(this.wg);
+            }
+            if (inEditable && !shape.type.editable)
+                setUneditable(dom);
             let flags = (node ? 512 : 16 | 1) | afterContent;
-            let tile = new WidgetTile(shape, node, flags, dom || shape.render(this.wg), node ? node.length : 0);
+            let tile = new WidgetTile(shape, node, flags, dom, node ? node.length : 0);
             if (shape.type.connect)
                 this.toConnect.push(tile);
             return tile;
@@ -3936,7 +3946,8 @@ class KeyBinding {
             shift: Command.bind(moveToTextblockSide, { dir: "forward", extend: true }) },
         { mac: "Ctrl-d", run: Command.bind(deleteUnit, "forward") },
         { mac: "Ctrl-h", run: Command.bind(deleteUnit, "backward") },
-        { mac: "Ctrl-k", run: Command.bind(deleteToLineEnd, "forward") },
+        { mac: "Ctrl-k", run: killToLineEnd },
+        { mac: "Ctrl-y", run: yankKilled },
         { mac: "Ctrl-Alt-h", run: Command.bind(deleteWord, "backward") },
         { mac: "Ctrl-o", run: insertLineBreak },
         { mac: "Ctrl-t", run: transposeChars },

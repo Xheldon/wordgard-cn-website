@@ -5574,5 +5574,25 @@
   "If the selection additionally is a cursor on an otherwise empty line after a blank line, split or trunctate (if at end) the parent textblock and create a blank default text block in place of the empty line.": {
     "_translate": "如果选区是一个位于空行之后的光标，且该行本身为空，则分割或截断（若位于末尾）父文本块，并在空行处创建一个空白的默认文本块。",
     "_note": ""
+  },
+  "Ctrl-k to killToLineEnd": {
+    "_translate": "<code>Ctrl-k</code> 用于 <a href=\"#command.killToLineEnd\"><code>killToLineEnd</code></a>",
+    "_note": ""
+  },
+  "Ctrl-y to yankKilled": {
+    "_translate": "<code>Ctrl-y</code> 用于 <a href=\"#command.yankKilled\"><code>yankKilled</code></a>",
+    "_note": ""
+  },
+  "Command similar to forward deleteToLineEnd for macOS's Ctrl-k binding. If there's no content left on the line, this will delete the node (generally a line break) after the cursor of, if at end of textblock, join it to the next textblock.": {
+    "_translate": "类似于 macOS 中 Ctrl-k 绑定的 `deleteToLineEnd` 命令。如果行上没有剩余内容，此操作将删除光标后的节点（通常为换行符）；如果位于文本块末尾，则将其与下一个文本块合并。",
+    "_note": ""
+  },
+  "Content deleted by this command is added to a ‘kill buffer’, and can be reinserted with yankKilled. Multiple kill actions in sequence will accumulate the deleted content in the buffer. Doing anything else and then running this command again will reset the buffer to hold only the newly killed content.": {
+    "_translate": "此命令删除的内容会被添加到“剪贴缓冲区”，并可通过 <a href=\"#command.yankKilled\"><code>yankKilled</code></a> 重新插入。连续执行多次删除操作会将删除的内容累积到该缓冲区中。若执行其他操作后再运行此命令，缓冲区将被重置，仅保留新删除的内容。",
+    "_note": ""
+  },
+  "Insert the content killed by the most recent killToLineEnd command (or sequence thereof) at the cursor position.": {
+    "_translate": "将最近一次 <a href=\"#command.killToLineEnd\"><code>killToLineEnd</code></a> 命令（或其序列）所删除的内容插入到光标位置。",
+    "_note": ""
   }
 }

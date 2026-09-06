@@ -676,7 +676,7 @@ function joinBlocks(before, after) {
             if (atEnd)
                 end++;
             else
-                tokensAfter.push(level.parent.node.tag);
+                tokensAfter.unshift(level.parent.node.tag);
         }
     }
     if (tokensAfter.length || end > posAfter)
@@ -807,7 +807,7 @@ const deleteToLineEnd = (wg, dir) => {
         return false;
     let tr = deleteSelection(wg.state), { selection } = wg.state;
     if (tr)
-        return (wg.dispatch(tr), true);
+        return tr;
     if (!(selection instanceof GardSelection.Text))
         return false;
     let end = wg.moveToLineBoundary(selection, dir == "forward");
@@ -819,12 +819,76 @@ const deleteToLineEnd = (wg, dir) => {
         userEvent: "delete." + dir
     };
 };
+const addToKillBuffer = /*@__PURE__*/Transaction.Effect.define();
+const killBuffer = /*@__PURE__*/GardState.Field.define({
+    create() { return { content: [], active: false }; },
+    update(value, tr) {
+        let add = tr.effects.find(e => e.is(addToKillBuffer));
+        if (add)
+            return { content: value.active ? value.content.concat(add.value) : add.value, active: true };
+        return !value.active || tr.annotation(Transaction.remote) || !(tr.docChanged || tr.selection)
+            ? value : { content: value.content, active: false };
+    }
+});
+function killText(state, from, to) {
+    let add = addToKillBuffer.of(state.doc.slice(from, to).content);
+    return state.field(killBuffer, false) ? [add] : [GardState.appendConfig.of(killBuffer), add];
+}
+const killToLineEnd = wg => {
+    let { state } = wg, { selection } = state;
+    if (state.readOnly || !(selection instanceof GardSelection.Text))
+        return false;
+    let end = wg.moveToLineBoundary(selection, true);
+    if (!end)
+        return false;
+    if (end.head > selection.head)
+        return {
+            changes: { correct: { from: selection.head, to: end.head } },
+            scrollIntoView: true,
+            effects: killText(state, selection.head, end.head),
+            userEvent: "delete.forward"
+        };
+    let join = joinForward(state);
+    if (join) {
+        let joinEnd;
+        state.doc.iterate(state.sel.head.textblockParent.after, state.doc.length, (node, pos) => {
+            if (joinEnd != null)
+                return false;
+            if (node.isPlot && node.isTextblock)
+                joinEnd = pos + 1;
+        });
+        return Transaction.merge(state, join, {
+            effects: joinEnd == null ? undefined : killText(state, selection.head, joinEnd)
+        });
+    }
+    let next = state.sel.head.nodeAfter;
+    if (next)
+        return {
+            changes: { correct: { from: selection.head, to: selection.head + next.length } },
+            scrollIntoView: true,
+            effects: killText(state, selection.head, selection.head + next.length),
+            userEvent: "delete.forward"
+        };
+    return false;
+};
+const yankKilled = wg => {
+    let { state } = wg, buffer = wg.state.field(killBuffer, false);
+    if (!buffer || !buffer.content.length || !(state.selection instanceof GardSelection.Text))
+        return false;
+    let { selection } = state;
+    return {
+        changes: { correct: { from: selection.from, to: selection.to, insert: buffer.content } },
+        scrollIntoView: true,
+        selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(selection.from, 1)),
+        userEvent: "input.yank"
+    };
+};
 const deleteLine = wg => {
     if (wg.state.readOnly)
         return false;
     let tr = deleteSelection(wg.state), { selection } = wg.state;
     if (tr)
-        return (wg.dispatch(tr), true);
+        return tr;
     if (!(selection instanceof GardSelection.Text))
         return false;
     let start = wg.moveToLineBoundary(selection, false), end = wg.moveToLineBoundary(selection, true);
@@ -1476,4 +1540,4 @@ const Menu = /*@__PURE__*/(function (Menu) {
     Menu.resolve = resolve;
 ;return Menu})({});
 
-export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, enterInCode, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange };
+export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, enterInCode, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, killToLineEnd, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange, yankKilled };
