@@ -82,5 +82,17 @@
   "With that kludge, individual namespaces can be eliminated if not referenced, at least by Rollup. Combined with the fact that each namespace only wraps a coherent set of functionality that you'll usually need as a whole, if you need it, the library should tree-shake pretty well.": {
     "_translate": "借助这一权宜之计，如果未被引用，各个命名空间至少可以被 Rollup 消除。再加上每个命名空间仅封装了一组连贯的功能，而这些功能通常作为一个整体被需要，因此，如果需要该库，它应该能很好地支持树摇优化。",
     "_note": ""
+  },
+  "What browsers and platforms does Wordgard target?": {
+    "_translate": "Wordgard 针对哪些浏览器和平台？",
+    "_note": ""
+  },
+  "Wordgard aims to work in the 2022 and later version of Firefox, Chrome, and Safari, running on Linux, Windows, macOS, Android, or iOS.": {
+    "_translate": "Wordgard 旨在适用于 2022 年及以后版本的 Firefox、Chrome 和 Safari，并支持在 Linux、Windows、macOS、Android 或 iOS 上运行。",
+    "_note": ""
+  },
+  "Problems introduced by other platforms, browser wrappers (webviews, Electron, and similar) or obscure peripherals (input hardware, dodgy virtual keyboards) will be looked at on a case-by-case basis. If not too difficult to solve (and test), they will be addressed, but if not, they may be considered out of scope.": {
+    "_translate": "由其他平台、浏览器封装器（如 WebViews、Electron 等）或冷门外设（输入硬件、不可靠的虚拟键盘）引发的问题，将视具体情况而定。如果解决和测试难度不大，我们将予以处理；否则，这些问题可能被视为超出范围。",
+    "_note": ""
   }
 }

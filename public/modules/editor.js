@@ -643,7 +643,6 @@ class PointSet {
 }
 class PointIterator {
     set;
-    done = false;
     constructor(set) {
         this.set = set;
         this.fill(0);
@@ -658,18 +657,16 @@ class PointIterator {
         else {
             this.from = 1e8;
             this.value = null;
-            this.done = true;
         }
     }
     next() {
-        if (!this.done)
+        if (this.value)
             this.fill(this.i + 1);
     }
     get side() {
-        return this.done ? 1 : this.value.side;
+        return this.value ? this.value.side : 1;
     }
     goto(pos, inclusive) {
-        this.done = false;
         let i = findAbove(this.set.positions, 0, pos - 1);
         if (!inclusive) {
             while (i < this.set.values.length && this.set.values[i].side < 1000000000)
@@ -844,7 +841,6 @@ class RangeSet {
 }
 class RangeIterator {
     set;
-    done = false;
     constructor(set) {
         this.set = set;
         this.fill(0);
@@ -859,99 +855,14 @@ class RangeIterator {
         else {
             this.from = this.to = 1e8;
             this.value = null;
-            this.done = true;
         }
     }
     next() {
-        if (!this.done)
+        if (this.value)
             this.fill(this.i + 1);
     }
     goto(pos) {
-        this.done = false;
         this.fill(findAbove(this.set.to, 0, pos));
-    }
-}
-class MultiSet {
-    sets;
-    pos;
-    constructor(sets, pos) {
-        this.sets = sets;
-        this.pos = pos;
-    }
-    map(changes) {
-        if (changes.empty)
-            return this;
-        let pos = this.pos.slice(), sets = this.sets.slice(), i = 0;
-        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
-            while (i < sets.length && (last || pos[i] + sets[i].length < fromA)) {
-                pos[i++] += fromB - fromA;
-            }
-        }, (_fromA, toA) => {
-            while (i < sets.length && pos[i] <= toA) {
-                sets[i] = sets[i].map(changes, pos[i]);
-                pos[i] = changes.mapPos(pos[i], -1);
-                i++;
-            }
-        });
-        return new MultiSet(sets, pos);
-    }
-    iter() {
-        return new MultiIterator(this);
-    }
-    static empty = /*@__PURE__*/(() => new MultiSet([], []))();
-    static create(f) {
-        let sets = [], pos = [], at = 0;
-        f((p, set) => {
-            if (p < at)
-                throw new Error("Overlapping sets in MultiSet.create");
-            sets.push(set);
-            pos.push(p);
-            at = p + set.size;
-        });
-        return sets.length ? new MultiSet(sets, pos) : MultiSet.empty;
-    }
-}
-const empty = {
-    from: 1e9, to: 1e9,
-    value: null,
-    done: true,
-    next() { },
-    goto() { }
-};
-class MultiIterator {
-    set;
-    get value() { return this.cur.value; }
-    get done() { return this.cur.done; }
-    get from() { return this.cur.from + this.offset; }
-    get to() { return this.cur.to + this.offset; }
-    i = 0;
-    constructor(set) {
-        this.set = set;
-        this.nextSet();
-    }
-    next() {
-        this.cur.next();
-        while (this.cur != empty && this.cur.done)
-            this.nextSet();
-    }
-    nextSet() {
-        if (this.i == this.set.sets.length) {
-            this.offset = 0;
-            this.cur = empty;
-        }
-        else {
-            this.offset = this.set.pos[this.i];
-            this.cur = this.set.sets[this.i].iter();
-            this.i++;
-        }
-    }
-    goto(pos, inclusive = false) {
-        let i = 0;
-        while (i < this.set.pos.length && this.set.pos[i] + this.set.sets[i].size)
-            i++;
-        this.i = i;
-        this.nextSet();
-        this.cur.goto(pos - this.offset, inclusive);
     }
 }
 function compareDecoSet(setA, setB, cmp) {
@@ -1076,7 +987,7 @@ class HeapIterator {
             return this;
         if (this.point) {
             this.point.next();
-            if (this.point.done)
+            if (!this.point.value)
                 popHeap(this.pointHeap, cmpPoint);
             else
                 bubble(this.pointHeap, 0, cmpPoint);
@@ -1112,7 +1023,7 @@ class HeapIterator {
             else {
                 let first = active[0];
                 first.next();
-                if (!first.done)
+                if (first.value)
                     sink(rangeHeap, rangeHeap.push(first) - 1, cmpRangeFrom);
                 popHeap(active, cmpRangeTo);
             }
@@ -1256,7 +1167,7 @@ class DecoIterator {
             i.goto(from);
         for (let i of this.pointIter)
             i.goto(from, inclusiveStart);
-        let iter = new HeapIterator(this.rangeIter.filter(i => !i.done), this.pointIter.filter(i => !i.done), from, to);
+        let iter = new HeapIterator(this.rangeIter.filter(i => i.value), this.pointIter.filter(i => i.value), from, to);
         let pos = this.pos.advance(from - this.pos.pos), started = inclusiveStart;
         let atomParent;
         for (let p = pos.parent; p; p = p.parent)
@@ -1947,7 +1858,9 @@ class CompositeTile extends Tile {
         return CoordPos.create(start + this.length - 2 * this.boundary, -1);
     }
 }
-function rowScan(x, y, scan) {
+function rowScan(x, y, scan, depth = 0) {
+    if (depth > 1)
+        return null;
     let closest = null, closestDx = 1e8, closestRect = null;
     let above = null, below = null;
     scan((rect, value) => {
@@ -1973,16 +1886,16 @@ function rowScan(x, y, scan) {
     if (closestRect) {
         if (closestDx) {
             if (above && above.bottom > closestRect.top)
-                return rowScan(x, above.bottom - 1, scan);
+                return rowScan(x, above.bottom - 1, scan, depth + 1);
             if (below && below.top < closestRect.bottom)
-                return rowScan(x, below.top + 1, scan);
+                return rowScan(x, below.top + 1, scan, depth + 1);
         }
         return { closest: closest, rect: closestRect };
     }
     let side = above && (!below || (y - above.bottom < below.top - y)) ? above : below;
     if (!side)
         return null;
-    return rowScan(x, (side.top + side.bottom) / 2, scan);
+    return rowScan(x, (side.top + side.bottom) / 2, scan, depth + 1);
 }
 function ltrAt(state, pos, assoc, textblock) {
     if (textblock === undefined) {
@@ -4243,6 +4156,10 @@ class InputState {
             this._domMapping = this._domMapping.compose(pending[this.domMappingIndex++].changes);
         return this._domMapping;
     }
+    get unflushedSelection() {
+        let { pending } = this.wg.viewState;
+        return pending.some(tr => tr.selection && !tr.isUserEvent("input"));
+    }
     posAtDOM(node, offset, assoc = -1) {
         if (this.domMapping.empty && !this.domChanges)
             return this.wg.docTile.posFromDOM(node, offset);
@@ -4262,7 +4179,7 @@ class InputState {
         }
         let command = inputTypeCommands[type];
         if ((type == "deleteContentBackward" || type == "deleteContentForward") && range &&
-            range.from != range.to &&            (sel.empty
+            range.from != range.to &&            !this.unflushedSelection &&            (sel.empty
                 ? !isSingleChar(this.domDoc, data.domRange.from, data.domRange.to) ||
                     sel.head != (type == "deleteContentBackward" ? range.to : range.from)
                 : sel.from != range.from || sel.to != range.to)) {
@@ -4273,11 +4190,12 @@ class InputState {
         }
         else if (type == "insertText") {
             let insert = event.data.replace(/\r\n?|\n/g, " ");
-            Command.dispatch(wg, insertText, { from: range.from, to: range.to, insert, userEvent: "input.type" });
+            let { from, to } = this.unflushedSelection ? wg.state.selection : range;
+            Command.dispatch(wg, insertText, { from, to, insert, userEvent: "input.type" });
         }
         else if ((type == "insertReplacementText" || type == "insertFromYank")) {
             let read = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, true);
-            let { from, to } = range;
+            let { from, to } = this.unflushedSelection ? wg.state.selection : range;
             let sel = wg.state.selection, touchesSel = from <= sel.to && to >= sel.from;
             if (read)
                 wg.dispatch({
@@ -6300,7 +6218,7 @@ class MenuBar {
         }
         if (update && selection.some(e => e.flags & 32)) {
             let reset = selection[0].flags & 32 ? findChild(this.children, true) : selection[0];
-            this.setSelection(reset ? [reset] : [], this.dom.contains(document.activeElement));
+            this.setSelection(reset ? [reset] : [], this.dom.contains(this.wg.root.activeElement));
         }
     }
     setSelection(selection, focus = true) {
@@ -6399,7 +6317,7 @@ class MenuBar {
         event.preventDefault();
     }
     globalClick(event) {
-        if (!this.dom.contains(event.target)) {
+        if (!event.composedPath().includes(this.dom)) {
             this.dom.ownerDocument.removeEventListener("mousedown", this.globalClick);
             if (this.selection.length > 1)
                 this.setSelection([this.selection[0]], false);
