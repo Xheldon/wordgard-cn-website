@@ -3427,7 +3427,7 @@ function rangeForClick(wg, pos, type) {
             return GardSelection.near(wg.state, pos.pos, pos.side || -1);
     }
 }
-const Y_STEP = 5;
+const Y_STEP = 2;
 function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
     let editorRect = wg.contentDOM.getBoundingClientRect();
     let coords = wg.coordsAtPos(start.head, start.headSide);

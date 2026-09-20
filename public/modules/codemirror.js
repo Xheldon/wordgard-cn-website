@@ -431,7 +431,7 @@ for(let i=this.activeTo.length-1;i>=0&&this.activeTo[i]>t;i--)e++
 return e}}function Dt(t,e,i,n,s,r){t.goto(e),i.goto(n)
 let o=n+s,a=n,l=n-e,h=!!r.boundChange
 for(let e=!1;;){let n=t.to+l-i.to,s=n||t.endSide-i.endSide,c=s<0?t.to+l:i.to,O=Math.min(c,o)
-if(t.point||i.point?(t.point&&i.point&&Zt(t.point,i.point)&&qt(t.activeForPoint(t.to),i.activeForPoint(i.to))||r.comparePoint(a,O,t.point,i.point),e=!1):(e&&r.boundChange(a),O>a&&!qt(t.active,i.active)&&r.compareRange(a,O,t.active,i.active),h&&O<o&&(n||t.openEnd(c)!=i.openEnd(c))&&(e=!0)),c>o)break
+if(t.point||i.point?(t.point&&i.point&&Zt(t.point,i.point)&&qt(t.activeForPoint(t.to),i.activeForPoint(i.to))||r.comparePoint(a,O,t.point,i.point),e=!1):(e&&(r.boundChange(a),e=!1),O>a&&!qt(t.active,i.active)&&r.compareRange(a,O,t.active,i.active),h&&O<o&&(n||t.openEnd(c)!=i.openEnd(c))&&(e=!0)),c>o)break
 a=c,s<=0&&t.next(),s>=0&&i.next()}}function qt(t,e){if(t.length!=e.length)return!1
 for(let i=0;i<t.length;i++)if(t[i]!=e[i]&&!Zt(t[i],e[i]))return!1
 return!0}function Lt(t,e){for(let i=e,n=t.length-1;i<n;i++)t[i]=t[i+1]
@@ -455,15 +455,14 @@ class Ft{constructor(t,e){let i=t.ownerDocument||t,n=i.defaultView
 if(!t.head&&t.adoptedStyleSheets&&n.CSSStyleSheet){let e=Ht.get(i)
 if(e)return t[It]=e
 this.sheet=new n.CSSStyleSheet,Ht.set(i,this)}else this.styleTag=i.createElement("style"),e&&this.styleTag.setAttribute("nonce",e)
-this.modules=[],t[It]=this}mount(t,e){let i=this.sheet,n=0,s=0
-for(let e=0;e<t.length;e++){let r=t[e],o=this.modules.indexOf(r)
-if(o<s&&o>-1&&(this.modules.splice(o,1),s--,o=-1),-1==o){if(this.modules.splice(s++,0,r),i)for(let t=0;t<r.rules.length;t++)i.insertRule(r.rules[t],n++)}else{for(;s<o;)n+=this.modules[s++].rules.length
-n+=r.rules.length,s++}}if(i)e.adoptedStyleSheets.indexOf(this.sheet)<0&&(e.adoptedStyleSheets=[this.sheet,...e.adoptedStyleSheets])
-else{let t=""
+this.modules=[],t[It]=this}mount(t,e){let i=this.sheet,n=0,s=0,r=!1
+for(let e=0;e<t.length;e++){let o=t[e],a=this.modules.indexOf(o)
+if(a<s&&a>-1&&(this.modules.splice(a,1),r=!0,s--,a=-1),-1==a){if(this.modules.splice(s++,0,o),r=!0,i)for(let t=0;t<o.rules.length;t++)i.insertRule(o.rules[t],n++)}else{for(;s<a;)n+=this.modules[s++].rules.length
+n+=o.rules.length,s++}}if(i)e.adoptedStyleSheets.indexOf(this.sheet)<0&&(e.adoptedStyleSheets=[this.sheet,...e.adoptedStyleSheets])
+else{if(r){let t=""
 for(let e=0;e<this.modules.length;e++)t+=this.modules[e].getRules()+"\n"
-this.styleTag.textContent=t
-let i=e.head||e
-this.styleTag.parentNode!=i&&i.insertBefore(this.styleTag,i.firstChild)}}setNonce(t){this.styleTag&&this.styleTag.getAttribute("nonce")!=t&&this.styleTag.setAttribute("nonce",t)}}for(var Kt={8:"Backspace",9:"Tab",10:"Enter",12:"NumLock",13:"Enter",16:"Shift",17:"Control",18:"Alt",20:"CapsLock",27:"Escape",32:" ",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",44:"PrintScreen",45:"Insert",46:"Delete",59:";",61:"=",91:"Meta",92:"Meta",106:"*",107:"+",108:",",109:"-",110:".",111:"/",144:"NumLock",145:"ScrollLock",160:"Shift",161:"Shift",162:"Control",163:"Control",164:"Alt",165:"Alt",173:"-",186:";",187:"=",188:",",189:"-",190:".",191:"/",192:"`",219:"[",220:"\\",221:"]",222:"'"},Jt={48:")",49:"!",50:"@",51:"#",52:"$",53:"%",54:"^",55:"&",56:"*",57:"(",59:":",61:"+",173:"_",186:":",187:"+",188:"<",189:"_",190:">",191:"?",192:"~",219:"{",220:"|",221:"}",222:'"'},te="undefined"!=typeof navigator&&/Mac/.test(navigator.platform),ee="undefined"!=typeof navigator&&/MSIE \d|Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(navigator.userAgent),ie=0;ie<10;ie++)Kt[48+ie]=Kt[96+ie]=String(ie)
+this.styleTag.textContent=t}let t=e.head||e
+this.styleTag.parentNode!=t&&t.insertBefore(this.styleTag,t.firstChild)}}setNonce(t){this.styleTag&&this.styleTag.getAttribute("nonce")!=t&&this.styleTag.setAttribute("nonce",t)}}for(var Kt={8:"Backspace",9:"Tab",10:"Enter",12:"NumLock",13:"Enter",16:"Shift",17:"Control",18:"Alt",20:"CapsLock",27:"Escape",32:" ",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",44:"PrintScreen",45:"Insert",46:"Delete",59:";",61:"=",91:"Meta",92:"Meta",106:"*",107:"+",108:",",109:"-",110:".",111:"/",144:"NumLock",145:"ScrollLock",160:"Shift",161:"Shift",162:"Control",163:"Control",164:"Alt",165:"Alt",173:"-",186:";",187:"=",188:",",189:"-",190:".",191:"/",192:"`",219:"[",220:"\\",221:"]",222:"'"},Jt={48:")",49:"!",50:"@",51:"#",52:"$",53:"%",54:"^",55:"&",56:"*",57:"(",59:":",61:"+",173:"_",186:":",187:"+",188:"<",189:"_",190:">",191:"?",192:"~",219:"{",220:"|",221:"}",222:'"'},te="undefined"!=typeof navigator&&/Mac/.test(navigator.platform),ee="undefined"!=typeof navigator&&/MSIE \d|Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(navigator.userAgent),ie=0;ie<10;ie++)Kt[48+ie]=Kt[96+ie]=String(ie)
 for(ie=1;ie<=24;ie++)Kt[ie+111]="F"+ie
 for(ie=65;ie<=90;ie++)Kt[ie]=String.fromCharCode(ie+32),Jt[ie]=String.fromCharCode(ie)
 for(var ne in Kt)Jt.hasOwnProperty(ne)||(Jt[ne]=Kt[ne])
@@ -727,9 +726,9 @@ i.dom!=e.line.dom&&(i.setDOM(this.cache.reused.has(e.line)?vn(e.line.dom):e.line
 let n=i
 for(let t=e.marks.length-1;t>=0;t--){let i=e.marks[t],s=n.lastChild
 if(s instanceof hn&&s.mark.eq(i.mark))s.dom!=i.dom&&s.setDOM(vn(i.dom)),n=s
-else{if(this.cache.reused.get(i)){let t=en.get(i.dom)
-t&&t.setDOM(vn(i.dom))}let t=hn.of(i.mark,i.dom)
-n.append(t),n=t}this.cache.reused.set(i,2)}let s=en.get(t.text)
+else{let{dom:t}=i
+if(this.cache.reused.get(i)){en.get(i.dom)&&(t=vn(i.dom))}let e=hn.of(i.mark,t)
+n.append(e),n=e}this.cache.reused.set(i,2)}let s=en.get(t.text)
 s&&this.cache.reused.set(s,2)
 let r=new cn(t.text,t.text.nodeValue)
 r.flags|=8,this.pos=t.range.toB,n.append(r)}addInlineWidget(t,e,i){let n=this.afterWidget&&48&t.flags&&(48&this.afterWidget.flags)==(48&t.flags)
@@ -799,7 +798,7 @@ null==a?(n.addLineStartIfNotCovered(i),n.addBreak(),s++):(n.ensureLine(i),n.addT
 s>-1&&(this.openWidget=r>s),this.openWidget||n.addLineStartIfNotCovered(i),this.openMarks=r}forward(t,e,i=1){e-t<=10?this.old.advance(e-t,i,this.reuseWalker):(this.old.advance(5,-1,this.reuseWalker),this.old.advance(e-t-10,-1),this.old.advance(5,i,this.reuseWalker))}getCompositionContext(t){let e=[],i=null
 for(let n=t.parentNode;;n=n.parentNode){let t=en.get(n)
 if(n==this.view.contentDOM)break
-t instanceof hn?e.push(t):(null==t?void 0:t.isLine())?i=t:t instanceof on||("DIV"!=n.nodeName||i||n==this.view.contentDOM?i||e.push(hn.of(new ke({tagName:n.nodeName.toLowerCase(),attributes:xe(n)}),n)):i=new an(n,Sn))}return{line:i,marks:e}}}function xn(t,e){let i=t=>{for(let n of t.children)if((e?n.isText():n.length)||i(n))return!0
+t instanceof hn?e.push(t):(null==t?void 0:t.isLine())?i=t:t instanceof on||("DIV"!=n.nodeName||i?i||e.push(hn.of(new ke({tagName:n.nodeName.toLowerCase(),attributes:xe(n)}),n)):i=new an(n,Sn))}return i?{line:i,marks:e}:null}}function xn(t,e){let i=t=>{for(let n of t.children)if((e?n.isText():n.length)||i(n))return!0
 return!1}
 return i(t)}const Sn={class:"cm-line"}
 function vn(t){let e=en.get(t)
@@ -1204,7 +1203,8 @@ function ws(t,e){let i=[]
 for(let n of t.facet($i)){let s=n(t,e)
 s&&i.push(s)}return i.length?t.update({effects:i,annotations:Qs.of(!0)}):null}function xs(t){setTimeout(()=>{let e=t.hasFocus
 if(e!=t.inputState.notifiedFocused){let i=ws(t.state,e)
-i?t.dispatch(i):t.update([])}},10)}os.focus=t=>{t.inputState.lastFocusTime=Date.now(),t.scrollDOM.scrollTop||!t.inputState.lastScrollTop&&!t.inputState.lastScrollLeft||(t.scrollDOM.scrollTop=t.inputState.lastScrollTop,t.scrollDOM.scrollLeft=t.inputState.lastScrollLeft),xs(t)},os.blur=t=>{t.observer.clearSelectionRange(),xs(t)},os.compositionstart=os.compositionupdate=t=>{t.observer.editContext||(null==t.inputState.compositionFirstChange&&(t.inputState.compositionFirstChange=!0),t.inputState.composing<0&&(t.inputState.composing=0))},os.compositionend=t=>{t.observer.editContext||(t.inputState.composing=-1,t.inputState.compositionEndedAt=Date.now(),t.inputState.compositionPendingKey=!0,t.inputState.compositionPendingChange=t.observer.pendingRecords().length>0,t.inputState.compositionFirstChange=null,pe.chrome&&pe.android?t.observer.flushSoon():t.inputState.compositionPendingChange?Promise.resolve().then(()=>t.observer.flush()):setTimeout(()=>{t.inputState.composing<0&&t.docView.hasComposition&&t.update([])},50))},os.contextmenu=t=>{t.inputState.lastContextMenu=Date.now()},rs.beforeinput=(t,e)=>{var i,n
+i?t.dispatch(i):t.update([])}},10)}os.focus=t=>{t.inputState.lastFocusTime=Date.now(),t.scrollDOM.scrollTop||!t.inputState.lastScrollTop&&!t.inputState.lastScrollLeft||(t.scrollDOM.scrollTop=t.inputState.lastScrollTop,t.scrollDOM.scrollLeft=t.inputState.lastScrollLeft),xs(t)},os.blur=t=>{t.observer.clearSelectionRange(),xs(t)},os.compositionstart=os.compositionupdate=t=>{if(!t.observer.editContext&&(null==t.inputState.compositionFirstChange&&(t.inputState.compositionFirstChange=!0),t.inputState.composing<0)){let{main:e}=t.state.selection
+e.empty||t.lineBlockAt(e.from).from==t.lineBlockAt(e.to).from||t.dispatch({changes:t.state.selection.ranges.filter(t=>!t.empty).map(t=>({from:t.from,to:t.to})),userEvent:"input"}),t.inputState.composing=0}},os.compositionend=t=>{t.observer.editContext||(t.inputState.composing=-1,t.inputState.compositionEndedAt=Date.now(),t.inputState.compositionPendingKey=!0,t.inputState.compositionPendingChange=t.observer.pendingRecords().length>0,t.inputState.compositionFirstChange=null,pe.chrome&&pe.android?t.observer.flushSoon():t.inputState.compositionPendingChange?Promise.resolve().then(()=>t.observer.flush()):setTimeout(()=>{t.inputState.composing<0&&t.docView.hasComposition&&t.update([])},50))},os.contextmenu=t=>{t.inputState.lastContextMenu=Date.now()},rs.beforeinput=(t,e)=>{var i,n
 if("insertText"!=e.inputType&&"insertCompositionText"!=e.inputType||(t.inputState.insertingText=e.data,t.inputState.insertingTextAt=Date.now()),"insertReplacementText"==e.inputType&&t.observer.editContext){let n=null===(i=e.dataTransfer)||void 0===i?void 0:i.getData("text/plain"),s=e.getTargetRanges()
 if(n&&s.length){let e=s[0],i=t.posAtDOM(e.startContainer,e.startOffset),r=t.posAtDOM(e.endContainer,e.endOffset)
 return Nn(t,{from:i,to:r,insert:t.state.toText(n)},null),!0}}let s
@@ -1508,7 +1508,7 @@ return!(this.from>0&&e-this.from<500||this.to<t.doc.length&&this.to-e<500||this.
 let i=this.composing
 return i&&i.drifted?i.editorBase+(t-i.contextBase):t+this.from}toContextPos(t){let e=this.composing
 return e&&e.drifted?e.contextBase+(t-e.editorBase):t-this.from}destroy(){for(let t in this.handlers)this.editContext.removeEventListener(t,this.handlers[t])}}class ur{get state(){return this.viewState.state}get viewport(){return this.viewState.viewport}get visibleRanges(){return this.viewState.visibleRanges}get inView(){return this.viewState.inView}get composing(){return!!this.inputState&&this.inputState.composing>0}get compositionStarted(){return!!this.inputState&&this.inputState.composing>=0}get root(){return this._root}get win(){return this.dom.ownerDocument.defaultView||window}constructor(t={}){var e
-this.plugins=[],this.pluginMap=new Map,this.editorAttrs={},this.contentAttrs={},this.bidiCache=[],this.destroyed=!1,this.updateState=2,this.measureScheduled=-1,this.measureRequests=[],this.contentDOM=document.createElement("div"),this.scrollDOM=document.createElement("div"),this.scrollDOM.tabIndex=-1,this.scrollDOM.className="cm-scroller",this.scrollDOM.appendChild(this.contentDOM),this.announceDOM=document.createElement("div"),this.announceDOM.className="cm-announced",this.announceDOM.setAttribute("aria-live","polite"),this.dom=document.createElement("div"),this.dom.appendChild(this.announceDOM),this.dom.appendChild(this.scrollDOM),t.parent&&t.parent.appendChild(this.dom)
+this.plugins=[],this.pluginMap=new Map,this.editorAttrs={},this.contentAttrs={},this.bidiCache=[],this.destroyed=!1,this.updateState=2,this.measureScheduled=-1,this.measureRequests=[],this.clearAnnouncement=-1,this.contentDOM=document.createElement("div"),this.scrollDOM=document.createElement("div"),this.scrollDOM.tabIndex=-1,this.scrollDOM.className="cm-scroller",this.scrollDOM.appendChild(this.contentDOM),this.announceDOM=document.createElement("div"),this.announceDOM.className="cm-announced",this.announceDOM.setAttribute("aria-live","polite"),this.dom=document.createElement("div"),this.dom.appendChild(this.announceDOM),this.dom.appendChild(this.scrollDOM),t.parent&&t.parent.appendChild(this.dom)
 let{dispatch:i}=t
 this.dispatchTransactions=t.dispatchTransactions||i&&(t=>t.forEach(t=>i(t,this)))||(t=>this.update(t)),this.dispatch=this.dispatch.bind(this),this._root=t.root||function(t){for(;t;){if(t&&(9==t.nodeType||11==t.nodeType&&t.host))return t
 t=t.assignedSlot||t.parentNode}return null}(t.parent)||document,this.viewState=new Vs(this,t.state||bt.create(t)),t.scrollTo&&t.scrollTo.is(Ri)&&(this.viewState.scrollTarget=t.scrollTo.value.clip(this.viewState.state)),this.plugins=this.state.facet(Wi).map(t=>new Di(t))
@@ -1566,7 +1566,7 @@ this.state.readOnly&&(e["aria-readonly"]="true"),gr(this,Li,e)
 let i=this.observer.ignore(()=>{let i=we(this.contentDOM,this.contentAttrs,e),n=we(this.dom,this.editorAttrs,t)
 return i||n})
 return this.editorAttrs=t,this.contentAttrs=e,i}showAnnouncements(t){let e=!0
-for(let i of t)for(let t of i.effects)if(t.is(ur.announce)){e&&(this.announceDOM.textContent=""),e=!1,this.announceDOM.appendChild(document.createElement("div")).textContent=t.value}}mountStyles(){this.styleModules=this.state.facet(Fi)
+for(let i of t)for(let t of i.effects)if(t.is(ur.announce)){e&&(this.announceDOM.textContent="",this.win.clearTimeout(this.clearAnnouncement),this.clearAnnouncement=this.win.setTimeout(()=>{this.announceDOM.textContent=" "},200),e=!1),this.announceDOM.appendChild(document.createElement("div")).textContent=t.value}}mountStyles(){this.styleModules=this.state.facet(Fi)
 let t=this.state.facet(ur.cspNonce)
 Ut.mount(this.root,this.styleModules.concat(rr).reverse(),t?{nonce:t}:void 0)}readMeasured(){if(2==this.updateState)throw new Error("Reading the editor layout isn't allowed during an update")
 0==this.updateState&&this.measureScheduled>-1&&this.measure(!1)}requestMeasure(t){if(this.measureScheduled<0&&(this.measureScheduled=this.win.requestAnimationFrame(()=>this.measure())),t){if(this.measureRequests.indexOf(t)>-1)return
@@ -1577,7 +1577,8 @@ return t=>{let e=n(t)
 return s==St.Space&&(s=e),s==e}}(this,t.head,e)))}visualLineSide(t,e){let i=this.bidiSpans(t),n=this.textDirectionAt(t.from),s=i[e?i.length-1:0]
 return C.cursor(s.side(e,n)+t.from,s.forward(!e,n)?1:-1)}moveToLineBoundary(t,e,i=!0){return function(t,e,i,n){let s=Mn(t,e.head,e.assoc||-1),r=n&&s.type==ve.Text&&(t.lineWrapping||s.widgetLineBreaks)?t.coordsAtPos(e.assoc<0&&e.head>s.from?e.head-1:e.head):null
 if(r){let e=t.dom.getBoundingClientRect(),n=t.textDirectionAt(s.from),o=t.posAtCoords({x:i==(n==ei.LTR)?e.right-1:e.left+1,y:(r.top+r.bottom)/2})
-if(null!=o)return C.cursor(o,i?-1:1)}return C.cursor(i?s.to:s.from,i?-1:1)}(this,t,e,i)}moveVertically(t,e,i){return Yn(this,t,function(t,e,i,n){let s=e.head,r=i?1:-1
+if(null!=o)return C.cursor(o,i?-1:1)}let o=t.state.doc.lineAt(e.head)
+return(i?o.to==s.to:o.from==s.from)?t.visualLineSide(o,i):C.cursor(i?s.to:s.from,i?-1:1)}(this,t,e,i)}moveVertically(t,e,i){return Yn(this,t,function(t,e,i,n){let s=e.head,r=i?1:-1
 if(s==(i?t.state.doc.length:0))return C.cursor(s,e.assoc)
 let o,a=e.goalColumn,l=t.contentDOM.getBoundingClientRect(),h=t.coordsAtPos(s,e.assoc||((e.empty?i:e.head==e.from)?1:-1)),c=t.documentTop
 if(h)null==a&&(a=h.left-l.left),o=r<0?h.top:h.bottom
@@ -1602,7 +1603,7 @@ return pi(t,s,s,i,0,t.length,n),n}(t.text,i,e)
 return this.bidiCache.push(new pr(t.from,t.to,i,e,!0,n)),n}get hasFocus(){var t
 return(this.dom.ownerDocument.hasFocus()||pe.safari&&(null===(t=this.inputState)||void 0===t?void 0:t.lastContextMenu)>Date.now()-3e4)&&this.root.activeElement==this.contentDOM}focus(){this.observer.ignore(()=>{Ne(this.contentDOM),this.docView.updateSelection()})}setRoot(t){this._root!=t&&(this._root=t,this.observer.setWindow((9==t.nodeType?t:t.ownerDocument).defaultView||window),this.mountStyles())}destroy(){this.root.activeElement==this.contentDOM&&this.contentDOM.blur()
 for(let t of this.plugins)t.destroy(this)
-this.plugins=[],this.inputState.destroy(),this.docView.destroy(),this.dom.remove(),this.observer.destroy(),this.measureScheduled>-1&&this.win.cancelAnimationFrame(this.measureScheduled),this.destroyed=!0}static scrollIntoView(t,e={}){var i,n,s,r
+this.plugins=[],this.inputState.destroy(),this.docView.destroy(),this.dom.remove(),this.observer.destroy(),this.win.clearTimeout(this.clearAnnouncement),this.measureScheduled>-1&&this.win.cancelAnimationFrame(this.measureScheduled),this.destroyed=!0}static scrollIntoView(t,e={}){var i,n,s,r
 return Ri.of(new Mi("number"==typeof t?C.cursor(t):t,null!==(i=e.y)&&void 0!==i?i:"nearest",null!==(n=e.x)&&void 0!==n?n:"nearest",null!==(s=e.yMargin)&&void 0!==s?s:5,null!==(r=e.xMargin)&&void 0!==r?r:5))}scrollSnapshot(){let{scrollTop:t,scrollLeft:e}=this.scrollDOM,i=this.viewState.scrollAnchorAt(t)
 return Ri.of(new Mi(C.cursor(i.from),"start","start",i.top-t,e,!0))}setTabFocusMode(t){null==t?this.inputState.tabFocusMode=this.inputState.tabFocusMode<0?0:-1:"boolean"==typeof t?this.inputState.tabFocusMode=t?0:-1:0!=this.inputState.tabFocusMode&&(this.inputState.tabFocusMode=Date.now()+t)}static domEventHandlers(t){return Ei.define(()=>({}),{eventHandlers:t})}static domEventObservers(t){return Ei.define(()=>({}),{eventObservers:t})}static theme(t,e){let i=Ut.newName(),n=[Ks.of(i),Fi.of(sr(`.${i}`,t))]
 return e&&e.dark&&n.push(Js.of(!0)),n}static baseTheme(t){return H.lowest(Fi.of(sr("."+tr,t,nr)))}static findFromDOM(t){var e
@@ -2391,7 +2392,7 @@ return n.line?Tl(t):!!n.block&&Al(t)}},{key:"Alt-A",mac:"Ctrl-A",run:Xl},{key:"C
 return yh(t,e,i=>vh(t,i,e))},preventDefault:!0},{key:"ArrowRight",run:Oh,shift:$h,preventDefault:!0},{key:"Mod-ArrowRight",mac:"Alt-ArrowRight",run:t=>uh(t,hh(t)),shift:t=>Ph(t,hh(t)),preventDefault:!0},{mac:"Cmd-ArrowRight",run:t=>oh(t,e=>vh(t,e,hh(t))),shift:t=>{let e=hh(t)
 return yh(t,e,i=>vh(t,i,e))},preventDefault:!0},{key:"ArrowUp",run:gh,shift:Th,preventDefault:!0},{mac:"Cmd-ArrowUp",run:Ch,shift:Yh},{mac:"Ctrl-ArrowUp",run:xh,shift:Mh},{key:"ArrowDown",run:mh,shift:Xh,preventDefault:!0},{mac:"Cmd-ArrowDown",run:_h,shift:zh},{mac:"Ctrl-ArrowDown",run:Sh,shift:Rh},{key:"PageUp",run:xh,shift:Mh},{key:"PageDown",run:Sh,shift:Rh},{key:"Home",run:t=>oh(t,e=>vh(t,e,!1)),shift:t=>yh(t,!1,e=>vh(t,e,!1)),preventDefault:!0},{key:"Mod-Home",run:Ch,shift:Yh},{key:"End",run:t=>oh(t,e=>vh(t,e,!0)),shift:t=>yh(t,!0,e=>vh(t,e,!0)),preventDefault:!0},{key:"Mod-End",run:_h,shift:zh},{key:"Enter",run:Uh,shift:Uh},{key:"Mod-a",run:({state:t,dispatch:e})=>(e(t.update({selection:{anchor:0,head:t.doc.length},userEvent:"select"})),!0)},{key:"Backspace",run:Lh,shift:Lh,preventDefault:!0},{key:"Delete",run:jh,preventDefault:!0},{key:"Mod-Backspace",mac:"Alt-Backspace",run:Bh,preventDefault:!0},{key:"Mod-Delete",mac:"Alt-Delete",run:t=>Vh(t,!0),preventDefault:!0},{mac:"Mod-Backspace",run:t=>Eh(t,e=>{let i=t.moveToLineBoundary(e,!1).head
 return e.head>i?i:Math.max(0,e.head-1)}),preventDefault:!0},{mac:"Mod-Delete",run:t=>Eh(t,e=>{let i=t.moveToLineBoundary(e,!0).head
-return e.head<i?i:Math.min(t.state.doc.length,e.head+1)}),preventDefault:!0}].concat([{key:"Ctrl-b",run:ch,shift:bh,preventDefault:!0},{key:"Ctrl-f",run:Oh,shift:$h},{key:"Ctrl-p",run:gh,shift:Th},{key:"Ctrl-n",run:mh,shift:Xh},{key:"Ctrl-a",run:t=>oh(t,e=>C.cursor(t.lineBlockAt(e.head).from,1)),shift:t=>yh(t,!1,e=>C.cursor(t.lineBlockAt(e.head).from))},{key:"Ctrl-e",run:t=>oh(t,e=>C.cursor(t.lineBlockAt(e.head).to,-1)),shift:t=>yh(t,!0,e=>C.cursor(t.lineBlockAt(e.head).to))},{key:"Ctrl-d",run:jh},{key:"Ctrl-h",run:Lh},{key:"Ctrl-k",run:t=>Eh(t,e=>{let i=t.lineBlockAt(e.head).to
+return e.head<i?i:Math.min(t.state.doc.length,e.head+1)}),preventDefault:!0}].concat([{key:"Ctrl-b",run:ch,shift:bh,preventDefault:!0},{key:"Ctrl-f",run:Oh,shift:$h},{key:"Ctrl-p",run:gh,shift:Th},{key:"Ctrl-n",run:mh,shift:Xh},{key:"Ctrl-a",run:t=>oh(t,e=>t.moveToLineBoundary(e,!1,!1)),shift:t=>yh(t,!1,e=>C.cursor(t.lineBlockAt(e.head).from))},{key:"Ctrl-e",run:t=>oh(t,e=>t.moveToLineBoundary(e,!0,!1)),shift:t=>yh(t,!0,e=>C.cursor(t.lineBlockAt(e.head).to))},{key:"Ctrl-d",run:jh},{key:"Ctrl-h",run:Lh},{key:"Ctrl-k",run:t=>Eh(t,e=>{let i=t.lineBlockAt(e.head).to
 return e.head<i?i:Math.min(t.state.doc.length,e.head+1)})},{key:"Ctrl-Alt-h",run:Bh},{key:"Ctrl-o",run:({state:t,dispatch:e})=>{if(t.readOnly)return!1
 let i=t.changeByRange(t=>({changes:{from:t.from,to:t.to,insert:O.of(["",""])},range:C.cursor(t.from)}))
 return e(t.update(i,{scrollIntoView:!0,userEvent:"input"})),!0}},{key:"Ctrl-t",run:({state:t,dispatch:e})=>{if(t.readOnly)return!1
