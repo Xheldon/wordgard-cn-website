@@ -1,4 +1,4 @@
-import { Decoration, PointSet, Wordgard } from 'wordgard/editor';
+import { Decoration, Wordgard } from 'wordgard/editor';
 import { GardState, Transaction, GardSelection, Correction } from 'wordgard/state';
 import { Table, ColSpan, RowSpan, TableRow, Cell, BlockCell, HeaderCell, BlockHeaderCell } from 'wordgard/types';
 import { Node, ValidationError, Token, ChangeSet } from 'wordgard/doc';
@@ -236,8 +236,8 @@ const cellSelectionDeco = /*@__PURE__*/GardState.Field.define({
 const selectedCell = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-cell" });
 function getCellDeco(state) {
     if (!(state.selection instanceof CellSelection))
-        return PointSet.empty;
-    return PointSet.create(state.selection.ranges.map(({ from }) => [from - 1, selectedCell]));
+        return Decoration.Point.none;
+    return Decoration.Point.set(state.selection.ranges.map(({ from }) => [from - 1, selectedCell]));
 }
 const tableSelectionFilter = /*@__PURE__*/(() => GardState.prec.low(Transaction.extender.of(tr => {
     let normalized = CellSelection.normalize(tr.newSelection, tr.newDoc);
@@ -790,7 +790,7 @@ function pastedCells(schema, slice, context) {
         tok.type == Table.type) {
         table = tok;
     }
-    else if (context.length && isTableContent(schema, context[0].type) ||
+    else if (context.some(tag => isTableContent(schema, tag.type)) ||
         slice.content.some(tok => tok.tokenType != Token.Type.Close && isTableContent(schema, tok.type))) {
         table = fitSlice(schema, Table, slice, context);
     }

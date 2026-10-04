@@ -4720,11 +4720,34 @@ addEventListener("load", function() {
 <p data-x-en="By default, the attribute is added to the outer element (or a wrapper element if the node is rendered as a widget). If the target option is given, and matches an element in the representation, it will be added to that element instead.">默认情况下，该属性会被添加到外部元素（如果节点被渲染为组件，则添加到包装元素）。如果提供了 <code>target</code> 选项，并且与表示中的某个元素 <a href="#editor.Decoration.Tag.wrapper.options.target">匹配</a>，则该属性将添加到该元素上。</p>
 </div>
 <section class="class">
-<pre class="refcode"><span class="keyword">abstract</span> <span class="keyword">class</span> <a href="#editor.Decoration.Point" class="def heading" id="editor.Decoration.Point">Decoration.Point</a> <span class="keyword">implements</span> <a href="#editor.PointSet.Value" class="ref">PointSet.Value</a> {
+<pre class="refcode"><span class="keyword">abstract</span> <span class="keyword">class</span> <a href="#editor.Decoration.Point" class="def heading" id="editor.Decoration.Point">Decoration.Point</a> {
 </pre>
 <div class="doc indent1">
 <p data-x-en="A point decoration is a decoration that targets a given position in the document, or the node after a given position. Sets of point decorations can be provided as point sets through Decoration.Point.source.">点装饰是一种针对文档中给定位置或给定位置之后节点的装饰。点装饰集可以通过 <a href="#editor.Decoration.Point.source"><code>Decoration.Point.source</code></a> 作为点集提供。</p>
 </div>
+<pre class="refcode">  <span class="keyword">abstract</span> <a href="#editor.Decoration.Point.eq" class="def" id="editor.Decoration.Point.eq">eq</a>(<a href="#editor.Decoration.Point.eq.other" class="def" id="editor.Decoration.Point.eq.other">other</a>: {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.eq.other.side" class="def" id="editor.Decoration.Point.eq.other.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The side of the point. Used to provide a sorting of points at the same position, and to determine cursor position relative to the points. Points with side < 0 are always displayed before a cursor at their position, those with side > 0 always after, and those with side == 0 before or after depending on the cursor's side.">点的侧面。用于对同一位置的点进行排序，并确定光标相对于这些点的位置。侧面值小于 0 的点始终显示在光标位置之前，侧面值大于 0 的点始终显示在光标位置之后，而侧面值等于 0 的点则根据光标的侧面值显示在之前或之后。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.eq.other.trackMode" class="def" id="editor.Decoration.Point.eq.other.trackMode">trackMode</a>: <a href="#doc.ChangeSet.TrackMode" class="ref">ChangeSet.TrackMode</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Configures whether the point should be deleted when content next to it is deleted. See mapPos.">配置在删除其相邻内容时是否应删除该点。参见 <a href="#doc.ChangeSet.mapPos"><code>mapPos</code></a>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.eq.other.eq" class="def" id="editor.Decoration.Point.eq.other.eq">eq</a>(<a href="#editor.Decoration.Point.eq.other.eq.other" class="def" id="editor.Decoration.Point.eq.other.eq.other">other</a>: {}): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Method to compare this value to another.">将此值与另一个值进行比较的方法。</p>
+</div>
+<pre class="refcode">  }): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<pre class="refcode">  <span class="keyword">abstract</span> <a href="#editor.Decoration.Point.side" class="def" id="editor.Decoration.Point.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<pre class="refcode">  <span class="keyword">abstract</span> <a href="#editor.Decoration.Point.trackMode" class="def" id="editor.Decoration.Point.trackMode">trackMode</a>: <a href="#doc.ChangeSet.TrackMode" class="ref">ChangeSet.TrackMode</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Point.widget" class="def" id="editor.Decoration.Point.widget">widget</a>(<a href="#editor.Decoration.Point.widget.widget" class="def" id="editor.Decoration.Point.widget.widget">widget</a>: <a href="#editor.Widget" class="ref">Widget</a>, <a href="#editor.Decoration.Point.widget.options" class="def" id="editor.Decoration.Point.widget.options">options</a>?: {
 </pre>
 <pre class="refcode">    <a href="#editor.Decoration.Point.widget.options.side" class="def" id="editor.Decoration.Point.widget.options.side">side</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
@@ -4764,23 +4787,866 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Wrap the node, or inner node selected with target, at the given position with a wrapper.">使用包装器在给定位置包裹由 <code>target</code> 选中的节点或内部节点。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Point.source" class="def" id="editor.Decoration.Point.source">source</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
-    <a href="#editor.Decoration.Point.source.state" class="def" id="editor.Decoration.Point.source.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>
-  ) =&gt; <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>&gt;&gt;
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Point.source" class="def" id="editor.Decoration.Point.source">source</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(<a href="#editor.Decoration.Point.source.state" class="def" id="editor.Decoration.Point.source.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>) =&gt; {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.length" class="def" id="editor.Decoration.Point.source.returns.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.empty" class="def" id="editor.Decoration.Point.source.returns.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.cursor" class="def" id="editor.Decoration.Point.source.returns.cursor">cursor</a>(<a href="#editor.Decoration.Point.source.returns.cursor.from" class="def" id="editor.Decoration.Point.source.returns.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.source.returns.cursor.side" class="def" id="editor.Decoration.Point.source.returns.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.value" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The value of the current point, or null when there are no more points.">当前点的值，或者在没有更多点时为 <code>null</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.pos" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The position of the current point.">当前点的位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.side" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The side value of the current point.">当前点的侧值。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.goto" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Point.source.returns.cursor.returns.goto.pos" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.source.returns.cursor.returns.goto.side" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.goto.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move the cursor to a given position and side.">将光标移动到指定位置和侧边。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.next" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent4">
+<p data-x-en="Continue to the next point, if any.">如有后续要点，请继续。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.cursor.returns.set" class="def" id="editor.Decoration.Point.source.returns.cursor.returns.set">set</a>: {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="The set object that the current point belongs to.">当前点所属的集合对象。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个游标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.at" class="def" id="editor.Decoration.Point.source.returns.at">at</a>(<a href="#editor.Decoration.Point.source.returns.at.pos" class="def" id="editor.Decoration.Point.source.returns.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.map" class="def" id="editor.Decoration.Point.source.returns.map">map</a>(<a href="#editor.Decoration.Point.source.returns.map.map" class="def" id="editor.Decoration.Point.source.returns.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.source.returns.map.replace" class="def" id="editor.Decoration.Point.source.returns.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.map.replace.from" class="def" id="editor.Decoration.Point.source.returns.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.map.replace.to" class="def" id="editor.Decoration.Point.source.returns.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.map.replace.add" class="def" id="editor.Decoration.Point.source.returns.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.source.returns.map.replace.add.add" class="def" id="editor.Decoration.Point.source.returns.map.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.source.returns.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.source.returns.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.source.returns.map.replace.add.add.value" class="def" id="editor.Decoration.Point.source.returns.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional source of points to to this section.">此部分的一个可选积分来源。</p>
+</div>
+<pre class="refcode">    }[] = []): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择性地接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.modify" class="def" id="editor.Decoration.Point.source.returns.modify">modify</a>(<a href="#editor.Decoration.Point.source.returns.modify.spec" class="def" id="editor.Decoration.Point.source.returns.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.modify.spec.replace" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.source.returns.modify.spec.replace.from" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.source.returns.modify.spec.replace.to" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.source.returns.modify.spec.replace.add" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.source.returns.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.source.returns.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.source.returns.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.source.returns.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">      }[]
+</pre>
+<div class="doc indent4">
+<p data-x-en="If given, replace all points in these ranges.">如果已提供，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.modify.spec.add" class="def" id="editor.Decoration.Point.source.returns.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.source.returns.modify.spec.add.add" class="def" id="editor.Decoration.Point.source.returns.modify.spec.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.source.returns.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.source.returns.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.source.returns.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.source.returns.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.source.returns.modify.spec.filter" class="def" id="editor.Decoration.Point.source.returns.modify.spec.filter">filter</a>?: (<a href="#editor.Decoration.Point.source.returns.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.source.returns.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.source.returns.modify.spec.filter.value" class="def" id="editor.Decoration.Point.source.returns.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">    }): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.source.returns.compareRange" class="def" id="editor.Decoration.Point.source.returns.compareRange">compareRange</a>(
+      <a href="#editor.Decoration.Point.source.returns.compareRange.fromA" class="def" id="editor.Decoration.Point.source.returns.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.source.returns.compareRange.b" class="def" id="editor.Decoration.Point.source.returns.compareRange.b">b</a>: {},
+      <a href="#editor.Decoration.Point.source.returns.compareRange.fromB" class="def" id="editor.Decoration.Point.source.returns.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.source.returns.compareRange.len" class="def" id="editor.Decoration.Point.source.returns.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.source.returns.compareRange.change" class="def" id="editor.Decoration.Point.source.returns.compareRange.change">change</a>: (
+        <a href="#editor.Decoration.Point.source.returns.compareRange.change.pos" class="def" id="editor.Decoration.Point.source.returns.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.source.returns.compareRange.change.value" class="def" id="editor.Decoration.Point.source.returns.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>
+    )
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
+<pre class="refcode">  }&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="The facet used to register a point decoration source. Functions provided in this way will be called on every editor update, so computing the set on the fly will only perform well for very simple decoration sets, and you'll usually want to keep your set in a state field and update it incrementally.">用于注册点装饰源的 Facet。
 通过此方式提供的函数将在每次编辑器更新时被调用，因此动态计算装饰集仅对非常简单的装饰集表现良好；通常，您应将该集保存在状态字段中，并对其进行增量更新。</p>
 </div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Point.set" class="def" id="editor.Decoration.Point.set">set</a>(<a href="#editor.Decoration.Point.set.source" class="def" id="editor.Decoration.Point.set.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+    <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+  ]&gt; | ((<a href="#editor.Decoration.Point.set.source.add" class="def" id="editor.Decoration.Point.set.source.add">add</a>: (
+    <a href="#editor.Decoration.Point.set.source.add.pos" class="def" id="editor.Decoration.Point.set.source.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Point.set.source.add.value" class="def" id="editor.Decoration.Point.set.source.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+  ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)): <a href="#editor.Decoration.Point.Set" class="ref">Decoration.Point.Set</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Create a PointSet from an array or source function of point decorations.">从点装饰的数组或源函数创建一个 <code>PointSet</code>。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Point.none" class="def" id="editor.Decoration.Point.none">none</a>: <a href="#editor.Decoration.Point.Set" class="ref">Decoration.Point.Set</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The empty set of point decorations.">点装饰的空集。</p>
+</div>
+<pre class="refcode">}
+</pre>
+</section>
+<section class="typealias">
+<pre class="refcode"><span class="keyword">type</span> <a href="#editor.Decoration.Point.Set" class="def heading" id="editor.Decoration.Point.Set">Decoration.Point.Set</a> = {
+</pre>
+<div class="doc indent1">
+<p data-x-en="The type used for sets of point decorations.">用于点装饰集合的类型。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.length" class="def" id="editor.Decoration.Point.Set.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.empty" class="def" id="editor.Decoration.Point.Set.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.cursor" class="def" id="editor.Decoration.Point.Set.cursor">cursor</a>(<a href="#editor.Decoration.Point.Set.cursor.from" class="def" id="editor.Decoration.Point.Set.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.Set.cursor.side" class="def" id="editor.Decoration.Point.Set.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The value of the current point, or null when there are no more points.">当前点的值，或者在没有更多点时为 <code>null</code>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The position of the current point.">当前点的位置。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.side" class="def" id="editor.Decoration.Point.Set.cursor.returns.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The side value of the current point.">当前点的侧值。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.goto" class="def" id="editor.Decoration.Point.Set.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Point.Set.cursor.returns.goto.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.cursor.returns.goto.side" class="def" id="editor.Decoration.Point.Set.cursor.returns.goto.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="Move the cursor to a given position and side.">将光标移动到指定位置和侧边。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.next" class="def" id="editor.Decoration.Point.Set.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent3">
+<p data-x-en="Continue to the next point, if any.">如有后续要点，请继续。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.cursor.returns.set" class="def" id="editor.Decoration.Point.Set.cursor.returns.set">set</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.length" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.empty" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.cursor" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.cursor">cursor</a>(<a href="#editor.Decoration.Point.Set.cursor.returns.set.cursor.from" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.Set.cursor.returns.set.cursor.side" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个光标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.at" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.at">at</a>(<a href="#editor.Decoration.Point.Set.cursor.returns.set.at.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.map" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map">map</a>(<a href="#editor.Decoration.Point.Set.cursor.returns.set.map.map" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.from" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.to" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional source of points to to this section.">一个可选的指向此部分的积分来源。</p>
+</div>
+<pre class="refcode">      }[] = []): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify">modify</a>(<a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.from" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.to" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add">add</a>: (
+            <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+          ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent6">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">        }[]
+</pre>
+<div class="doc indent5">
+<p data-x-en="If given, replace all points in these ranges.">如果已提供，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter">filter</a>?: (
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地，过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">      }): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange">compareRange</a>(
+        <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.fromA" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.b" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.b">b</a>: {},
+        <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.fromB" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.len" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.change" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.change">change</a>: (
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.change.pos" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.cursor.returns.set.compareRange.change.value" class="def" id="editor.Decoration.Point.Set.cursor.returns.set.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>
+      )
+</pre>
+<div class="doc indent4">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="The set object that the current point belongs to.">当前点所属的集合对象。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个光标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.at" class="def" id="editor.Decoration.Point.Set.at">at</a>(<a href="#editor.Decoration.Point.Set.at.pos" class="def" id="editor.Decoration.Point.Set.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.map" class="def" id="editor.Decoration.Point.Set.map">map</a>(<a href="#editor.Decoration.Point.Set.map.map" class="def" id="editor.Decoration.Point.Set.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.Set.map.replace" class="def" id="editor.Decoration.Point.Set.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.replace.from" class="def" id="editor.Decoration.Point.Set.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.replace.to" class="def" id="editor.Decoration.Point.Set.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.replace.add" class="def" id="editor.Decoration.Point.Set.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.map.replace.add.add" class="def" id="editor.Decoration.Point.Set.map.replace.add.add">add</a>: (
+      <a href="#editor.Decoration.Point.Set.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.map.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+    ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">  }[] = []): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.length" class="def" id="editor.Decoration.Point.Set.map.returns.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.empty" class="def" id="editor.Decoration.Point.Set.map.returns.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.cursor" class="def" id="editor.Decoration.Point.Set.map.returns.cursor">cursor</a>(<a href="#editor.Decoration.Point.Set.map.returns.cursor.from" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.Set.map.returns.cursor.side" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.value" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The value of the current point, or null when there are no more points.">当前点的值，或者在没有更多点时为 <code>null</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.pos" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The position of the current point.">当前点的位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.side" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The side value of the current point.">当前点的侧值。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.goto" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.goto.pos" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.goto.side" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.goto.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move the cursor to a given position and side.">将光标移动到指定位置和侧边。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.next" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent4">
+<p data-x-en="Continue to the next point, if any.">如有后续要点，请继续。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.cursor.returns.set" class="def" id="editor.Decoration.Point.Set.map.returns.cursor.returns.set">set</a>: {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="The set object that the current point belongs to.">当前点所属的集合对象。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个游标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.at" class="def" id="editor.Decoration.Point.Set.map.returns.at">at</a>(<a href="#editor.Decoration.Point.Set.map.returns.at.pos" class="def" id="editor.Decoration.Point.Set.map.returns.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.map" class="def" id="editor.Decoration.Point.Set.map.returns.map">map</a>(<a href="#editor.Decoration.Point.Set.map.returns.map.map" class="def" id="editor.Decoration.Point.Set.map.returns.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.Set.map.returns.map.replace" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.map.replace.from" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.map.replace.to" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.map.replace.add" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.map.returns.map.replace.add.add" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.Set.map.returns.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.map.returns.map.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.map.returns.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional source of points to to this section.">本节的可选积分来源。</p>
+</div>
+<pre class="refcode">    }[] = []): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回一个包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择性地接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.modify" class="def" id="editor.Decoration.Point.Set.map.returns.modify">modify</a>(<a href="#editor.Decoration.Point.Set.map.returns.modify.spec" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.from" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.to" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.add" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">      }[]
+</pre>
+<div class="doc indent4">
+<p data-x-en="If given, replace all points in these ranges.">如果已提供，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.add" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.map.returns.modify.spec.add.add" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.filter" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.filter">filter</a>?: (<a href="#editor.Decoration.Point.Set.map.returns.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.map.returns.modify.spec.filter.value" class="def" id="editor.Decoration.Point.Set.map.returns.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地，过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">    }): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.map.returns.compareRange" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange">compareRange</a>(
+      <a href="#editor.Decoration.Point.Set.map.returns.compareRange.fromA" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.map.returns.compareRange.b" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.b">b</a>: {},
+      <a href="#editor.Decoration.Point.Set.map.returns.compareRange.fromB" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.map.returns.compareRange.len" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.map.returns.compareRange.change" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.change">change</a>: (
+        <a href="#editor.Decoration.Point.Set.map.returns.compareRange.change.pos" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.map.returns.compareRange.change.value" class="def" id="editor.Decoration.Point.Set.map.returns.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>
+    )
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.modify" class="def" id="editor.Decoration.Point.Set.modify">modify</a>(<a href="#editor.Decoration.Point.Set.modify.spec" class="def" id="editor.Decoration.Point.Set.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.spec.replace" class="def" id="editor.Decoration.Point.Set.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.spec.replace.from" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.spec.replace.to" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.spec.replace.add" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.Set.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">    }[]
+</pre>
+<div class="doc indent3">
+<p data-x-en="If given, replace all points in these ranges.">如果已提供，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.spec.add" class="def" id="editor.Decoration.Point.Set.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.modify.spec.add.add" class="def" id="editor.Decoration.Point.Set.modify.spec.add.add">add</a>: (
+      <a href="#editor.Decoration.Point.Set.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.Set.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.Set.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+    ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.spec.filter" class="def" id="editor.Decoration.Point.Set.modify.spec.filter">filter</a>?: (<a href="#editor.Decoration.Point.Set.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.Set.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.modify.spec.filter.value" class="def" id="editor.Decoration.Point.Set.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地，过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">  }): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.length" class="def" id="editor.Decoration.Point.Set.modify.returns.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.empty" class="def" id="editor.Decoration.Point.Set.modify.returns.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.cursor" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor">cursor</a>(<a href="#editor.Decoration.Point.Set.modify.returns.cursor.from" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.Set.modify.returns.cursor.side" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.value" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The value of the current point, or null when there are no more points.">当前点的值，或者在没有更多点时为 <code>null</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The position of the current point.">当前点的位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.side" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The side value of the current point.">当前点的侧值。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.goto" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.goto.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.goto.side" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.goto.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move the cursor to a given position and side.">将光标移动到指定的位置和侧边。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.next" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent4">
+<p data-x-en="Continue to the next point, if any.">如有后续要点，请继续。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.cursor.returns.set" class="def" id="editor.Decoration.Point.Set.modify.returns.cursor.returns.set">set</a>: {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="The set object that the current point belongs to.">当前点所属的集合对象。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个光标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.at" class="def" id="editor.Decoration.Point.Set.modify.returns.at">at</a>(<a href="#editor.Decoration.Point.Set.modify.returns.at.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.map" class="def" id="editor.Decoration.Point.Set.modify.returns.map">map</a>(<a href="#editor.Decoration.Point.Set.modify.returns.map.map" class="def" id="editor.Decoration.Point.Set.modify.returns.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.Set.modify.returns.map.replace" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.map.replace.from" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.map.replace.to" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.map.replace.add" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.modify.returns.map.replace.add.add" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.Set.modify.returns.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.modify.returns.map.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.modify.returns.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional source of points to to this section.">一个可选的指向此部分的积分来源。</p>
+</div>
+<pre class="refcode">    }[] = []): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回一个包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.modify" class="def" id="editor.Decoration.Point.Set.modify.returns.modify">modify</a>(<a href="#editor.Decoration.Point.Set.modify.returns.modify.spec" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.from" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.to" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional source of points to to this section.">此部分可选的积分来源。</p>
+</div>
+<pre class="refcode">      }[]
+</pre>
+<div class="doc indent4">
+<p data-x-en="If given, replace all points in these ranges.">如果已提供，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.add" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.add.add" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.add.add">add</a>: (
+        <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.filter" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.filter">filter</a>?: (<a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.modify.returns.modify.spec.filter.value" class="def" id="editor.Decoration.Point.Set.modify.returns.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地，过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">    }): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Point.Set.modify.returns.compareRange" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange">compareRange</a>(
+      <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.fromA" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.b" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.b">b</a>: {},
+      <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.fromB" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.len" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.change" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.change">change</a>: (
+        <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.change.pos" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.modify.returns.compareRange.change.value" class="def" id="editor.Decoration.Point.Set.modify.returns.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+      ) =&gt; <span class="keyword">void</span>
+    )
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Point.Set.compareRange" class="def" id="editor.Decoration.Point.Set.compareRange">compareRange</a>(
+    <a href="#editor.Decoration.Point.Set.compareRange.fromA" class="def" id="editor.Decoration.Point.Set.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Point.Set.compareRange.b" class="def" id="editor.Decoration.Point.Set.compareRange.b">b</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.length" class="def" id="editor.Decoration.Point.Set.compareRange.b.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The number of points in this set.">该集合中的点数。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.empty" class="def" id="editor.Decoration.Point.Set.compareRange.b.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 <code>true</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.cursor" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor">cursor</a>(<a href="#editor.Decoration.Point.Set.compareRange.b.cursor.from" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0, <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.side" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = -1e9): {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The value of the current point, or null when there are no more points.">当前点的值，或者在没有更多点时为 <code>null</code>。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The position of the current point.">当前点的位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.side" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The side value of the current point.">当前点的侧值。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto.side" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.goto.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="Move the cursor to a given position and side.">将光标移动到指定位置和侧边。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.next" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent5">
+<p data-x-en="Continue to the next point, if any.">如有后续要点，请继续。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.cursor.returns.set" class="def" id="editor.Decoration.Point.Set.compareRange.b.cursor.returns.set">set</a>: {}
+</pre>
+<div class="doc indent5">
+<p data-x-en="The set object that the current point belongs to.">当前点所属的集合对象。</p>
+</div>
+<pre class="refcode">      }
+</pre>
+<div class="doc indent4">
+<p data-x-en="Create a cursor over this point set, starting at the given position and side.">在此点集上创建一个游标，从给定的位置和侧边开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.at" class="def" id="editor.Decoration.Point.Set.compareRange.b.at">at</a>(<a href="#editor.Decoration.Point.Set.compareRange.b.at.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.map" class="def" id="editor.Decoration.Point.Set.compareRange.b.map">map</a>(<a href="#editor.Decoration.Point.Set.compareRange.b.map.map" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.from" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.to" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.add.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.compareRange.b.map.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional source of points to to this section.">本节的可选积分来源。</p>
+</div>
+<pre class="refcode">      }[] = []): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择接受一个有序的替换序列。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.modify" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify">modify</a>(<a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.from" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The start of the replacement.">替换的开始。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.to" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The end of the replaced range.">被替换范围的结束位置。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add">add</a>: (
+            <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+          ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent6">
+<p data-x-en="An optional source of points to to this section.">此部分的一个可选积分来源。</p>
+</div>
+<pre class="refcode">        }[]
+</pre>
+<div class="doc indent5">
+<p data-x-en="If given, replace all points in these ranges.">如果已给出，请替换这些范围内的所有点。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>]&gt; | ((<a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add">add</a>: (
+          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="Add the points from this source.">添加此来源的要点。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.filter" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.filter">filter</a>?: (
+          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.filter.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.filter.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.compareRange.b.modify.spec.filter.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="Optionally filter out any point where this predicate returns false.">可选地，过滤掉该谓词返回 false 的任何点。</p>
+</div>
+<pre class="refcode">      }): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Create an updated copy of this set.">创建此套件的更新副本。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange">compareRange</a>(
+        <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.fromA" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.b" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.b">b</a>: {},
+        <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.fromB" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.len" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.change" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.change">change</a>: (
+          <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.change.pos" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Point.Set.compareRange.b.compareRange.change.value" class="def" id="editor.Decoration.Point.Set.compareRange.b.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>
+        ) =&gt; <span class="keyword">void</span>
+      )
+</pre>
+<div class="doc indent4">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
+<pre class="refcode">    },
+    <a href="#editor.Decoration.Point.Set.compareRange.fromB" class="def" id="editor.Decoration.Point.Set.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Point.Set.compareRange.len" class="def" id="editor.Decoration.Point.Set.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Point.Set.compareRange.change" class="def" id="editor.Decoration.Point.Set.compareRange.change">change</a>: (<a href="#editor.Decoration.Point.Set.compareRange.change.pos" class="def" id="editor.Decoration.Point.Set.compareRange.change.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Point.Set.compareRange.change.value" class="def" id="editor.Decoration.Point.Set.compareRange.change.value">value</a>: <a href="#editor.Decoration.Point" class="ref">Decoration.Point</a>) =&gt; <span class="keyword">void</span>
+  )
+</pre>
+<div class="doc indent2">
+<p data-x-en="Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.">比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。</p>
+</div>
 <pre class="refcode">}
 </pre>
 </section>
 <section class="class">
-<pre class="refcode"><span class="keyword">abstract</span> <span class="keyword">class</span> <a href="#editor.Decoration.Range" class="def heading" id="editor.Decoration.Range">Decoration.Range</a> <span class="keyword">implements</span> <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a> {
+<pre class="refcode"><span class="keyword">abstract</span> <span class="keyword">class</span> <a href="#editor.Decoration.Range" class="def heading" id="editor.Decoration.Range">Decoration.Range</a> {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Range decorations apply to a document range. They are stored in RangeSets and registered in an editor configuration with Decoration.Range.source.">范围装饰应用于文档范围。它们存储在 <a href="#editor.RangeSet"><code>RangeSet</code></a> 中，并通过 <a href="#editor.Decoration.Range.source"><code>Decoration.Range.source</code></a> 在编辑器配置中注册。</p>
 </div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.inclusiveStart" class="def" id="editor.Decoration.Range.inclusiveStart">inclusiveStart</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<pre class="refcode">  <a href="#editor.Decoration.Range.inclusiveEnd" class="def" id="editor.Decoration.Range.inclusiveEnd">inclusiveEnd</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<pre class="refcode">  <span class="keyword">abstract</span> <a href="#editor.Decoration.Range.eq" class="def" id="editor.Decoration.Range.eq">eq</a>(<a href="#editor.Decoration.Range.eq.other" class="def" id="editor.Decoration.Range.eq.other">other</a>: {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.eq.other.inclusiveStart" class="def" id="editor.Decoration.Range.eq.other.inclusiveStart">inclusiveStart</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Whether content inserted at the start of this value's range is included in the range.">在此值的范围起始处插入的内容是否包含在该范围内。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.eq.other.inclusiveEnd" class="def" id="editor.Decoration.Range.eq.other.inclusiveEnd">inclusiveEnd</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Whether content inserted at the end is included.">是否包含在末尾插入的内容。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.eq.other.eq" class="def" id="editor.Decoration.Range.eq.other.eq">eq</a>(<a href="#editor.Decoration.Range.eq.other.eq.other" class="def" id="editor.Decoration.Range.eq.other.eq.other">other</a>: {}): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare this value to another.">将此值与另一个值进行比较。</p>
+</div>
+<pre class="refcode">  }): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Range.wrapper" class="def" id="editor.Decoration.Range.wrapper">wrapper</a>(
     <a href="#editor.Decoration.Range.wrapper.tagName" class="def" id="editor.Decoration.Range.wrapper.tagName">tagName</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>,
     <a href="#editor.Decoration.Range.wrapper.spec" class="def" id="editor.Decoration.Range.wrapper.spec">spec</a>: <a href="#editor.Decoration.Range.WrapperSpec" class="ref">Decoration.Range.WrapperSpec</a>
@@ -4800,10 +5666,28 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Range.source" class="def" id="editor.Decoration.Range.source">source</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
     <a href="#editor.Decoration.Range.source.state" class="def" id="editor.Decoration.Range.source.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>
-  ) =&gt; <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>&gt;&gt;
+  ) =&gt; <a href="#editor.Decoration.Range.Set" class="ref">Decoration.Range.Set</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="The facet used to register range decoration sources. The source function will be called on every update. Generating big range sets on the fly will not perform well, so you'll often want to store these in a state field.">用于注册范围装饰源的方面。源函数将在每次更新时调用。动态生成大型范围集的性能不佳，因此您通常希望将这些范围集存储在状态字段中。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Range.set" class="def" id="editor.Decoration.Range.set">set</a>(<a href="#editor.Decoration.Range.set.source" class="def" id="editor.Decoration.Range.set.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+    <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+  ]&gt; | ((<a href="#editor.Decoration.Range.set.source.add" class="def" id="editor.Decoration.Range.set.source.add">add</a>: (
+    <a href="#editor.Decoration.Range.set.source.add.from" class="def" id="editor.Decoration.Range.set.source.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range.set.source.add.to" class="def" id="editor.Decoration.Range.set.source.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range.set.source.add.value" class="def" id="editor.Decoration.Range.set.source.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+  ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)): <a href="#editor.Decoration.Range.Set" class="ref">Decoration.Range.Set</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Create a RangeSet from an array or source function of range decorations.">从范围装饰的数组或源函数创建一个 <code>RangeSet</code>。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Decoration.Range.none" class="def" id="editor.Decoration.Range.none">none</a>: <a href="#editor.Decoration.Range.Set" class="ref">Decoration.Range.Set</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The empty set of range decorations.">范围装饰的空集。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -4853,6 +5737,590 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Whether this wrapper may span multiple sibling nodes. Non-spanning wrappers will be created separately for each node. Defaults to true.">此包装器是否可以跨越多个兄弟节点。非跨越式包装器将为每个节点单独创建。默认为 true。</p>
+</div>
+<pre class="refcode">}
+</pre>
+</section>
+<section class="typealias">
+<pre class="refcode"><span class="keyword">type</span> <a href="#editor.Decoration.Range.Set" class="def heading" id="editor.Decoration.Range.Set">Decoration.Range.Set</a> = {
+</pre>
+<div class="doc indent1">
+<p data-x-en="The type used for sets of point decorations.">用于点装饰集合的类型。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.length" class="def" id="editor.Decoration.Range.Set.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.empty" class="def" id="editor.Decoration.Range.Set.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 true。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.cursor" class="def" id="editor.Decoration.Range.Set.cursor">cursor</a>(<a href="#editor.Decoration.Range.Set.cursor.from" class="def" id="editor.Decoration.Range.Set.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.cursor.returns.value" class="def" id="editor.Decoration.Range.Set.cursor.returns.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The current range's value, or null if the end of the set has been reached.">当前范围的值，如果已达到集合的末尾，则为 <code>null</code>。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.cursor.returns.from" class="def" id="editor.Decoration.Range.Set.cursor.returns.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The start position of the current range.">当前范围的起始位置。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.cursor.returns.to" class="def" id="editor.Decoration.Range.Set.cursor.returns.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The end position of the current range.">当前范围的结束位置。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.cursor.returns.goto" class="def" id="editor.Decoration.Range.Set.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Range.Set.cursor.returns.goto.pos" class="def" id="editor.Decoration.Range.Set.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="Move the cursor to a new position.">将光标移动到新位置。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.cursor.returns.next" class="def" id="editor.Decoration.Range.Set.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent3">
+<p data-x-en="Move to the next range, if any.">移至下一个范围（如有）。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Create a cursor over this set, starting at the given position.">在此集合上创建一个从给定位置开始的游标。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.map" class="def" id="editor.Decoration.Range.Set.map">map</a>(<a href="#editor.Decoration.Range.Set.map.map" class="def" id="editor.Decoration.Range.Set.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Range.Set.map.replace" class="def" id="editor.Decoration.Range.Set.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.replace.from" class="def" id="editor.Decoration.Range.Set.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.replace.to" class="def" id="editor.Decoration.Range.Set.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.replace.add" class="def" id="editor.Decoration.Range.Set.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>]&gt; | ((<a href="#editor.Decoration.Range.Set.map.replace.add.add" class="def" id="editor.Decoration.Range.Set.map.replace.add.add">add</a>: (
+      <a href="#editor.Decoration.Range.Set.map.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.map.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.map.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.map.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.map.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+    ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">  }[] = []): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.length" class="def" id="editor.Decoration.Range.Set.map.returns.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.empty" class="def" id="editor.Decoration.Range.Set.map.returns.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 true。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.cursor" class="def" id="editor.Decoration.Range.Set.map.returns.cursor">cursor</a>(<a href="#editor.Decoration.Range.Set.map.returns.cursor.from" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.value" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The current range's value, or null if the end of the set has been reached.">当前范围的值，如果已到达集合的末尾，则为 <code>null</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.from" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start position of the current range.">当前范围的起始位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.to" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end position of the current range.">当前范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.goto" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.goto.pos" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move the cursor to a new position.">将光标移动到新位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.cursor.returns.next" class="def" id="editor.Decoration.Range.Set.map.returns.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move to the next range, if any.">如有下一个范围，请移至该范围。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create a cursor over this set, starting at the given position.">在此集合上创建一个从给定位置开始的游标。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.map" class="def" id="editor.Decoration.Range.Set.map.returns.map">map</a>(<a href="#editor.Decoration.Range.Set.map.returns.map.map" class="def" id="editor.Decoration.Range.Set.map.returns.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Range.Set.map.returns.map.replace" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.map.replace.from" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.map.replace.to" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.map.replace.add" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ]&gt; | ((<a href="#editor.Decoration.Range.Set.map.returns.map.replace.add.add" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Range.Set.map.returns.map.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.map.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.map.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.map.returns.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">    }[] = []): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges. Optionally takes an array of replacement ranges. Any ranges overlapping such a replacement will be dropped, and new ranges provided by their add properties will be added to the new set.">调整给定变更集中范围的位置。返回包含更新后范围的集合。可选地接受一个替换范围数组。任何与此类替换重叠的范围都将被丢弃，而由其 <code>add</code> 属性提供的新范围将被添加到新集合中。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.modify" class="def" id="editor.Decoration.Range.Set.map.returns.modify">modify</a>(<a href="#editor.Decoration.Range.Set.map.returns.modify.spec" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.from" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.to" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.add" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ]&gt; | ((<a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">      }[]
+</pre>
+<div class="doc indent4">
+<p data-x-en="Drop any ranges inside the given replacement ranges, optionally add new ranges provided by their add property.">丢弃给定替换范围内的任何范围，并可选择通过其 <code>add</code> 属性添加新范围。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.add" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ]&gt; | ((<a href="#editor.Decoration.Range.Set.map.returns.modify.spec.add.add" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.add.add">add</a>: (
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.add.add.from" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.add.add.to" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.add.add.value" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Add new ranges to the set.">向集合中添加新范围。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.filter" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.filter">filter</a>?: (
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.filter.from" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.filter.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.filter.to" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.filter.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.modify.spec.filter.value" class="def" id="editor.Decoration.Range.Set.map.returns.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Drop any range for which this predicate function returns false.">丢弃该谓词函数返回<code>false</code>的任何范围。</p>
+</div>
+<pre class="refcode">    }): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Modify this set.">修改此集合。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.map.returns.compareRange" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange">compareRange</a>(
+      <a href="#editor.Decoration.Range.Set.map.returns.compareRange.fromA" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.map.returns.compareRange.b" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.b">b</a>: {},
+      <a href="#editor.Decoration.Range.Set.map.returns.compareRange.fromB" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.map.returns.compareRange.len" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.map.returns.compareRange.change" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.change">change</a>: (
+        <a href="#editor.Decoration.Range.Set.map.returns.compareRange.change.from" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.change.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.map.returns.compareRange.change.to" class="def" id="editor.Decoration.Range.Set.map.returns.compareRange.change.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+      ) =&gt; <span class="keyword">void</span>
+    )
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.">将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges. Optionally takes an array of replacement ranges. Any ranges overlapping such a replacement will be dropped, and new ranges provided by their add properties will be added to the new set.">调整给定变更集中范围的位置。返回包含更新后范围的集合。可选地接受一个替换范围数组。任何与此类替换重叠的范围都将被丢弃，而由其 <code>add</code> 属性提供的新范围将被添加到新集合中。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.modify" class="def" id="editor.Decoration.Range.Set.modify">modify</a>(<a href="#editor.Decoration.Range.Set.modify.spec" class="def" id="editor.Decoration.Range.Set.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.spec.replace" class="def" id="editor.Decoration.Range.Set.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.spec.replace.from" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.spec.replace.to" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.spec.replace.add" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ]&gt; | ((<a href="#editor.Decoration.Range.Set.modify.spec.replace.add.add" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Range.Set.modify.spec.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.spec.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">    }[]
+</pre>
+<div class="doc indent3">
+<p data-x-en="Drop any ranges inside the given replacement ranges, optionally add new ranges provided by their add property.">丢弃给定替换范围内的任何范围，并可选择通过其 <code>add</code> 属性添加新范围。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.spec.add" class="def" id="editor.Decoration.Range.Set.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>]&gt; | ((<a href="#editor.Decoration.Range.Set.modify.spec.add.add" class="def" id="editor.Decoration.Range.Set.modify.spec.add.add">add</a>: (
+      <a href="#editor.Decoration.Range.Set.modify.spec.add.add.from" class="def" id="editor.Decoration.Range.Set.modify.spec.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.spec.add.add.to" class="def" id="editor.Decoration.Range.Set.modify.spec.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.spec.add.add.value" class="def" id="editor.Decoration.Range.Set.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+    ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent3">
+<p data-x-en="Add new ranges to the set.">向集合中添加新范围。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.spec.filter" class="def" id="editor.Decoration.Range.Set.modify.spec.filter">filter</a>?: (
+      <a href="#editor.Decoration.Range.Set.modify.spec.filter.from" class="def" id="editor.Decoration.Range.Set.modify.spec.filter.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.spec.filter.to" class="def" id="editor.Decoration.Range.Set.modify.spec.filter.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.spec.filter.value" class="def" id="editor.Decoration.Range.Set.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+    ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Drop any range for which this predicate function returns false.">丢弃该谓词函数返回<code>false</code>的任何范围。</p>
+</div>
+<pre class="refcode">  }): {
+</pre>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.length" class="def" id="editor.Decoration.Range.Set.modify.returns.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.empty" class="def" id="editor.Decoration.Range.Set.modify.returns.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent3">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 true。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.cursor" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor">cursor</a>(<a href="#editor.Decoration.Range.Set.modify.returns.cursor.from" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.value" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The current range's value, or null if the end of the set has been reached.">当前范围的值，如果已到达集合的末尾，则为 <code>null</code>。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.from" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start position of the current range.">当前范围的起始位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.to" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end position of the current range.">当前范围的结束位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.goto" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.goto.pos" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move the cursor to a new position.">将光标移动到新位置。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.cursor.returns.next" class="def" id="editor.Decoration.Range.Set.modify.returns.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent4">
+<p data-x-en="Move to the next range, if any.">如有下一个范围，请移至该范围。</p>
+</div>
+<pre class="refcode">    }
+</pre>
+<div class="doc indent3">
+<p data-x-en="Create a cursor over this set, starting at the given position.">在此集合上创建一个从给定位置开始的游标。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.map" class="def" id="editor.Decoration.Range.Set.modify.returns.map">map</a>(<a href="#editor.Decoration.Range.Set.modify.returns.map.map" class="def" id="editor.Decoration.Range.Set.modify.returns.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Range.Set.modify.returns.map.replace" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.from" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.to" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.add" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ]&gt; | ((<a href="#editor.Decoration.Range.Set.modify.returns.map.replace.add.add" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.add.add">add</a>: (
+        <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.map.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.modify.returns.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">    }[] = []): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges. Optionally takes an array of replacement ranges. Any ranges overlapping such a replacement will be dropped, and new ranges provided by their add properties will be added to the new set.">调整给定变更集中范围的位臵。返回包含更新后范围的集合。可选地接受一个替换范围数组。任何与此类替换重叠的范围都将被丢弃，而其 <code>add</code> 属性提供的新范围将被添加到新集合中。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.modify" class="def" id="editor.Decoration.Range.Set.modify.returns.modify">modify</a>(<a href="#editor.Decoration.Range.Set.modify.returns.modify.spec" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.from" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.to" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ]&gt; | ((<a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">      }[]
+</pre>
+<div class="doc indent4">
+<p data-x-en="Drop any ranges inside the given replacement ranges, optionally add new ranges provided by their add property.">丢弃给定替换范围内的任何范围，并可选择通过其 <code>add</code> 属性添加新范围。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.add" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ]&gt; | ((<a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.add.add" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.add.add">add</a>: (
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.from" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.to" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.value" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent4">
+<p data-x-en="Add new ranges to the set.">向集合添加新范围。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.filter" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.filter">filter</a>?: (
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.filter.from" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.filter.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.filter.to" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.filter.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.modify.spec.filter.value" class="def" id="editor.Decoration.Range.Set.modify.returns.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+      ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Drop any range for which this predicate function returns false.">丢弃该谓词函数返回<code>false</code>的任何范围。</p>
+</div>
+<pre class="refcode">    }): {}
+</pre>
+<div class="doc indent3">
+<p data-x-en="Modify this set.">修改此集合。</p>
+</div>
+<pre class="refcode">    <a href="#editor.Decoration.Range.Set.modify.returns.compareRange" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange">compareRange</a>(
+      <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.fromA" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.b" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.b">b</a>: {},
+      <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.fromB" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.len" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+      <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.change" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.change">change</a>: (
+        <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.change.from" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.change.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.modify.returns.compareRange.change.to" class="def" id="editor.Decoration.Range.Set.modify.returns.compareRange.change.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+      ) =&gt; <span class="keyword">void</span>
+    )
+</pre>
+<div class="doc indent3">
+<p data-x-en="Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.">将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。</p>
+</div>
+<pre class="refcode">  }
+</pre>
+<div class="doc indent2">
+<p data-x-en="Modify this set.">修改此集合。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Decoration.Range.Set.compareRange" class="def" id="editor.Decoration.Range.Set.compareRange">compareRange</a>(
+    <a href="#editor.Decoration.Range.Set.compareRange.fromA" class="def" id="editor.Decoration.Range.Set.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range.Set.compareRange.b" class="def" id="editor.Decoration.Range.Set.compareRange.b">b</a>: {
+</pre>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.length" class="def" id="editor.Decoration.Range.Set.compareRange.b.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.empty" class="def" id="editor.Decoration.Range.Set.compareRange.b.empty">empty</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="Returns true when this set is empty.">当此集合为空时返回 true。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.cursor" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor">cursor</a>(<a href="#editor.Decoration.Range.Set.compareRange.b.cursor.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.value" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The current range's value, or null if the end of the set has been reached.">当前范围的值，如果已到达集合的末尾，则为 <code>null</code>。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start position of the current range.">当前范围的起始位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end position of the current range.">当前范围的结束位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.goto" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.goto">goto</a>(<a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.goto.pos" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.goto.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="Move the cursor to a new position.">将光标移动到新位置。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.cursor.returns.next" class="def" id="editor.Decoration.Range.Set.compareRange.b.cursor.returns.next">next</a>()
+</pre>
+<div class="doc indent5">
+<p data-x-en="Move to the next range, if any.">如有下一个范围，请移至该范围。</p>
+</div>
+<pre class="refcode">      }
+</pre>
+<div class="doc indent4">
+<p data-x-en="Create a cursor over this set, starting at the given position.">在此集合上创建一个从给定位置开始的游标。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.map" class="def" id="editor.Decoration.Range.Set.compareRange.b.map">map</a>(<a href="#editor.Decoration.Range.Set.compareRange.b.map.map" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace">replace</a>: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ]&gt; | ((<a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.add.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.add.add">add</a>: (
+          <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.compareRange.b.map.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">      }[] = []): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges. Optionally takes an array of replacement ranges. Any ranges overlapping such a replacement will be dropped, and new ranges provided by their add properties will be added to the new set.">调整给定变更集中范围的位罝。返回包含更新后范围的集合。可选地接受一个替换范围数组。任何与此类替换重叠的范围都将被丢弃，而由其 <code>add</code> 属性提供的新范围将被添加到新集合中。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.modify" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify">modify</a>(<a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec">spec</a>: {
+</pre>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace">replace</a>?: <span class="keyword">readonly</span> {
+</pre>
+<pre class="refcode">          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The start of the section.">该部分的开始。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent6">
+<p data-x-en="The end of the section.">本节结束。</p>
+</div>
+<pre class="refcode">          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+            <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+          ]&gt; | ((<a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add">add</a>: (
+            <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+            <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.value" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.replace.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+          ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent6">
+<p data-x-en="An optional collection of ranges to replace the section with. Must fall within from and to.">用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。</p>
+</div>
+<pre class="refcode">        }[]
+</pre>
+<div class="doc indent5">
+<p data-x-en="Drop any ranges inside the given replacement ranges, optionally add new ranges provided by their add property.">丢弃给定替换范围内的任何范围，并可选择通过其 <code>add</code> 属性添加新范围。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.add">add</a>?: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ]&gt; | ((<a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add">add</a>: (
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.value" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.add.add.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)
+</pre>
+<div class="doc indent5">
+<p data-x-en="Add new ranges to the set.">向集合添加新范围。</p>
+</div>
+<pre class="refcode">        <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.filter" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.filter">filter</a>?: (
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.value" class="def" id="editor.Decoration.Range.Set.compareRange.b.modify.spec.filter.value">value</a>: <a href="#editor.Decoration.Range" class="ref">Decoration.Range</a>
+        ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
+</pre>
+<div class="doc indent5">
+<p data-x-en="Drop any range for which this predicate function returns false.">丢弃该谓词函数返回<code>false</code>的任何范围。</p>
+</div>
+<pre class="refcode">      }): {}
+</pre>
+<div class="doc indent4">
+<p data-x-en="Modify this set.">修改此集合。</p>
+</div>
+<pre class="refcode">      <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange">compareRange</a>(
+        <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.fromA" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.fromA">fromA</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.b" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.b">b</a>: {},
+        <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.fromB" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.len" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+        <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.change" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.change">change</a>: (
+          <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.change.from" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.change.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+          <a href="#editor.Decoration.Range.Set.compareRange.b.compareRange.change.to" class="def" id="editor.Decoration.Range.Set.compareRange.b.compareRange.change.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+        ) =&gt; <span class="keyword">void</span>
+      )
+</pre>
+<div class="doc indent4">
+<p data-x-en="Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.">将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。</p>
+</div>
+<pre class="refcode">    },
+    <a href="#editor.Decoration.Range.Set.compareRange.fromB" class="def" id="editor.Decoration.Range.Set.compareRange.fromB">fromB</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range.Set.compareRange.len" class="def" id="editor.Decoration.Range.Set.compareRange.len">len</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#editor.Decoration.Range.Set.compareRange.change" class="def" id="editor.Decoration.Range.Set.compareRange.change">change</a>: (<a href="#editor.Decoration.Range.Set.compareRange.change.from" class="def" id="editor.Decoration.Range.Set.compareRange.change.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.Decoration.Range.Set.compareRange.change.to" class="def" id="editor.Decoration.Range.Set.compareRange.change.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>) =&gt; <span class="keyword">void</span>
+  )
+</pre>
+<div class="doc indent2">
+<p data-x-en="Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.">将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -4947,174 +6415,6 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Create an instance of this widget type.">创建此小部件类型的实例。</p>
-</div>
-<pre class="refcode">}
-</pre>
-</section>
-<section class="class">
-<pre class="refcode"><span class="keyword">class</span> <a href="#editor.PointSet" class="def heading" id="editor.PointSet">PointSet</a>&lt;<a href="#editor.PointSet.T" class="def" id="editor.PointSet.T">T</a> <span class="keyword">extends</span> <a href="#editor.PointSet.Value" class="ref">PointSet.Value</a> = <a href="#editor.PointSet.Value" class="ref">PointSet.Value</a>&gt; {
-</pre>
-<div class="doc indent1">
-<p data-x-en="Data structure used to store sets of points and then track them across document changes. Mostly used for point decorations, but can also track your own types, if you make sure they implement the PointSet.Value interface.">用于存储点集并在文档变更过程中跟踪它们的数据结构。主要用于<a href="#editor.Decoration.Point">点装饰</a>，但如果您确保自定义类型实现了<a href="#editor.PointSet.Value"><code>PointSet.Value</code></a>接口，也可以用于跟踪这些类型。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.values" class="def" id="editor.PointSet.values">values</a>: <span class="keyword">readonly</span> <a href="#editor.PointSet.T" class="ref">T</a>[]
-</pre>
-<div class="doc indent2">
-<p data-x-en="The values in this set.">此集合中的值。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.positions" class="def" id="editor.PointSet.positions">positions</a>: <span class="keyword">readonly</span> <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>[]
-</pre>
-<div class="doc indent2">
-<p data-x-en="The positions of the values in this set.">该集合中值的位置。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.length" class="def" id="editor.PointSet.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="The number of points in this set.">该集合中的点数。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.map" class="def" id="editor.PointSet.map">map</a>(<a href="#editor.PointSet.map.changes" class="def" id="editor.PointSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.PointSet.map.start" class="def" id="editor.PointSet.map.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted.">调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.merge" class="def" id="editor.PointSet.merge">merge</a>(
-    <a href="#editor.PointSet.merge.other" class="def" id="editor.PointSet.merge.other">other</a>: <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;,
-    <a href="#editor.PointSet.merge.maskFrom" class="def" id="editor.PointSet.merge.maskFrom">maskFrom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.PointSet.merge.maskTo" class="def" id="editor.PointSet.merge.maskTo">maskTo</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a> = maskFrom
-  ): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Returns the union of this set and the given set. If maskFrom/maskTo are given, drop any points from this between or at those positions.">返回此集合与给定集合的并集。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则删除 <code>this</code> 中位于这些位置之间或处于这些位置的点。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.at" class="def" id="editor.PointSet.at">at</a>(<a href="#editor.PointSet.at.pos" class="def" id="editor.PointSet.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#editor.PointSet.T" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
-</div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.PointSet.create" class="def" id="editor.PointSet.create">create</a>&lt;
-    <a href="#editor.PointSet.create.T" class="def" id="editor.PointSet.create.T">T</a> <span class="keyword">extends</span> <a href="#editor.PointSet.Value" class="ref">PointSet.Value</a>
-  &gt;(<a href="#editor.PointSet.create.source" class="def" id="editor.PointSet.create.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#editor.PointSet.create.T" class="ref">T</a>]&gt; |
-    ((<a href="#editor.PointSet.create.source.add" class="def" id="editor.PointSet.create.source.add">add</a>: (
-    <a href="#editor.PointSet.create.source.add.pos" class="def" id="editor.PointSet.create.source.add.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.PointSet.create.source.add.value" class="def" id="editor.PointSet.create.source.add.value">value</a>: <a href="#editor.PointSet.create.T" class="ref">T</a>
-  ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)): <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a href="#editor.PointSet.create.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Create a point set from an iterable of [position, value] tuples, or a function that calls its argument for every point to add.">从 <code>[position, value]</code> 元组的可迭代对象，或一个为每个要添加的点调用其参数的函数，创建一个点集。</p>
-</div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.PointSet.empty" class="def" id="editor.PointSet.empty">empty</a>: <a href="#editor.PointSet" class="ref">PointSet</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="The empty point set.">空点集。</p>
-</div>
-<pre class="refcode">}
-</pre>
-</section>
-<section class="interface">
-<pre class="refcode"><span class="keyword">interface</span> <a href="#editor.PointSet.Value" class="def heading" id="editor.PointSet.Value">PointSet.Value</a> {
-</pre>
-<div class="doc indent1">
-<p data-x-en="Objects stored in a point set must conform to this interface.">存储在点集中的对象必须符合此接口。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.Value.side" class="def" id="editor.PointSet.Value.side">side</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="The side of the point. Used to provide a sorting of points at the same position">点的侧面。用于对位于同一位置的点进行排序。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.Value.trackMode" class="def" id="editor.PointSet.Value.trackMode">trackMode</a>: <a href="#doc.ChangeSet.TrackMode" class="ref">ChangeSet.TrackMode</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Specifies whether the point should be deleted when content next to it is deleted. See mapPos.">指定在删除其旁边的内容时是否应删除该点。参见 <a href="#doc.ChangeSet.mapPos"><code>mapPos</code></a>。</p>
-</div>
-<pre class="refcode">  <a href="#editor.PointSet.Value.eq" class="def" id="editor.PointSet.Value.eq">eq</a>(<a href="#editor.PointSet.Value.eq.other" class="def" id="editor.PointSet.Value.eq.other">other</a>: <a href="#editor.PointSet.Value" class="ref">PointSet.Value</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Method to compare this value to another.">将此值与另一个值进行比较的方法。</p>
-</div>
-<pre class="refcode">}
-</pre>
-</section>
-<section class="class">
-<pre class="refcode"><span class="keyword">class</span> <a href="#editor.RangeSet" class="def heading" id="editor.RangeSet">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="def" id="editor.RangeSet.T">T</a> <span class="keyword">extends</span> <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a> = <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a>&gt; {
-</pre>
-<div class="doc indent1">
-<p data-x-en="Data structure that stores sets of ranges, for use with range decorations or other data types implementing RangeSet.Value.">用于存储范围集合的数据结构，可与<a href="#editor.Decoration.Range">范围装饰</a>或实现<a href="#editor.RangeSet.Value"><code>RangeSet.Value</code></a>的其他数据类型配合使用。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.values" class="def" id="editor.RangeSet.values">values</a>: <span class="keyword">readonly</span> <a href="#editor.RangeSet.T" class="ref">T</a>[]
-</pre>
-<div class="doc indent2">
-<p data-x-en="The value associated with the ranges in the set.">与集合中范围关联的值。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.from" class="def" id="editor.RangeSet.from">from</a>: <span class="keyword">readonly</span> <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>[]
-</pre>
-<div class="doc indent2">
-<p data-x-en="The start positions of the ranges in this set.">此集合中各范围的起始位置。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.to" class="def" id="editor.RangeSet.to">to</a>: <span class="keyword">readonly</span> <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>[]
-</pre>
-<div class="doc indent2">
-<p data-x-en="The end positions of the ranges.">范围的结束位置。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.length" class="def" id="editor.RangeSet.length">length</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="The number of ranges stored in this set.">此集合中存储的范围数量。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.map" class="def" id="editor.RangeSet.map">map</a>(<a href="#editor.RangeSet.map.changes" class="def" id="editor.RangeSet.map.changes">changes</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>, <a href="#editor.RangeSet.map.start" class="def" id="editor.RangeSet.map.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> = 0): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges.">调整给定变更集中的范围位置。返回包含更新后范围的集合。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.merge" class="def" id="editor.RangeSet.merge">merge</a>(
-    <a href="#editor.RangeSet.merge.other" class="def" id="editor.RangeSet.merge.other">other</a>: <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;,
-    <a href="#editor.RangeSet.merge.maskFrom" class="def" id="editor.RangeSet.merge.maskFrom">maskFrom</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.RangeSet.merge.maskTo" class="def" id="editor.RangeSet.merge.maskTo">maskTo</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a> = maskFrom
-  ): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Merge this set with another set. If maskFrom/maskTo are given, any ranges overlapping the masked range in this are not included in the merged set.">将此集合与另一个集合合并。如果提供了 <code>maskFrom</code>/<code>maskTo</code>，则 <code>this</code> 中与掩码范围重叠的任何范围都不会包含在合并后的集合中。</p>
-</div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.RangeSet.create" class="def" id="editor.RangeSet.create">create</a>&lt;<a href="#editor.RangeSet.create.T" class="def" id="editor.RangeSet.create.T">T</a> <span class="keyword">extends</span> <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a>&gt;(<a href="#editor.RangeSet.create.source" class="def" id="editor.RangeSet.create.source">source</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol">Iterable</a>&lt;[
-    <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.RangeSet.create.T" class="ref">T</a>
-  ]&gt; | ((<a href="#editor.RangeSet.create.source.add" class="def" id="editor.RangeSet.create.source.add">add</a>: (
-    <a href="#editor.RangeSet.create.source.add.from" class="def" id="editor.RangeSet.create.source.add.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.RangeSet.create.source.add.to" class="def" id="editor.RangeSet.create.source.add.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
-    <a href="#editor.RangeSet.create.source.add.value" class="def" id="editor.RangeSet.create.source.add.value">value</a>: <a href="#editor.RangeSet.create.T" class="ref">T</a>
-  ) =&gt; <span class="keyword">void</span>) =&gt; <span class="keyword">void</span>)): <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a href="#editor.RangeSet.create.T" class="ref">T</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="Create a range set from an iterable of [from, to, value] tuples, or a function that calls its argument for every range to add.">从 <code>[from, to, value]</code> 元组的可迭代对象创建一个范围集，或者使用一个函数，该函数对要添加的每个范围调用其参数。</p>
-</div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.RangeSet.empty" class="def" id="editor.RangeSet.empty">empty</a>: <a href="#editor.RangeSet" class="ref">RangeSet</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;
-</pre>
-<div class="doc indent2">
-<p data-x-en="The empty range set.">空范围集。</p>
-</div>
-<pre class="refcode">}
-</pre>
-</section>
-<section class="interface">
-<pre class="refcode"><span class="keyword">interface</span> <a href="#editor.RangeSet.Value" class="def heading" id="editor.RangeSet.Value">RangeSet.Value</a> {
-</pre>
-<div class="doc indent1">
-<p data-x-en="Values stored in a range set must conform to this interface.">存储在范围集中的值必须符合此接口。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.Value.inclusiveStart" class="def" id="editor.RangeSet.Value.inclusiveStart">inclusiveStart</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Whether content inserted at the start of this value's range is included in the range.">在此值的范围起始处插入的内容是否包含在该范围内。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.Value.inclusiveEnd" class="def" id="editor.RangeSet.Value.inclusiveEnd">inclusiveEnd</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Whether content inserted at the end is included.">是否包含在末尾插入的内容。</p>
-</div>
-<pre class="refcode">  <a href="#editor.RangeSet.Value.eq" class="def" id="editor.RangeSet.Value.eq">eq</a>(<a href="#editor.RangeSet.Value.eq.other" class="def" id="editor.RangeSet.Value.eq.other">other</a>: <a href="#editor.RangeSet.Value" class="ref">RangeSet.Value</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
-</pre>
-<div class="doc indent2">
-<p data-x-en="Compare this value to another.">将此值与另一个值进行比较。</p>
 </div>
 <pre class="refcode">}
 </pre>

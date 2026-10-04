@@ -2,46 +2,10 @@ import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'w
 import { Attributes, Elt, Node, Leaf, parse, Slice, Plot, serialize, Pos, ChangeSet, ValidationError, Mark } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
+import { findAbove, PointSet, RangeSet } from 'wordgard/set';
 import { enter, insertLineBreak, selectAll, undo, redo, killToLineEnd, yankKilled, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
 import { PhraseSet, phrases } from 'wordgard/phrases';
 import { history } from 'wordgard/history';
-
-function eqArray(a, b) {
-    if (!a || !b)
-        return a == b;
-    if (a == b)
-        return true;
-    if (a.length != b.length)
-        return false;
-    for (let i = 0; i < a.length; i++)
-        if (!a[i].eq(b[i]))
-            return false;
-    return true;
-}
-const exceptionSink = /*@__PURE__*/GardState.Facet.define();
-function logException(state, exception, context) {
-    let handler = state.facet(exceptionSink);
-    if (handler.length)
-        handler[0](exception);
-    else if (window.onerror)
-        window.onerror(String(exception), context, undefined, undefined, exception);
-    else if (context)
-        console.error(context + ":", exception);
-    else
-        console.error(exception);
-}
-function findAbove(array, start, n) {
-    let from = start, to = array.length;
-    for (;;) {
-        if (from == to)
-            return from;
-        let mid = (from + to) >> 1;
-        if (array[mid] > n)
-            to = mid;
-        else
-            from = mid + 1;
-    }
-}
 
 function addUpdated(sections, updated) {
     let result = [];
@@ -126,20 +90,25 @@ function isEmpty(changes) {
     return changes.length == 0 || changes.length == 2 && changes[1] == -1;
 }
 function addRange(ranges, from, to) {
-    if (!ranges.length || ranges[ranges.length - 1] < from) {
+    let last;
+    if (!ranges.length || (last = ranges[ranges.length - 1]) < from) {
         ranges.push(from, to);
-        return;
     }
-    let i = findAbove(ranges, 0, from) & -2, j = i;
-    if (j && ranges[j - 1] == from) {
-        j -= 2;
-        from = ranges[j];
+    else if (last == from) {
+        ranges[ranges.length - 1] = to;
     }
-    while (i < ranges.length && ranges[i] <= to) {
-        from = Math.min(from, ranges[i++]);
-        to = Math.max(to, ranges[i++]);
+    else {
+        let i = findAbove(ranges, 0, from) & -2, j = i;
+        if (j && ranges[j - 1] == from) {
+            j -= 2;
+            from = ranges[j];
+        }
+        while (i < ranges.length && ranges[i] <= to) {
+            from = Math.min(from, ranges[i++]);
+            to = Math.max(to, ranges[i++]);
+        }
+        ranges.splice(j, i - j, from, to);
     }
-    ranges.splice(j, i - j, from, to);
 }
 function joinRanges(ranges) {
     if (ranges.length == 1)
@@ -327,6 +296,8 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         static source = GardState.Facet.define({
             combine: sources => sources.concat(nodeSelection)
         });
+        static set(source) { return PointSet.create(source); }
+        static none = PointSet.empty;
     }
     Decoration.Point = Point;
     class Range {
@@ -348,6 +319,8 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
             return new AttributeRangeDecoration(attr, value, options);
         }
         static source = GardState.Facet.define();
+        static set(source) { return RangeSet.create(source); }
+        static none = RangeSet.empty;
     }
     Decoration.Range = Range;
 ;return Decoration})({});
@@ -506,194 +479,6 @@ function nodeSelection(state) {
     return PointSet.empty;
 }
 const none = [];
-class PointSet {
-    values;
-    positions;
-    constructor(
-    values, 
-    positions) {
-        this.values = values;
-        this.positions = positions;
-    }
-    get length() { return this.positions.length; }
-    get size() { return this.positions.length ? this.positions[this.positions.length - 1] : 0; }
-    map(changes, start = 0) {
-        if (changes.empty)
-            return this;
-        let positions = this.positions.slice();
-        let pos = start, i = 0, startB = start && changes.mapPos(start, -1);
-        let deleted = [], deletions = 0;
-        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
-            let off = fromB - fromA, end = last ? toA : toA - 1;
-            if (end > pos) {
-                let nextI = findAbove(positions, i, end - start);
-                if (off)
-                    for (; i < nextI; i++)
-                        positions[i] += off;
-                else
-                    i = nextI;
-                pos = end;
-            }
-        }, (_fromA, toA) => {
-            let nextI = findAbove(positions, i, toA + 1 + start);
-            for (; i < nextI; i++) {
-                let mapped = changes.mapPos(positions[i] + start, this.values[i].side < 0 ? -1 : 1, this.values[i].trackMode);
-                if (mapped == null) {
-                    addDel(deleted, i);
-                    deletions++;
-                }
-                else
-                    positions[i] = mapped - startB;
-            }
-            pos = toA + 1;
-        });
-        if (!deletions)
-            return new PointSet(this.values, positions);
-        return new PointSet(applyDel(deleted, deletions, this.values), applyDel(deleted, deletions, positions));
-    }
-    merge(other, maskFrom, maskTo = maskFrom) {
-        if (!this.length)
-            return other;
-        if (!other.length && maskFrom == null)
-            return this;
-        let posA = this.positions, posB = other.positions;
-        let pos = new Array((maskFrom == null ? posA.length : 0) + posB.length), values = new Array(pos.length);
-        for (let i = 0, a = 0, b = 0;;) {
-            if (a < posA.length && (b == posB.length || (posA[a] - posB[b] || this.values[a].side - other.values[b].side) < 0)) {
-                if (maskFrom == null || maskFrom > posA[a] || maskTo < posA[a]) {
-                    pos[i] = posA[a];
-                    values[i++] = this.values[a];
-                }
-                a++;
-            }
-            else if (b < posB.length) {
-                pos[i] = posB[b];
-                values[i++] = other.values[b++];
-            }
-            else {
-                return new PointSet(values, pos);
-            }
-        }
-    }
-    compareRange(fromA, b, fromB, len, change) {
-        let a = this, endB = fromB + len;
-        if (a != b || fromA != fromB) {
-            let iA = findAbove(a.positions, 0, fromA - 1), lA = a.positions.length;
-            let iB = findAbove(b.positions, 0, fromB - 1), lB = b.positions.length;
-            let off = fromB - fromA;
-            let sameVal = a.values == b.values;
-            for (;;) {
-                let nextA = iA < lA ? a.positions[iA] + off : 1e9;
-                let nextB = iB < lB ? b.positions[iB] : 1e9;
-                let next = Math.min(nextA, nextB);
-                if (next > endB)
-                    break;
-                if (nextA == nextB) {
-                    if (!sameVal && !a.values[iA].eq(b.values[iB]))
-                        change(next, a.values[iA]);
-                    iA++;
-                    iB++;
-                }
-                else if (nextA < nextB) {
-                    change(nextA, a.values[iA++]);
-                }
-                else {
-                    change(nextB, b.values[iB++]);
-                }
-            }
-        }
-    }
-    iter() {
-        return new PointIterator(this);
-    }
-    at(pos) {
-        let index = findAbove(this.positions, 0, pos - 1);
-        return index < this.positions.length && this.positions[index] == pos ? this.values[index] : undefined;
-    }
-    static create(source) {
-        if (typeof source != "function") {
-            let array = source;
-            source = add => { for (let [pos, value] of array)
-                add(pos, value); };
-        }
-        let positions = [], values = [], curPos = -1, curVal;
-        source((pos, value) => {
-            if (curPos > pos || curPos == pos && curVal.side > value.side) {
-                for (let i = positions.length;;) {
-                    positions[i] = positions[i - 1];
-                    values[i] = values[i - 1];
-                    --i;
-                    if (!i || (positions[i - 1] - pos || values[i - 1].side - value.side) <= 0) {
-                        positions[i] = pos;
-                        values[i] = value;
-                        break;
-                    }
-                }
-            }
-            else {
-                positions.push(pos);
-                values.push(value);
-                curPos = pos;
-                curVal = value;
-            }
-        });
-        return new PointSet(values, positions);
-    }
-    static empty = /*@__PURE__*/(() => new PointSet(none, none))();
-}
-class PointIterator {
-    set;
-    constructor(set) {
-        this.set = set;
-        this.fill(0);
-    }
-    get to() { return this.from; }
-    fill(i) {
-        this.i = i;
-        if (i < this.set.positions.length) {
-            this.from = this.set.positions[i];
-            this.value = this.set.values[i];
-        }
-        else {
-            this.from = 1e8;
-            this.value = null;
-        }
-    }
-    next() {
-        if (this.value)
-            this.fill(this.i + 1);
-    }
-    get side() {
-        return this.value ? this.value.side : 1;
-    }
-    goto(pos, inclusive) {
-        let i = findAbove(this.set.positions, 0, pos - 1);
-        if (!inclusive) {
-            while (i < this.set.values.length && this.set.values[i].side < 1000000000)
-                i++;
-        }
-        this.fill(i);
-    }
-}
-function addDel(deleted, i) {
-    let last = deleted.length - 1;
-    if (last >= 0 && deleted[last] == i)
-        deleted[last] = i + 1;
-    else
-        deleted.push(i, i + 1);
-}
-function applyDel(deleted, deletions, array) {
-    let result = new Array(array.length - deletions);
-    for (let iA = 0, iR = 0, iD = 0;;) {
-        let last = iD == deleted.length, from = last ? array.length : deleted[iD++];
-        while (iA < from)
-            result[iR++] = array[iA++];
-        if (last)
-            return result;
-        let to = deleted[iD++];
-        iA += to - from;
-    }
-}
 function getDecoSet(state) {
     let set = { points: new Map, ranges: new Map };
     for (let src of state.facet(Decoration.Point.source))
@@ -701,169 +486,6 @@ function getDecoSet(state) {
     for (let src of state.facet(Decoration.Range.source))
         set.ranges.set(src, src(state));
     return set;
-}
-class RangeSet {
-    values;
-    from;
-    to;
-    constructor(
-    values, 
-    from, 
-    to) {
-        this.values = values;
-        this.from = from;
-        this.to = to;
-    }
-    get length() { return this.from.length; }
-    get size() { return this.to.length ? this.to[this.to.length - 1] : 0; }
-    map(changes, start = 0) {
-        if (changes.empty || !this.length)
-            return this;
-        let from = this.from.slice(), to = this.to.slice();
-        let pos = start, i = 0, startB = start && changes.mapPos(start, -1);
-        let deleted = [], deletions = 0;
-        changes.iterGaps((fromA, toA, fromB, _toB, last) => {
-            let off = fromB - fromA, end = last ? toA : toA - 1;
-            if (end > pos) {
-                let nextI = findAbove(to, i, end - start);
-                if (off)
-                    for (; i < nextI; i++) {
-                        from[i] += off;
-                        to[i] += off;
-                    }
-                else
-                    i = nextI;
-                pos = end;
-            }
-        }, (_fromA, toA) => {
-            let nextI = findAbove(from, i, toA - start);
-            for (; i < nextI; i++) {
-                let value = this.values[i];
-                let mappedFrom = changes.mapPos(from[i] + start, value.inclusiveStart ? -1 : 1);
-                let mappedTo = changes.mapPos(to[i] + start, value.inclusiveEnd ? 1 : -1);
-                if (mappedFrom >= mappedTo) {
-                    addDel(deleted, i);
-                    deletions++;
-                }
-                else {
-                    from[i] = mappedFrom - startB;
-                    to[i] = mappedTo - startB;
-                }
-            }
-            pos = toA + 1;
-        });
-        if (!deletions)
-            return new RangeSet(this.values, from, to);
-        return new RangeSet(applyDel(deleted, deletions, this.values), applyDel(deleted, deletions, from), applyDel(deleted, deletions, to));
-    }
-    merge(other, maskFrom, maskTo = maskFrom) {
-        if (!this.length)
-            return other;
-        if (!other.length && maskFrom == null)
-            return this;
-        let fromA = this.from, fromB = other.from;
-        let from = new Array((maskFrom == null ? fromA.length : 0) + fromB.length);
-        let to = new Array(from.length), values = new Array(from.length);
-        for (let i = 0, a = 0, b = 0, at = 0;;) {
-            if (a < fromA.length && (b == fromB.length || fromA[a] < fromB[b])) {
-                if (maskFrom == null || maskFrom >= this.to[a] || maskTo <= this.from[a]) {
-                    if ((from[i] = fromA[a]) < at)
-                        throw new Error("Overlapping ranges");
-                    at = to[i] = this.to[a];
-                    values[i++] = this.values[a];
-                }
-                a++;
-            }
-            else if (b < fromB.length) {
-                if ((from[i] = fromB[b]) < at)
-                    throw new Error("Overlapping ranges");
-                at = to[i] = other.to[b];
-                values[i++] = other.values[b++];
-            }
-            else {
-                return new RangeSet(values, from, to);
-            }
-        }
-    }
-    iter() {
-        return new RangeIterator(this);
-    }
-    compareRange(fromA, b, fromB, len, change) {
-        let a = this, toB = fromB + len;
-        if (a != b || fromA != fromB) {
-            let iA = findAbove(a.to, 0, fromA - 1), lA = a.from.length;
-            let iB = findAbove(b.to, 0, fromB - 1), lB = b.from.length;
-            let off = fromB - fromA;
-            let sameVals = a.values == b.values;
-            for (;;) {
-                let [startA, endA] = iA < lA ? [a.from[iA] + off, a.to[iA] + off] : [1e9, 1e9];
-                let [startB, endB] = iB < lB ? [b.from[iB], b.to[iB]] : [1e9, 1e9];
-                let start = Math.min(startA, startB);
-                if (start > toB)
-                    break;
-                if (startA == startB) {
-                    if (endA != endB || !sameVals && !a.values[iA].eq(b.values[iB]))
-                        change(start, Math.max(endA, endB));
-                    iA++;
-                    iB++;
-                }
-                else if (startA < startB) {
-                    change(startA, endA);
-                    iA++;
-                }
-                else {
-                    change(startB, endB);
-                    iB++;
-                }
-            }
-        }
-    }
-    static create(source) {
-        if (typeof source != "function") {
-            let array = source;
-            source = add => { for (let [from, to, value] of array)
-                add(from, to, value); };
-        }
-        let from = [], to = [], values = [], curPos = -1;
-        source((f, t, value) => {
-            if (f >= t)
-                throw new Error("Ranges cannot be empty");
-            if (f < curPos)
-                throw new Error("Ranges must be added in order and cannot overlap");
-            from.push(f);
-            to.push(t);
-            curPos = t;
-            values.push(value);
-        });
-        return new RangeSet(values, from, to);
-    }
-    static empty = /*@__PURE__*/(() => new RangeSet(none, none, none))();
-}
-class RangeIterator {
-    set;
-    constructor(set) {
-        this.set = set;
-        this.fill(0);
-    }
-    fill(i) {
-        this.i = i;
-        if (i < this.set.from.length) {
-            this.from = this.set.from[i];
-            this.to = this.set.to[i];
-            this.value = this.set.values[i];
-        }
-        else {
-            this.from = this.to = 1e8;
-            this.value = null;
-        }
-    }
-    next() {
-        if (this.value)
-            this.fill(this.i + 1);
-    }
-    goto(pos) {
-        this.fill(findAbove(this.set.to, 0, pos));
-    }
 }
 function compareDecoSet(setA, setB, cmp) {
     for (let [srcA, valA] of setA)
@@ -963,43 +585,43 @@ function addAtomicityChanges(changes, prev, nodes) {
     }
     return added.length ? addUpdated(changes, added) : changes;
 }
-class HeapIterator {
-    rangeHeap;
-    pointHeap;
+class SpanIterator {
+    ranges;
+    points;
     end;
     active = [];
+    activeEnd = [];
     from;
     to;
     point = null;
+    pointSource = null;
     done = false;
-    constructor(rangeHeap, pointHeap, start, end) {
-        this.rangeHeap = rangeHeap;
-        this.pointHeap = pointHeap;
+    constructor(ranges, points, start, end) {
+        this.ranges = ranges;
+        this.points = points;
         this.end = end;
-        for (let i = rangeHeap.length >> 1; i >= 0; i--)
-            bubble(rangeHeap, i, cmpRangeFrom);
-        for (let i = pointHeap.length >> 1; i >= 0; i--)
-            bubble(pointHeap, i, cmpPoint);
         this.from = this.to = start;
     }
     next() {
         if (this.done)
             return this;
-        if (this.point) {
-            this.point.next();
-            if (!this.point.value)
-                popHeap(this.pointHeap, cmpPoint);
-            else
-                bubble(this.pointHeap, 0, cmpPoint);
+        if (this.point)
             this.point = null;
-        }
-        let { rangeHeap, pointHeap, active } = this;
+        let { ranges, points, active, activeEnd } = this;
         while (true) {
-            let [startPos, startSide] = rangeHeap.length
-                ? [rangeHeap[0].from, rangeHeap[0].value.inclusiveStart ? -1 : 1]
+            let [startPos, startSide] = ranges.value
+                ? [ranges.from, ranges.value.inclusiveStart ? -1 : 1]
                 : [1e9, 0];
-            let [endPos, endSide] = active.length ? [active[0].to, active[0].value.inclusiveEnd ? 1 : -1] : [1e9, 0];
-            let { from: pointPos, side: pointSide } = pointHeap.length ? pointHeap[0] : { from: 1e9, side: 1 };
+            let endPos = 1e9, endSide = 0, nextActive = -1;
+            for (let i = 0; i < active.length; i++) {
+                let pos = activeEnd[i], side = active[i].inclusiveEnd ? 1 : -1;
+                if ((pos - endPos || side - endSide) < 0) {
+                    endPos = pos;
+                    endSide = side;
+                    nextActive = i;
+                }
+            }
+            let { pos: pointPos, side: pointSide } = points.value ? points : { pos: 1e9, side: 1 };
             let nextPos = Math.min(startPos, endPos, pointPos);
             if (this.to == this.end && nextPos > this.to) {
                 this.done = true;
@@ -1011,72 +633,24 @@ class HeapIterator {
                 break;
             }
             else if (pointPos == nextPos && (startPos > pointPos || pointSide < 0) && (endPos > pointPos || pointSide < 0)) {
-                this.point = this.pointHeap[0];
-                this.from = this.to = pointPos;
+                this.point = this.points.value;
+                this.pointSource = this.points.set;
+                this.from = this.to = this.points.pos;
+                this.points.next();
                 break;
             }
             else if ((startPos - endPos || startSide - endSide) < 0) {
-                let first = rangeHeap[0];
-                sink(active, active.push(first) - 1, cmpRangeTo);
-                popHeap(rangeHeap, cmpRangeFrom);
+                active.push(this.ranges.value);
+                activeEnd.push(this.ranges.to);
+                this.ranges.next();
             }
             else {
-                let first = active[0];
-                first.next();
-                if (first.value)
-                    sink(rangeHeap, rangeHeap.push(first) - 1, cmpRangeFrom);
-                popHeap(active, cmpRangeTo);
+                active.splice(nextActive, 1);
+                activeEnd.splice(nextActive, 1);
             }
         }
         return this;
     }
-}
-function bubble(heap, index, cmp) {
-    for (let cur = heap[index];;) {
-        let childIndex = (index << 1) + 1;
-        if (childIndex >= heap.length)
-            break;
-        let child = heap[childIndex];
-        if (childIndex + 1 < heap.length && cmp(child, heap[childIndex + 1]) >= 0) {
-            child = heap[childIndex + 1];
-            childIndex++;
-        }
-        if (cmp(cur, child) < 0)
-            break;
-        heap[childIndex] = cur;
-        heap[index] = child;
-        index = childIndex;
-    }
-}
-function sink(heap, index, cmp) {
-    let elt = heap[index];
-    while (index > 0) {
-        let parent = (index - 1) >> 1;
-        if (cmp(heap[parent], elt) < 0)
-            break;
-        heap[index] = heap[parent];
-        heap[parent] = elt;
-        index = parent;
-    }
-}
-function popHeap(heap, cmp) {
-    let last = heap.pop();
-    if (heap.length) {
-        heap[0] = last;
-        bubble(heap, 0, cmp);
-    }
-}
-function cmpBool(a, b) {
-    return a ? (b ? 0 : 1) : (b ? -1 : 0);
-}
-function cmpRangeFrom(a, b) {
-    return a.from - b.from || cmpBool(b.value.inclusiveStart, a.value.inclusiveStart);
-}
-function cmpRangeTo(a, b) {
-    return a.to - b.to || cmpBool(a.value.inclusiveEnd, b.value.inclusiveEnd);
-}
-function cmpPoint(a, b) {
-    return a.from - b.from || a.side - b.side;
 }
 function nodeWrappers(schema, tag, active, atom) {
     let wrappers;
@@ -1084,8 +658,7 @@ function nodeWrappers(schema, tag, active, atom) {
         if (mark.type.element)
             (wrappers || (wrappers = [])).push(mark);
     if (active.length) {
-        for (let cur of active) {
-            let val = cur.value;
+        for (let val of active) {
             if (val instanceof WrapperRangeDecoration && (tagScope(tag, atom) & val.scope) &&
                 (!val.query || schema.matchNode(tag.type, val.query)))
                 (wrappers || (wrappers = [])).push(val);
@@ -1119,8 +692,9 @@ class DecoIterator {
     globalAttrs;
     schema;
     pos;
-    rangeIter = [];
-    pointIter = [];
+    rangeCursor;
+    pointSets;
+    pointCursor;
     endWidgets;
     constructor(state, decoSet) {
         this.state = state;
@@ -1133,16 +707,9 @@ class DecoIterator {
         this.globalAttrs = state.facet(tagAttribute);
         this.pos = state.doc.resolve(0);
         this.schema = state.schema;
-        for (let s of state.facet(Decoration.Range.source)) {
-            let set = decoSet.ranges.get(s);
-            if (set?.length)
-                this.rangeIter.push(set.iter());
-        }
-        for (let s of state.facet(Decoration.Point.source)) {
-            let set = decoSet.points.get(s);
-            if (set?.length)
-                this.pointIter.push(set.iter());
-        }
+        this.rangeCursor = RangeSet.cursor(state.facet(Decoration.Range.source).map(s => s(state)));
+        this.pointSets = state.facet(Decoration.Point.source).map(s => s(state));
+        this.pointCursor = PointSet.cursor(this.pointSets);
     }
     widgets(tag, place, walker) {
         if (place == 2 && tag.type.isInline)
@@ -1163,11 +730,9 @@ class DecoIterator {
             typeof tw.widget == "function");
     }
     walk(from, inclusiveStart, to, walker) {
-        for (let i of this.rangeIter)
-            i.goto(from);
-        for (let i of this.pointIter)
-            i.goto(from, inclusiveStart);
-        let iter = new HeapIterator(this.rangeIter.filter(i => i.value), this.pointIter.filter(i => i.value), from, to);
+        this.rangeCursor.goto(from);
+        this.pointCursor.goto(from, inclusiveStart ? -1e9 : 1000000000);
+        let iter = new SpanIterator(this.rangeCursor, this.pointCursor, from, to);
         let pos = this.pos.advance(from - this.pos.pos), started = inclusiveStart;
         let atomParent;
         for (let p = pos.parent; p; p = p.parent)
@@ -1238,7 +803,7 @@ class DecoIterator {
                     iter.next();
             }
             else if (iter.point) {
-                let value = iter.point.value;
+                let value = iter.point;
                 if (value instanceof WidgetDecoration) {
                     walker.widget(value.widget, value.side);
                 }
@@ -1249,9 +814,9 @@ class DecoIterator {
                         pendingPos = pos.pos;
                     }
                     if (value instanceof ShapeDecoration &&
-                        (!pendingShape || compareSetPrec(pendingShapeSet, iter.point.set, this.pointIter))) {
+                        (!pendingShape || compareSetPrec(pendingShapeSet, iter.pointSource, this.pointSets))) {
                         pendingShape = value;
-                        pendingShapeSet = iter.point.set;
+                        pendingShapeSet = iter.pointSource;
                     }
                     else {
                         pendingDeco.push(value);
@@ -1299,8 +864,7 @@ class DecoIterator {
             if (tag.type == type) {
                 shape = target && shape instanceof Elt ? shape.wrap(elt, target) : elt.fill([shape]);
             }
-        for (let iter of active) {
-            let deco = iter.value;
+        for (let deco of active) {
             if (deco instanceof AttributeRangeDecoration && (scope & deco.scope) &&
                 (!deco.query || this.schema.matchNode(tag.type, deco.query)))
                 Attributes.push(add || (add = []), deco.attribute, deco.value);
@@ -1316,13 +880,38 @@ class DecoIterator {
 }
 function compareSetPrec(setA, setB, array) {
     if (setA != setB)
-        for (let i of array) {
-            if (i.set == setA)
+        for (let set of array) {
+            if (set == setA)
                 return -1;
-            if (i.set == setB)
+            if (set == setB)
                 return 1;
         }
     return 0;
+}
+
+function eqArray(a, b) {
+    if (!a || !b)
+        return a == b;
+    if (a == b)
+        return true;
+    if (a.length != b.length)
+        return false;
+    for (let i = 0; i < a.length; i++)
+        if (!a[i].eq(b[i]))
+            return false;
+    return true;
+}
+const exceptionSink = /*@__PURE__*/GardState.Facet.define();
+function logException(state, exception, context) {
+    let handler = state.facet(exceptionSink);
+    if (handler.length)
+        handler[0](exception);
+    else if (window.onerror)
+        window.onerror(String(exception), context, undefined, undefined, exception);
+    else if (context)
+        console.error(context + ":", exception);
+    else
+        console.error(exception);
 }
 
 function getSelection(root) {
@@ -1362,8 +951,8 @@ function rmDOM(dom) {
 }
 function isBlockElement(node) {
     let tile = node.wgTile;
-    if (tile?.node)
-        return tile.node.isBlock;
+    if (tile?.tag)
+        return tile.tag.type.isBlock;
     return node.nodeType == 1 && /^(DIV|P|LI|UL|OL|BLOCKQUOTE|DD|DT|H\d|SECTION|PRE)$/.test(node.nodeName);
 }
 function isBlocking(node) {
@@ -1674,7 +1263,7 @@ class Tile {
     get isSpanning() { return false; }
     get isComposition() { return (this.flags & 128) > 0; }
     get isPoint() { return (this.flags & 16) > 0; }
-    get node() { return null; }
+    get tag() { return null; }
     posBeforeChild(child, ownStart = this.posAtStart) {
         for (let i = 0, pos = ownStart;; i++) {
             let cur = this.children[i];
@@ -1705,7 +1294,7 @@ class Tile {
     }
     get nodeParent() {
         let tile = this;
-        while (!tile.node)
+        while (!tile.tag)
             tile = tile.parent;
         return tile;
     }
@@ -1723,7 +1312,7 @@ class Tile {
     }
     nearestNode() {
         let tile = this;
-        while (!tile.node)
+        while (!tile.tag)
             tile = tile.parent;
         return tile;
     }
@@ -1791,15 +1380,15 @@ class CompositeTile extends Tile {
             next = rmDOM(next);
     }
     posAtCoordsInner(start, state, x, y, textblock, orientation) {
-        let { node } = this, outerOrientation = orientation;
-        if (node && node.isPlot) {
-            orientation = node.type.orientation == "row" ? 0 : 1;
-            if (node.isTextblock)
-                textblock = TextblockMap.get(state, start, node);
-            else if (node.isBlock)
+        let { tag } = this, outerOrientation = orientation;
+        if (tag && tag.isPlot) {
+            orientation = tag.type.orientation == "row" ? 0 : 1;
+            if (tag.isTextblock)
+                textblock = TextblockMap.get(state, start, start ? state.doc.plotAt(start - 1) : state.doc);
+            else if (tag.type.isBlock)
                 textblock = null;
         }
-        else if (node && node.isText) {
+        else if (tag && tag.isText) {
             orientation = 0;
         }
         let result = this.isAtom || !this.children.length ? null
@@ -1809,7 +1398,7 @@ class CompositeTile extends Tile {
             return result;
         let rect = this.dom.getBoundingClientRect();
         let after = outerOrientation == 0 ? x > (rect.left + rect.right) / 2 : y > (rect.top + rect.bottom) / 2;
-        let target = this.node && this.node.type.isSelectable &&
+        let target = this.tag && this.tag.type.isSelectable &&
             x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom ? start : null;
         return CoordPos.create(start + (after ? this.length - 2 * this.boundary : 0), after ? -1 : 1, target);
     }
@@ -1836,7 +1425,7 @@ class CompositeTile extends Tile {
         let pos = this.posBeforeChild(closest, start);
         if (closest.dom.nodeName == "BR")
             return CoordPos.create(pos, 1);
-        if (closest.node && closest.node.isPlot && closest.node.isInline) {
+        if (closest.tag && closest.tag.isPlot && closest.tag.type.isInline) {
             if (x > rect.right)
                 return CoordPos.create(pos + closest.length, -1);
             if (x < rect.left)
@@ -1922,7 +1511,7 @@ class DocTile extends CompositeTile {
             .updateRanges(state, getDecoSet(state), [0, state.doc.length], wg);
     }
     get isDoc() { return true; }
-    get node() { return this.state.doc; }
+    get tag() { return this.state.doc.tag; }
     update(state, changes, wg, composition) {
         let decoSet = getDecoSet(state);
         let changed = findChangedRanges(this.state, this.decoSet, state, decoSet, changes);
@@ -1976,7 +1565,7 @@ class DocTile extends CompositeTile {
     nearest(dom, requireNode = false) {
         for (let cur = dom; cur; cur = cur.parentNode) {
             let elt = cur.wgTile;
-            if (elt && (!requireNode || elt.node) && this.owns(elt))
+            if (elt && (!requireNode || elt.tag) && this.owns(elt))
                 return elt;
         }
         return null;
@@ -1997,7 +1586,7 @@ class DocTile extends CompositeTile {
             for (let ch of parent.children) {
                 let end = off + ch.length;
                 if (pos < end) {
-                    if (off == pos && ch.node || ch instanceof TextTile)
+                    if (off == pos && ch.tag || ch instanceof TextTile)
                         return ch;
                     parent = ch;
                     off += ch.boundary;
@@ -2129,7 +1718,7 @@ class DocTile extends CompositeTile {
                 dom = dom.parentNode;
             domBefore = dom.previousSibling;
         }
-        if (elt.node && elt.node.isInline && elt.node.isPlot && (!domBefore || !domBefore.nextSibling))
+        if (elt.tag && elt.tag.type.isInline && elt.tag.isPlot && (!domBefore || !domBefore.nextSibling))
             return domBefore ? elt.posAfter : elt.posBefore;
         while (domBefore && !((eltBefore = domBefore.wgTile) && eltBefore.parent == elt))
             domBefore = domBefore.previousSibling;
@@ -2162,18 +1751,18 @@ function textTileRect(tile, offset) {
 }
 class EltTile extends CompositeTile {
     elt;
-    _node;
-    constructor(elt, _node, flags, length, dom) {
+    _tag;
+    constructor(elt, _tag, flags, length, dom) {
         super(dom, flags);
         this.elt = elt;
-        this._node = _node;
+        this._tag = _tag;
         this.length = length;
     }
     get isSpanning() { return (this.flags & 4) > 0; }
-    get isNodeOuter() { return !!this.node; }
-    get isAtom() { return !!this._node && (this.flags & 512) > 0; }
-    get boundary() { return this._node && !(this.flags & 512) ? 1 : 0; }
-    get node() { return this._node; }
+    get isNodeOuter() { return !!this.tag; }
+    get isAtom() { return !!this._tag && (this.flags & 512) > 0; }
+    get boundary() { return this._tag && !(this.flags & 512) ? 1 : 0; }
+    get tag() { return this._tag; }
     get contentTile() {
         if (!(this.flags & 1024))
             return null;
@@ -2182,7 +1771,7 @@ class EltTile extends CompositeTile {
                 return ch.contentTile;
         return this;
     }
-    static of(elt, node, flags, length, dom) {
+    static of(elt, tag, flags, length, dom) {
         if (elt.hasContent) {
             flags |= 1024;
             if (elt.children.length > 1) {
@@ -2191,7 +1780,7 @@ class EltTile extends CompositeTile {
                     flags |= 4096;
             }
         }
-        return new EltTile(elt, node, flags, length, dom || elt.outerDOM());
+        return new EltTile(elt, tag, flags, length, dom || elt.outerDOM());
     }
 }
 function setUneditable(dom) {
@@ -2205,16 +1794,16 @@ function setUneditable(dom) {
 }
 class WidgetTile extends Tile {
     widget;
-    _node;
-    constructor(widget, _node, flags, dom, length = 0) {
+    _tag;
+    constructor(widget, _tag, flags, dom, length = 0) {
         super(dom, flags);
         this.widget = widget;
-        this._node = _node;
+        this._tag = _tag;
         this.length = length;
     }
-    get isNodeOuter() { return !!this._node; }
+    get isNodeOuter() { return !!this._tag; }
     get isAtom() { return true; }
-    get node() { return this._node; }
+    get tag() { return this._tag; }
     get children() { return noChildren; }
     ignoreEvent(event) { return !this.widget.type.propagateEvent(event); }
     get ignoreMutations() { return !this.widget.type.editable; }
@@ -2231,7 +1820,7 @@ class WidgetTile extends Tile {
             ? JSON.stringify(this.widget.value) : super.toString();
     }
     posAtCoordsInner(start, state, x, y, textblock, orientation) {
-        if (!this.node)
+        if (!this.tag)
             return CoordPos.create(start, 1);
         let rect = this.dom.nodeType == 1 ? this.dom.getBoundingClientRect()
             : textRange(this.dom, 0, this.length).getBoundingClientRect();
@@ -2386,7 +1975,7 @@ class TilePointer {
         let { index, tile, parent } = this;
         for (;;) {
             if (!index) {
-                if (!parent || (tile instanceof EltTile ? tile.node : !(tile instanceof TextTile)))
+                if (!parent || (tile instanceof EltTile ? tile.tag : !(tile instanceof TextTile)))
                     break;
                 ({ index, tile, parent } = parent);
             }
@@ -2431,7 +2020,7 @@ class ContentUpdate {
                 }
                 else {
                     this.reused.set(tile, 2);
-                    let inner = EltTile.of(tile.elt, tile.node, tile.flags, tile.boundary * 2, tile.dom);
+                    let inner = EltTile.of(tile.elt, tile.tag, tile.flags, tile.boundary * 2, tile.dom);
                     this.new.addChild(inner);
                     this.new = inner;
                 }
@@ -2467,17 +2056,17 @@ class ContentUpdate {
                         for (let w = this.new; w && w.isWrapper; w = w.parent)
                             wrappers++;
                         let shape = tile instanceof EltTile ? tile.elt : tile instanceof WidgetTile ? tile.widget : null;
-                        if (!shape || !tile.node)
+                        if (!shape || !tile.tag)
                             throw new Error("Unexpected atom tile");
-                        this.partialNode = { node: tile.node, reuse: tile, shape, wrappers };
+                        this.partialNode = { tag: tile.tag, length: to - from, reuse: tile, shape, wrappers };
                     }
                     else {
                         if (!this.partialNode)
                             throw new Error("Missing partial node");
                         if (to == tile.length) {
-                            let { node, shape, reuse } = this.partialNode;
+                            let { tag, length, shape, reuse } = this.partialNode;
                             this.partialNode = null;
-                            this.new.addChild(this.buildNodeShape(node, shape, reuse));
+                            this.new.addChild(this.buildNodeShape(tag, length + (to - from), shape, reuse));
                         }
                     }
                 }
@@ -2512,13 +2101,13 @@ class ContentUpdate {
                     index++;
                 }
                 else {
-                    if (tile.node) {
-                        while (!nw.node && nw.parent)
+                    if (tile.tag) {
+                        while (!nw.tag && nw.parent)
                             nw = nw.parent;
                         if (!nw.parent)
                             break;
-                        if (!nw.node.tag.eq(tile.node.tag) &&
-                            (this.deco.hasEndWidget(tile.node.type) || this.deco.hasEndWidget(nw.node.type)))
+                        if (!nw.tag.eq(tile.tag) &&
+                            (this.deco.hasEndWidget(tile.tag.type) || this.deco.hasEndWidget(nw.tag.type)))
                             cut.push(pos);
                         nw = nw.parent;
                         if (!nw)
@@ -2611,7 +2200,7 @@ class ContentUpdate {
         this.deco.walk(start, includeStart, end, {
             enter: (node, elt, wrappers) => {
                 this.openWrappers(wrappers, reuse);
-                let tile = this.buildNodeShape(node, elt, reuse ? this.old.tileAfter() : null);
+                let tile = this.buildNodeShape(node.tag, node.length, elt, reuse ? this.old.tileAfter() : null);
                 this.new.addChild(tile);
                 this.new = tile.contentTile;
                 if (!this.new)
@@ -2649,14 +2238,14 @@ class ContentUpdate {
                     }
                 }
                 else if (partial != null) {
-                    this.partialNode = { node, shape, wrappers: wrapCount, reuse: reuse ? this.old.tileAfter() : null };
+                    this.partialNode = { tag: node.tag, length: partial, shape, wrappers: wrapCount, reuse: reuse ? this.old.tileAfter() : null };
                     if (reuse)
                         this.old = this.old.walk(partial, 1);
                     this.posB += partial;
                     return;
                 }
                 else {
-                    this.new.addChild(this.buildNodeShape(node, shape, reuse ? this.old.tileAfter() : null));
+                    this.new.addChild(this.buildNodeShape(node.tag, node.length, shape, reuse ? this.old.tileAfter() : null));
                 }
                 for (let i = 0; i < wrapCount; i++)
                     this.up();
@@ -2668,13 +2257,13 @@ class ContentUpdate {
                 if (!this.partialNode)
                     throw new Error("Continuing unknown partial node");
                 this.posB += length;
-                this.partialNode.node = node;
+                this.partialNode.tag = node.tag;
                 if (reuse)
                     this.old = this.old.walk(length, 1);
                 if (done) {
-                    let { node, shape, wrappers, reuse } = this.partialNode;
+                    let { tag, shape, wrappers, reuse } = this.partialNode;
                     this.partialNode = null;
-                    this.new.addChild(this.buildNodeShape(node, shape, reuse));
+                    this.new.addChild(this.buildNodeShape(tag, node.length, shape, reuse));
                     for (let i = 0; i < wrappers; i++)
                         this.up();
                 }
@@ -2724,7 +2313,7 @@ class ContentUpdate {
         }
         return null;
     }
-    buildNodeShape(node, shape, reuse, inEditable = true, afterContent = 0) {
+    buildNodeShape(tag, length, shape, reuse, inEditable = true, afterContent = 0) {
         if (shape instanceof Elt) {
             if (inEditable && !shape.hasContent) {
                 if (Attributes.get(shape.attrs, "contenteditable") == null && !/^(br|hr|img|input|wbr)$/i.test(shape.tagName))
@@ -2740,9 +2329,9 @@ class ContentUpdate {
                 else if (!strict)
                     updateAttributes(dom, reusable.elt.attrs, shape.attrs);
             }
-            let flags = (node ? (shape.hasContent ? 0 : 512)
+            let flags = (tag ? (shape.hasContent ? 0 : 512)
                 : 1 | (shape.hasContent ? 0 : 16)) | afterContent;
-            let tile = EltTile.of(shape, node, flags, node ? node.length : 0, dom);
+            let tile = EltTile.of(shape, tag, flags, tag ? length : 0, dom);
             let afterContentInner = 0;
             for (let ch of shape.children) {
                 if (ch === 0) {
@@ -2750,7 +2339,7 @@ class ContentUpdate {
                     tile.flags |= 2;
                 }
                 else {
-                    tile.addChild(this.buildNodeShape(null, typeof ch == "string" ? Widget.text.of(ch) : ch, reusable ? reusable.children : reuse, inEditable, afterContentInner));
+                    tile.addChild(this.buildNodeShape(null, 0, typeof ch == "string" ? Widget.text.of(ch) : ch, reusable ? reusable.children : reuse, inEditable, afterContentInner));
                 }
             }
             return tile;
@@ -2766,8 +2355,8 @@ class ContentUpdate {
             }
             if (inEditable && !shape.type.editable)
                 setUneditable(dom);
-            let flags = (node ? 512 : 16 | 1) | afterContent;
-            let tile = new WidgetTile(shape, node, flags, dom, node ? node.length : 0);
+            let flags = (tag ? 512 : 16 | 1) | afterContent;
+            let tile = new WidgetTile(shape, tag, flags, dom, tag ? length : 0);
             if (shape.type.connect)
                 this.toConnect.push(tile);
             return tile;
@@ -2779,8 +2368,8 @@ class ContentUpdate {
             return;
         while (tile.isNodeInner)
             tile = tile.parent;
-        let node = tile.node;
-        if (!node || !node.isPlot || !(node.isTextblock || node.isInline))
+        let tag = tile.tag;
+        if (!tag || !tag.isPlot || !(tag.isTextblock || tag.type.isInline))
             return;
         let hasHack = -1, needsHack = true;
         for (let parent = this.new, i = parent.children.length;;) {
@@ -2963,9 +2552,9 @@ function coordsAtPos(wg, pos, assoc) {
         return new Coords(tile, flattenV(singleRect(textRange(tile.dom, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc)));
     }
     let tagTile = tile;
-    while (!tagTile.node)
+    while (!tagTile.tag)
         tagTile = tagTile.parent;
-    let horizontal = tagTile.node.isPlot && tagTile.node.type.orientation == "column";
+    let horizontal = tagTile.tag.isPlot && tagTile.tag.type.orientation == "column";
     if (tile instanceof WidgetTile) {
         let after = pos > tilePos + tile.length / 2;
         if (tile.widget.type.inFlow) {
@@ -5416,7 +5005,10 @@ class Wordgard {
     }
     nodeFromDOM(node) {
         let tile = this.docTile.nearest(node, true);
-        return tile && tile != this.docTile ? { pos: tile.posBefore, node: tile.node } : null;
+        if (!tile || tile == this.docTile)
+            return null;
+        let pos = tile.posBefore, n = this.state.doc.nodeAt(pos);
+        return n && { pos, node: n };
     }
     posAtCoords(coords) {
         let elt = (this.root.elementFromPoint ? this.root : this.dom.ownerDocument)
@@ -7424,11 +7016,11 @@ function showPlaceholder(state) {
     else if (state.doc.length == 2 && state.doc.firstChild.isPlot)
         pos = 1;
     else
-        return PointSet.empty;
+        return Decoration.Point.none;
     let shape = state.facet(placeholderShape);
     if (!shape.length)
-        return PointSet.empty;
-    return PointSet.create([[pos, Decoration.Point.widget(placeholderWidget.of(shape[0]), { side: 1 })]]);
+        return Decoration.Point.none;
+    return Decoration.Point.set([[pos, Decoration.Point.widget(placeholderWidget.of(shape[0]), { side: 1 })]]);
 }
 const placeholderField = /*@__PURE__*/GardState.Field.define({
     create(state) {
@@ -7532,4 +7124,4 @@ function dropCursor() {
     return [dropCursorPos, drawDropCursor];
 }
 
-export { Decoration, Dialog, InputRule, KeyBinding, Panel, PointSet, RangeSet, Tooltip, Widget, Wordgard, dropCursor, menuBar, placeholder };
+export { Decoration, Dialog, InputRule, KeyBinding, Panel, Tooltip, Widget, Wordgard, dropCursor, menuBar, placeholder };

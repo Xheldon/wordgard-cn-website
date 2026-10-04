@@ -4,7 +4,7 @@ import { Paragraph, Heading, Direction, Blockquote, HorizontalRule, Alignment, D
 import { phrases, imagePhrases, colorNames } from 'wordgard/phrases';
 import { Command, setTextblockType, Menu, setAlignment, setDirection, toggleBlock, listIsActive, toggleList, enter, toggleMark } from 'wordgard/command';
 import { history } from 'wordgard/history';
-import { KeyBinding, InputRule, Wordgard, Widget, Decoration, Panel, Dialog, PointSet, Tooltip } from 'wordgard/editor';
+import { KeyBinding, InputRule, Wordgard, Widget, Decoration, Panel, Dialog, Tooltip } from 'wordgard/editor';
 import cr from 'crelt';
 
 function blockDoc() {
@@ -827,17 +827,17 @@ const handleElt = /*@__PURE__*/(() => Elt.mk("svg:svg", { class: "wg-resize-hand
 ]))();
 const resizeWrapper = /*@__PURE__*/(() => Decoration.Point.wrapper(Elt.mk("span", { class: "wg-resize-hover" }, [handleElt, 0]), { target: "img" }))();
 const resizeState = /*@__PURE__*/GardState.Field.define({
-    create: () => ({ target: -1, resizing: -1, deco: PointSet.empty }),
+    create: () => ({ target: -1, resizing: -1, deco: Decoration.Point.none }),
     update: (value, tr) => {
         for (let e of tr.effects) {
             if (e.is(setResizing)) {
                 let { target, resizing } = e.value;
                 if (target < 0)
-                    return { target: -1, resizing: -1, deco: PointSet.empty };
+                    return { target: -1, resizing: -1, deco: Decoration.Point.none };
                 let deco = [[target, resizeWrapper]];
                 if (resizing > -1)
                     deco.push([target, Decoration.Point.attributes({ style: `width: ${resizing}px` }, { target: "img" })]);
-                return { target, resizing, deco: PointSet.create(deco) };
+                return { target, resizing, deco: Decoration.Point.set(deco) };
             }
         }
         return value.target < 0 || !tr.docChanged ? value

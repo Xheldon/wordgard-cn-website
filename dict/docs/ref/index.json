@@ -5594,5 +5594,161 @@
   "Insert the content killed by the most recent killToLineEnd command (or sequence thereof) at the cursor position.": {
     "_translate": "将最近一次 <a href=\"#command.killToLineEnd\"><code>killToLineEnd</code></a> 命令（或其序列）所删除的内容插入到光标位置。",
     "_note": ""
+  },
+  "The side of the point. Used to provide a sorting of points at the same position, and to determine cursor position relative to the points. Points with side < 0 are always displayed before a cursor at their position, those with side > 0 always after, and those with side == 0 before or after depending on the cursor's side.": {
+    "_translate": "点的侧面。用于对同一位置的点进行排序，并确定光标相对于这些点的位置。侧面值小于 0 的点始终显示在光标位置之前，侧面值大于 0 的点始终显示在光标位置之后，而侧面值等于 0 的点则根据光标的侧面值显示在之前或之后。",
+    "_note": ""
+  },
+  "Configures whether the point should be deleted when content next to it is deleted. See mapPos.": {
+    "_translate": "配置在删除其相邻内容时是否应删除该点。参见 <a href=\"#doc.ChangeSet.mapPos\"><code>mapPos</code></a>。",
+    "_note": ""
+  },
+  "Returns true when this set is empty.": {
+    "_translate": "当此集合为空时返回 true。",
+    "_note": ""
+  },
+  "The value of the current point, or null when there are no more points.": {
+    "_translate": "当前点的值，或者在没有更多点时为 <code>null</code>。",
+    "_note": ""
+  },
+  "The position of the current point.": {
+    "_translate": "当前点的位置。",
+    "_note": ""
+  },
+  "The side value of the current point.": {
+    "_translate": "当前点的侧值。",
+    "_note": ""
+  },
+  "Move the cursor to a given position and side.": {
+    "_translate": "将光标移动到指定位置和侧边。",
+    "_note": ""
+  },
+  "Continue to the next point, if any.": {
+    "_translate": "如有后续要点，请继续。",
+    "_note": ""
+  },
+  "The set object that the current point belongs to.": {
+    "_translate": "当前点所属的集合对象。",
+    "_note": ""
+  },
+  "Create a cursor over this point set, starting at the given position and side.": {
+    "_translate": "在此点集上创建一个游标，从给定的位置和侧边开始。",
+    "_note": ""
+  },
+  "The start of the replacement.": {
+    "_translate": "替换的开始。",
+    "_note": ""
+  },
+  "The end of the replaced range.": {
+    "_translate": "被替换范围的结束位置。",
+    "_note": ""
+  },
+  "An optional source of points to to this section.": {
+    "_translate": "此部分的一个可选积分来源。",
+    "_note": ""
+  },
+  "Adjust the points for a set of document changes. Returns a new set with the adjusted points. May delete points when the content around them was deleted. Optionally accepts an ordered sequence of replacements.": {
+    "_translate": "调整一组文档变更的点。返回包含调整后点的新集合。如果点周围的内容被删除，则可能会删除这些点。可选择接受一个有序的替换序列。",
+    "_note": ""
+  },
+  "If given, replace all points in these ranges.": {
+    "_translate": "如果已给出，请替换这些范围内的所有点。",
+    "_note": ""
+  },
+  "Add the points from this source.": {
+    "_translate": "添加此来源的要点。",
+    "_note": ""
+  },
+  "Optionally filter out any point where this predicate returns false.": {
+    "_translate": "可选地，过滤掉该谓词返回 false 的任何点。",
+    "_note": ""
+  },
+  "Create an updated copy of this set.": {
+    "_translate": "创建此套件的更新副本。",
+    "_note": ""
+  },
+  "Create a PointSet from an array or source function of point decorations.": {
+    "_translate": "从点装饰的数组或源函数创建一个 <code>PointSet</code>。",
+    "_note": ""
+  },
+  "Compare a range in this set with a range in another set. Call change for every point that exists in one but not the other.": {
+    "_translate": "比较此集合中的一个范围与另一个集合中的一个范围。对于仅存在于其中一个集合中的每个点，调用<code>change</code>。",
+    "_note": ""
+  },
+  "The empty set of point decorations.": {
+    "_translate": "点装饰的空集。",
+    "_note": ""
+  },
+  "The type used for sets of point decorations.": {
+    "_translate": "用于点装饰集合的类型。",
+    "_note": ""
+  },
+  "Create a RangeSet from an array or source function of range decorations.": {
+    "_translate": "从范围装饰的数组或源函数创建一个 <code>RangeSet</code>。",
+    "_note": ""
+  },
+  "The empty set of range decorations.": {
+    "_translate": "范围装饰的空集。",
+    "_note": ""
+  },
+  "The current range's value, or null if the end of the set has been reached.": {
+    "_translate": "当前范围的值，如果已到达集合的末尾，则为 <code>null</code>。",
+    "_note": ""
+  },
+  "The start position of the current range.": {
+    "_translate": "当前范围的起始位置。",
+    "_note": ""
+  },
+  "The end position of the current range.": {
+    "_translate": "当前范围的结束位置。",
+    "_note": ""
+  },
+  "Move the cursor to a new position.": {
+    "_translate": "将光标移动到新位置。",
+    "_note": ""
+  },
+  "Move to the next range, if any.": {
+    "_translate": "如有下一个范围，请移至该范围。",
+    "_note": ""
+  },
+  "The start of the section.": {
+    "_translate": "该部分的开始。",
+    "_note": ""
+  },
+  "Create a cursor over this set, starting at the given position.": {
+    "_translate": "在此集合上创建一个从给定位置开始的游标。",
+    "_note": ""
+  },
+  "The end of the section.": {
+    "_translate": "本节结束。",
+    "_note": ""
+  },
+  "An optional collection of ranges to replace the section with. Must fall within from and to.": {
+    "_translate": "用于替换该部分的可选范围集合。必须位于 <code>from</code> 和 <code>to</code> 之间。",
+    "_note": ""
+  },
+  "Adjust the positions of the ranges for the given change set. Returns a set with the updated ranges. Optionally takes an array of replacement ranges. Any ranges overlapping such a replacement will be dropped, and new ranges provided by their add properties will be added to the new set.": {
+    "_translate": "调整给定变更集中范围的位罝。返回包含更新后范围的集合。可选地接受一个替换范围数组。任何与此类替换重叠的范围都将被丢弃，而由其 <code>add</code> 属性提供的新范围将被添加到新集合中。",
+    "_note": ""
+  },
+  "Drop any ranges inside the given replacement ranges, optionally add new ranges provided by their add property.": {
+    "_translate": "丢弃给定替换范围内的任何范围，并可选择通过其 <code>add</code> 属性添加新范围。",
+    "_note": ""
+  },
+  "Add new ranges to the set.": {
+    "_translate": "向集合添加新范围。",
+    "_note": ""
+  },
+  "Modify this set.": {
+    "_translate": "修改此集合。",
+    "_note": ""
+  },
+  "Drop any range for which this predicate function returns false.": {
+    "_translate": "丢弃该谓词函数返回<code>false</code>的任何范围。",
+    "_note": ""
+  },
+  "Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.": {
+    "_translate": "将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。",
+    "_note": ""
   }
 }
