@@ -1603,7 +1603,7 @@ class Schema {
     nodes, 
     marks, plotContent, markTarget, nodeGroup, 
     docTag, 
-    lineBreak) {
+    lineBreak    ) {
         this.elements = elements;
         this.nodes = nodes;
         this.marks = marks;

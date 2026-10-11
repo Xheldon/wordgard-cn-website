@@ -237,7 +237,7 @@ const selectedCell = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selec
 function getCellDeco(state) {
     if (!(state.selection instanceof CellSelection))
         return Decoration.Point.none;
-    return Decoration.Point.set(state.selection.ranges.map(({ from }) => [from - 1, selectedCell]));
+    return Decoration.Point.set(state.selection.ranges.map(({ from }) => [selectedCell, from - 1]));
 }
 const tableSelectionFilter = /*@__PURE__*/(() => GardState.prec.low(Transaction.extender.of(tr => {
     let normalized = CellSelection.normalize(tr.newSelection, tr.newDoc);

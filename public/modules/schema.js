@@ -277,8 +277,13 @@ function orderedList(config = {}) {
 ;return orderedList})(orderedList);
 
 function codeBlock() {
-    return [GardState.schemaElement.of(CodeBlock),
-        codeBlock.button, codeBlock.keyBinding, codeBlock.createOnBackticks];
+    return [
+        GardState.schemaElement.of(CodeBlock),
+        codeBlock.button,
+        codeBlock.keyBinding,
+        codeBlock.createOnBackticks,
+        codeBlock.theme
+    ];
 }
 ;codeBlock = /*@__PURE__*/(function (codeBlock) {
     codeBlock.keyBinding = KeyBinding.of({
@@ -312,6 +317,13 @@ function codeBlock() {
             scrollIntoView: true
         };
     }));
+    codeBlock.theme = Wordgard.theme({
+        pre: {
+            padding: "8px 12px",
+            borderRadius: "4px",
+            background: "#88888819"
+        }
+    });
 ;return codeBlock})(codeBlock);
 function codeBlockLanguage(options = {}) {
     return [
@@ -331,15 +343,23 @@ const languageStyles = /*@__PURE__*/Wordgard.styles({
             font: "var(--wg-dialog-font)",
             fontSize: "70%",
             position: "absolute",
-            top: "2px",
-            right: "4px",
+            top: "5px",
+            right: "5px",
             border: "none",
-            borderRadius: "4px"
+            borderRadius: "4px",
+            background: "#88888827"
         }
     }
 });
 const languageOptions = /*@__PURE__*/GardState.Facet.define({
-    combine: input => input.reduce((a, b) => a.concat(b), [])
+    combine: input => {
+        let options = [];
+        for (let arr of input)
+            for (let opt of arr)
+                if (!options.includes(opt))
+                    options.push(opt);
+        return options;
+    }
 });
 function option(text, selected, value) {
     let node = document.createElement("option");
@@ -403,6 +423,7 @@ const languageSelect = /*@__PURE__*/Decoration.Tag.widget.dynamic(CodeBlock, "en
         key: "Shift-Mod-l",
         run: codeBlockLanguage.selectLanguage
     });
+    codeBlockLanguage.options = languageOptions;
 ;return codeBlockLanguage})(codeBlockLanguage);
 
 function strong() {
@@ -834,9 +855,9 @@ const resizeState = /*@__PURE__*/GardState.Field.define({
                 let { target, resizing } = e.value;
                 if (target < 0)
                     return { target: -1, resizing: -1, deco: Decoration.Point.none };
-                let deco = [[target, resizeWrapper]];
+                let deco = [[resizeWrapper, target]];
                 if (resizing > -1)
-                    deco.push([target, Decoration.Point.attributes({ style: `width: ${resizing}px` }, { target: "img" })]);
+                    deco.push([Decoration.Point.attributes({ style: `width: ${resizing}px` }, { target: "img" }), target]);
                 return { target, resizing, deco: Decoration.Point.set(deco) };
             }
         }
@@ -1386,7 +1407,7 @@ function link() {
         linkTooltipTheme
     ];
     link_1.pasteOver = Wordgard.pasteHandler.of((wg, event) => {
-        let { selection } = wg.state, data = event.clipboardData;
+        let { selection } = wg.state, data = event.dataTransfer;
         if (!data || selection.empty)
             return false;
         let text = data.getData("text/plain") || data.getData("Text") || data.getData("text/uri-list");

@@ -62,7 +62,7 @@ function separateChange(changes, fromB, toB) {
     let lenI = 0, dLen = 0;
     for (let posB = 0, done = false, i = 0; i < changes.length;) {
         let len = changes[i++], ins = changes[i++], endB = posB + (ins < 0 ? len : ins);
-        if (fromB > endB || toB < posB) {
+        if (fromB >= endB || toB <= posB) {
             result.push(len, ins);
         }
         else {
@@ -475,7 +475,7 @@ class WrapperDecoration extends Decoration.Point {
 const nodeSelectionDeco = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-node" });
 function nodeSelection(state) {
     if (state.selection instanceof GardSelection.Node)
-        return PointSet.create([[state.selection.from, nodeSelectionDeco]]);
+        return PointSet.create([[nodeSelectionDeco, state.selection.from]]);
     return PointSet.empty;
 }
 const none = [];
@@ -621,7 +621,7 @@ class SpanIterator {
                     nextActive = i;
                 }
             }
-            let { pos: pointPos, side: pointSide } = points.value ? points : { pos: 1e9, side: 1 };
+            let [pointPos, pointSide] = points.value ? [points.from, points.value.side] : [1e9, 1];
             let nextPos = Math.min(startPos, endPos, pointPos);
             if (this.to == this.end && nextPos > this.to) {
                 this.done = true;
@@ -635,7 +635,7 @@ class SpanIterator {
             else if (pointPos == nextPos && (startPos > pointPos || pointSide < 0) && (endPos > pointPos || pointSide < 0)) {
                 this.point = this.points.value;
                 this.pointSource = this.points.set;
-                this.from = this.to = this.points.pos;
+                this.from = this.to = this.points.from;
                 this.points.next();
                 break;
             }
@@ -1529,6 +1529,8 @@ class DocTile extends CompositeTile {
                 changes = separated;
         }
         let builder = new ContentUpdate(state, this, wg, new DecoIterator(state, decoSet), wrapper);
+        if (composition?.target && Tile.get(composition.target))
+            builder.reused.set(Tile.get(composition.target), 2);
         for (let i = 0, posB = 0, startCovered = false; i < changes.length;) {
             let len = changes[i++], ins = changes[i++];
             if (composition && posB == composition.fromB && ins >= 0) {
@@ -3612,6 +3614,11 @@ const eventObserver = /*@__PURE__*/GardState.Facet.define({
         return result;
     }
 });
+const compositionInputTypes = /*@__PURE__*/(() => new Set([
+    "insertCompositionText",
+    "deleteCompositionText",
+    "insertFromComposition"
+]))();
 class InputState {
     wg;
     shiftKey = false;
@@ -3631,6 +3638,7 @@ class InputState {
     mouseSelection = null;
     draggedContent = null;
     notifiedFocused;
+    suppressEvents = false;
     pendingInputEvent = null;
     domDoc;
     _domMapping;
@@ -3646,6 +3654,8 @@ class InputState {
         this._domMapping = ChangeSet.empty(this.domDoc.length);
     }
     handleEvent(event) {
+        if (this.suppressEvents)
+            return;
         if (!eventBelongsToEditor(this.wg, event) || this.ignoreDuringComposition(event))
             return;
         if (event.type == "keydown" && this.keydown(event))
@@ -3767,11 +3777,12 @@ class InputState {
             }
         }
         let command = inputTypeCommands[type];
-        if ((type == "deleteContentBackward" || type == "deleteContentForward") && range &&
-            range.from != range.to &&            !this.unflushedSelection &&            (sel.empty
-                ? !isSingleChar(this.domDoc, data.domRange.from, data.domRange.to) ||
-                    sel.head != (type == "deleteContentBackward" ? range.to : range.from)
-                : sel.from != range.from || sel.to != range.to)) {
+        if (isDeletionInputEvent(type) && range &&
+            (!command ||
+                (range.from != range.to &&                    !this.unflushedSelection &&                    (sel.empty
+                        ? !isSingleChar(this.domDoc, data.domRange.from, data.domRange.to) ||
+                            sel.head != (type == "deleteContentBackward" ? range.to : range.from)
+                        : sel.from != range.from || sel.to != range.to)))) {
             wg.dispatch({ changes: { from: range.from, to: range.to, fit: true }, userEvent: "delete" });
         }
         else if (command) {
@@ -3781,6 +3792,20 @@ class InputState {
             let insert = event.data.replace(/\r\n?|\n/g, " ");
             let { from, to } = this.unflushedSelection ? wg.state.selection : range;
             Command.dispatch(wg, insertText, { from, to, insert, userEvent: "input.type" });
+        }
+        else if (type == "insertFromPaste") {
+            let { from, to } = this.unflushedSelection ? wg.state.selection.replacementRange : range;
+            let content = readClipboard(wg.state, event.dataTransfer, wg.state.doc.resolve(from), wg.inputState.shiftKey);
+            let isSel = from == wg.state.selection.replacementRange.from && to == wg.state.selection.replacementRange.to;
+            if (isSel && wg.state.facet(pasteHandler).some(h => h(wg, event, content ? content.slice : Slice.empty, content ? content.context : [])))
+                return;
+            if (content) {                wg.dispatch({
+                    changes: { from, to, insert: content.slice, fit: content.context },
+                    selection: isSel ? (cx, changes) => GardSelection.near(cx, changes.mapPos(to, 1), -1) : undefined,
+                    userEvent: "input.paste",
+                    scrollIntoView: isSel
+                });
+            }
         }
         else if ((type == "insertReplacementText" || type == "insertFromYank")) {
             let read = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, true);
@@ -3796,14 +3821,17 @@ class InputState {
                     userEvent: "insert.replacementText"
                 });
         }
-        else if (type == "insertCompositionText") {
-            let compositionStart = !wg.inputState.composing.changes;
-            wg.inputState.composing.changes++;
+        else if (compositionInputTypes.has(type)) {
+            let compositionStart = true;
+            if (wg.inputState.composing) {
+                compositionStart = !wg.inputState.composing.changes;
+                wg.inputState.composing.changes++;
+            }
             let sel = wg.observer.selectionRange;
             if (!sel.focusNode)
                 return false;
             let userEvent = "input.type.compose" + (compositionStart ? ".start" : "");
-            Command.dispatch(wg, insertText, { from: range.from, to: range.to, insert: event.data, userEvent });
+            Command.dispatch(wg, insertText, { from: range.from, to: range.to, insert: event.data || "", userEvent });
         }
         else if (type == "formatSetBlockTextDirection") {
             if (event.data == "ltr" || event.data == "rtl")
@@ -3855,6 +3883,57 @@ class InputState {
                 return after;
             return !tileBefore ? before : !tileAfter ? after : prev == after ? after : before;
         }
+    }
+    getCompositionInfo(wg) {
+        let wrap = this.wrappingComposition;
+        if (wrap) {
+            let sel = wg.state.selection.head;
+            return {
+                fromB: sel, toB: sel,
+                text: "",
+                target: null,
+                wrapCursor: wrap
+            };
+        }
+        let comp = this.composing;
+        if (!comp || !(comp.target = this.findComposition(comp.target)))
+            return null;
+        let value = comp.target.nodeValue;
+        let fromB = this.posAtDOM(comp.target, 0, 1), toB = fromB + value.length;
+        let disrupted = false;
+        this.domMapping.iterChanges((fA, tA, fB, tB) => {
+            if (fB < toB && tB > fromB)
+                disrupted = true;
+        });
+        return disrupted ? null : { fromB, toB, text: value, target: comp.target };
+    }
+    clearComposition() {
+        let comp = this.composing;
+        this.composing = null;
+        this.compositionEndedAt = Date.now();
+        if (!comp.target)
+            return false;
+        let pos = this.posAtDOM(comp.target, 0, 1);
+        this.wg.observer.addDirtyRange(pos, pos + comp.target.nodeValue.length);
+        return true;
+    }
+    abortComposition() {
+        if (!this.composing || !this.wg.hasFocus)
+            return;
+        this.clearComposition();
+        this.wg.win.setTimeout(() => {
+            this.suppressEvents = true;
+            try {
+                getSelection(this.wg.root)?.collapse(document.body, 0);
+                let dummy = this.wg.win.document.body.appendChild(document.createElement("input"));
+                dummy.focus();
+                dummy.remove();
+                this.wg.focus();
+            }
+            finally {
+                this.suppressEvents = false;
+            }
+        }, 0);
     }
     recordTouch(e) {
         this.lastTouchTime = Date.now();
@@ -4118,37 +4197,9 @@ function updateForFocusChange(wg) {
         }
     }, 10);
 }
-function getCompositionInfo(wg) {
-    let wrap = wg.inputState.wrappingComposition;
-    if (wrap) {
-        let sel = wg.state.selection.head;
-        return {
-            fromB: sel, toB: sel,
-            text: "",
-            target: null,
-            wrapCursor: wrap
-        };
-    }
-    let comp = wg.inputState.composing;
-    if (!comp || !(comp.target = wg.inputState.findComposition(comp.target)))
-        return null;
-    let value = comp.target.nodeValue;
-    let pos = wg.inputState.posAtDOM(comp.target, 0);
-    return {
-        fromB: pos, toB: pos + value.length,
-        text: value,
-        target: comp.target
-    };
-}
 function compositionEnd(wg) {
-    let comp = wg.inputState.composing;
-    wg.inputState.composing = null;
-    wg.inputState.compositionEndedAt = Date.now();
-    if (comp && comp.target) {
-        let pos = wg.inputState.posAtDOM(comp.target, 0);
-        wg.observer.addDirtyRange(pos, pos + comp.target.nodeValue.length);
+    if (wg.inputState.composing && wg.inputState.clearComposition())
         wg.flush();
-    }
 }
 function compositionUpdate(wg, event) {
     if (!wg.inputState.composing) {
@@ -4185,7 +4236,7 @@ function inEditableDOM(wg, node) {
     let tile = wg.docTile.nearest(node);
     return tile ? !(tile.isPoint || tile instanceof WidgetTile) : false;
 }
-function isDeletionInputEvent(type) { return /^delete(Content|Word)/.test(type); }
+function isDeletionInputEvent(type) { return /^delete(Content|Word|ByComposition)/.test(type); }
 const inputTypeCommands = /*@__PURE__*/(() => ({
     historyUndo: undo,
     historyRedo: redo,
@@ -4292,32 +4343,11 @@ const baseHandlers = {
         wg.inputState.draggedContent = null;
         return true;
     },
-    paste(wg, event) {
-        if (wg.state.readOnly || !event.clipboardData)
-            return true;
-        let { state } = wg;
-        let content = readClipboard(state, event.clipboardData, state.sel.head, wg.inputState.shiftKey);
-        if (wg.state.facet(pasteHandler).some(h => h(wg, event, content ? content.slice : Slice.empty, content ? content.context : [])))
-            return true;
-        if (content) {            wg.dispatch({
-                changes: {
-                    from: state.selection.from,
-                    to: state.selection.to,
-                    insert: content.slice,
-                    fit: content.context
-                },
-                selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(state.selection.to, 1), -1),
-                userEvent: "input.paste",
-                scrollIntoView: true
-            });
-        }
-        return true;
-    },
     beforeinput(wg, event) {
         let type = event.inputType;
         if (browser.safari && type == "insertText" && wg.inputState.composing)
             compositionEnd(wg);
-        if (type == "insertCompositionText" && !wg.inputState.composing)
+        if (compositionInputTypes.has(type) && !wg.inputState.composing)
             wg.inputState.composing = { changes: 0, target: null };
         let data = {
             inputType: type,
@@ -4333,7 +4363,7 @@ const baseHandlers = {
         }
         wg.inputState.beforeInput(event, wg.inputState.pendingInputEvent = data);
         wg.scheduleFlush();
-        let allow = type == "insertCompositionText" ||
+        let allow = compositionInputTypes.has(type) ||
             editable && (type == "insertText" || isDeletionInputEvent(type) &&
                 data.domRange && inlineContext(wg.inputState.domDoc, data.domRange));
         return !allow;
@@ -4344,8 +4374,8 @@ const baseHandlers = {
             return false;
         wg.inputState.pendingInputEvent = null;
         let change;
-        if (event.inputType == "insertCompositionText" || event.inputType == "insertText") {
-            change = { from: pending.domRange.from, to: pending.domRange.to, insert: [Leaf.text(pending.data)] };
+        if (compositionInputTypes.has(event.inputType) || event.inputType == "insertText") {
+            change = { from: pending.domRange.from, to: pending.domRange.to, insert: [Leaf.text(pending.data || "")] };
         }
         else if (isDeletionInputEvent(event.inputType)) {
             change = { from: pending.domRange.from, to: pending.domRange.to };
@@ -4789,8 +4819,8 @@ class Wordgard {
         this.lastFlush = Date.now();
         try {
             let domChanges = this.observer.takeDirty();
-            this.viewState.flush();
             this.observer.ignore(() => this.runUpdate(update, domChanges));
+            this.viewState.flush();
             domChanges = null;
             for (let i = 0;; i++) {
                 if (i > 5) {
@@ -4856,7 +4886,9 @@ class Wordgard {
         scrollRectIntoView(this.scrollDOM, targetRect, assoc, target.spec.x, target.spec.y, Math.max(Math.min(target.spec.xMargin, offsetWidth), -offsetWidth), Math.max(Math.min(target.spec.yMargin, offsetHeight), -offsetHeight), this.state.textLTR);
     }
     runUpdate(update, domChanges) {
-        let composition = this.composing ? getCompositionInfo(this) : null;
+        let composition = this.composing ? this.inputState.getCompositionInfo(this) : null;
+        if (this.composing && !composition)
+            this.inputState.abortComposition();
         let changes = domChanges ? addUpdated(update.changes.sections, domChanges) : update.changes.sections;
         let prevDocTile = this.docTile;
         if (!update.empty) {
@@ -5035,7 +5067,7 @@ class Wordgard {
         if (this.connected)
             this.observer.ignore(() => {
                 this.contentDOM.focus({ preventScroll: true });
-                if (this.willFlush && this.flushing == 0)
+                if (this.willFlush && this.flushing == 0 && this.viewState.pending.some(tr => tr.docChanged))
                     this.flush();
                 setDOMSelection(this);
             });
@@ -5363,6 +5395,86 @@ class PluginInstance {
         this.deactivated = true;
         this.value = null;
     }
+}
+
+function offset(add, offset) {
+    return (v, from, to) => add(v, from + offset, to == null ? undefined : to + offset);
+}
+function init(type, create, source, doc) {
+    return create(add => {
+        doc.iterate((node, pos) => {
+            if (node.isPlot && doc.schema.matchNode(node.type, type))
+                source(node, pos + 1, add);
+        });
+    });
+}
+function refreshByPred(type, source, doc, deco, pred) {
+    let recreate = [];
+    doc.iterate((node, pos) => {
+        if (doc.schema.matchNode(node.type, type) && pred(node))
+            recreate.push({
+                from: pos, to: pos + node.length,
+                add: add => source(node, pos + 1, add)
+            });
+    });
+    return recreate.length ? deco.modify({ replace: recreate }) : deco;
+}
+function update(config, create, source, deco, tr) {
+    let doc = tr.newDoc;
+    let refresh = config.refresh && config.refresh(tr);
+    if (refresh === true)
+        return init(config.type, create, source, doc);
+    if (refresh)
+        deco = refreshByPred(config.type, source, tr.startState.doc, deco, refresh);
+    if (!tr.docChanged && !refresh)
+        return deco;
+    let recreate = [];
+    let clear = [];
+    tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
+        let covered = false;
+        doc.iterate(fromB, toB, (node, pos) => {
+            if (doc.schema.matchNode(node.type, config.type)) {
+                recreate.push({
+                    from: pos, to: pos + node.length,
+                    add: add => source(node, pos + 1, add)
+                });
+                if (pos < toB && pos + node.length > toB)
+                    covered = true;
+                return false;
+            }
+        });
+        if (!covered) {
+            let end = tr.startState.doc.resolve(toA);
+            let open = end.matchingParent(p => doc.schema.matchNode(p.type, config.type));
+            if (open && open.before >= fromA)
+                clear.push({ from: open.before, to: open.after });
+        }
+    });
+    if (clear.length)
+        deco = deco.modify({ replace: clear });
+    deco = deco.map(tr.changes, recreate);
+    return deco;
+}
+function decoratePlots(config) {
+    let result = [];
+    let { type, points, ranges } = config;
+    if (points) {
+        let source = (plot, start, add) => points(plot, offset(add, start));
+        let field = GardState.Field.define({
+            create(state) { return init(type, PointSet.create, source, state.doc); },
+            update(value, tr) { return update(config, PointSet.create, source, value, tr); }
+        });
+        result.push(field, Decoration.Point.source.of(s => s.field(field)));
+    }
+    if (ranges) {
+        let source = (plot, start, add) => ranges(plot, offset(add, start));
+        let field = GardState.Field.define({
+            create(state) { return init(type, RangeSet.create, source, state.doc); },
+            update(value, tr) { return update(config, RangeSet.create, source, value, tr); }
+        });
+        result.push(field, Decoration.Range.source.of(s => s.field(field)));
+    }
+    return result;
 }
 
 const panelConfig = /*@__PURE__*/GardState.Facet.define({
@@ -7020,7 +7132,7 @@ function showPlaceholder(state) {
     let shape = state.facet(placeholderShape);
     if (!shape.length)
         return Decoration.Point.none;
-    return Decoration.Point.set([[pos, Decoration.Point.widget(placeholderWidget.of(shape[0]), { side: 1 })]]);
+    return Decoration.Point.set([[Decoration.Point.widget(placeholderWidget.of(shape[0]), { side: 1 }), pos]]);
 }
 const placeholderField = /*@__PURE__*/GardState.Field.define({
     create(state) {
@@ -7124,4 +7236,4 @@ function dropCursor() {
     return [dropCursorPos, drawDropCursor];
 }
 
-export { Decoration, Dialog, InputRule, KeyBinding, Panel, Tooltip, Widget, Wordgard, dropCursor, menuBar, placeholder };
+export { Decoration, Dialog, InputRule, KeyBinding, Panel, Tooltip, Widget, Wordgard, decoratePlots, dropCursor, menuBar, placeholder };

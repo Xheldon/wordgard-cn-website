@@ -5750,5 +5750,61 @@
   "Compare a section of this set with a section of the same length in another set. Calls change for any range where the two do not contain identical ranges.": {
     "_translate": "将此集合的一个部分与另一个集合中长度相同的部分进行比较。对于两个部分不包含相同范围的任何区间，调用 <code>change</code>。",
     "_note": ""
+  },
+  "The value of the current range or point, or null when there are no more values.": {
+    "_translate": "当前范围或点的值，或者在没有更多值时为 <code>null</code>。",
+    "_note": ""
+  },
+  "This function allows you to define a custom node shape that depends on the editor state. It will automatically track which state slots (see compute) you use, and make sure the nodes are redrawn when those change.": {
+    "_translate": "此函数允许您定义一个依赖于编辑器状态的<a href=\"#editor.Decoration.Tag.shape\">自定义节点形状</a>。它将自动跟踪您使用的状态槽（参见<a href=\"#state.GardState.Facet.compute\"><code>compute</code></a>），并确保在这些状态发生变化时重新绘制节点。",
+    "_note": ""
+  },
+  "The start position of the current range or point.": {
+    "_translate": "当前范围或点的起始位置。",
+    "_note": ""
+  },
+  "The end position of the current range. Will be equal to from for points.": {
+    "_translate": "当前范围的结束位置。对于点，该值将等于 <code>from</code>。",
+    "_note": ""
+  },
+  "Move the cursor to a given position.": {
+    "_translate": "将光标移动到指定位置。",
+    "_note": ""
+  },
+  "Continue to the next value, if any.": {
+    "_translate": "如有下一个值，请继续。",
+    "_note": ""
+  },
+  "The set object that the current value points at, if any.": {
+    "_translate": "当前值所指向的集合对象（如果有的话）。",
+    "_note": ""
+  },
+  "The type of plot to decorate.": {
+    "_translate": "要装饰的图表类型。",
+    "_note": ""
+  },
+  "A function that produces point decorations for a plot. pos should be relative to the start of the plot's content.": {
+    "_translate": "一个用于为图表生成点装饰的函数。<code>pos</code> 应相对于图表内容的起始位置。",
+    "_note": ""
+  },
+  "A function that produces range decorations for a plot. from and to should be relative to the start of the plot's content, and be fall entirely within the plot.": {
+    "_translate": "一个用于为图表生成范围装饰的函数。<code>from</code> 和 <code>to</code> 应相对于图表内容的起点，并且必须完全位于图表内部。",
+    "_note": ""
+  },
+  "An optional function that causes the decorations to be recreated on matching transaction, either for the entire document (true) or for any plot where the returned predicate returns true.": {
+    "_translate": "一个可选函数，用于在匹配的事务发生时重新创建装饰，可应用于整个文档（<code>true</code>）或任何返回谓词为 <code>true</code> 的绘图。",
+    "_note": ""
+  },
+  "Create an extension that adds decorations to plots matching the given type.": {
+    "_translate": "创建一个扩展，为匹配给定类型的图表添加装饰。",
+    "_note": ""
+  },
+  "Simple style that gives code blocks a background and slightly rounded corners.": {
+    "_translate": "简约风格，为代码块提供背景并带有轻微圆角。",
+    "_note": ""
+  },
+  "A facet that allows you to add options to the language selection drop-down.": {
+    "_translate": "允许您向语言选择下拉列表添加选项的 Facet。",
+    "_note": ""
   }
 }
