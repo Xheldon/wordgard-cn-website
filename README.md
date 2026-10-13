@@ -32,6 +32,14 @@ Wordgard（ProseMirror 作者 Marijn 的新一代编辑器框架）中文文档 
 3. 执行 `./local.sh`（需要执行权限）。
 4. 检查 `wordgard/website/output` 下各页面是否正常。
 
+## 回归测试
+
+执行 `npm ci && npm test`。测试仅使用模拟响应，无需 API 配置，也不会调用模型或推送内容。
+PR 与 main 的推送会自动运行独立测试检查。
+翻译请求最多尝试 4 次，间隔 3 秒，每次独立收集响应；瞬时 HTTP/网络错误、
+忙碌错误 `50508`、空或畸形响应可重试。最终失败仍记录到 `error.txt`，保留原文且不写入字典；
+成功恢复的请求不记录错误。只有 `finish_reason: stop` 的完整非空文本才作为译文接受。
+
 ## 需要配置的项（首次接入时）
 
 1. GitHub Secrets：`OPENAI_API_KEY`、`OPENAI_URL`、`GIT_TOKEN`。
@@ -40,7 +48,7 @@ Wordgard（ProseMirror 作者 Marijn 的新一代编辑器框架）中文文档 
 
 ## 备注
 
-1. 本项目 CI 有两种触发方式：手动触发和每周检查一次。
+1. 翻译 CI 有两种触发方式：手动触发和每周检查一次。
 2. CI 可能会修改 `dict` 目录中的文件，以及新产生页面覆盖 `public` 中的同名文件。
-3. CI 会将修改再次提交到本仓库，以触发 Cloudflare Pages 的更新，因此本仓库不能通过 Merge 触发。
+3. 翻译 CI 会将修改再次提交到本仓库，以触发 Cloudflare Pages 的更新，因此翻译工作流不通过合入或推送触发。
 4. 翻译模型为 `Qwen/Qwen3.5-27B`，请求时关闭了 Qwen3 的思考模式（`enable_thinking: false`）以保证速度。
