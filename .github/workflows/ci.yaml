@@ -97,8 +97,11 @@ jobs:
         if: env.new_commits == 'true'
         run: |
           git checkout -b temp
+          # Note: Workers 的 PR 预览需要显式配置；刷新页面时保留它。
+          cp public/wrangler.jsonc "$RUNNER_TEMP/wordgard-wrangler.jsonc"
           rm -rf public
           mkdir -p public && cp -R wordgard/website/output/* public
+          cp "$RUNNER_TEMP/wordgard-wrangler.jsonc" public/wrangler.jsonc
           # Note: 上游 robots.txt 可能屏蔽 AI 爬虫，这里删除它，不让中文翻译站跟着屏蔽
           # （Googlebot 未被屏蔽，不影响普通搜索收录）。
           rm -f public/robots.txt
