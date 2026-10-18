@@ -1,4 +1,4 @@
-import { Leaf, ValidationError, Pos, ChangeSet, Plot, SchemaError, parse, Schema } from 'wordgard/doc';
+import { Leaf, ValidationError, Slice, Pos, ChangeSet, Plot, SchemaError, parse, Schema } from 'wordgard/doc';
 import { findClusterBreak } from '@marijn/find-cluster-break';
 
 function dec(str) {
@@ -444,8 +444,20 @@ class TextblockMap {
         return off;
     }
     moveVisually(start, side, forward, skipped) {
-        let startIndex = this.toIndex(start), { order, ltr } = this;
-        let spanI = BidiSpan.find(order, startIndex, side);
+        if (!this.text.length)
+            return null;
+        let startIndex = this.toIndex(start), { order, ltr } = this, spanI;
+        if (startIndex == 0 && side < 0) {            if (!forward)
+                return null;
+            startIndex = order[spanI = 0].side(false, this.ltr);
+        }
+        else if (startIndex == this.text.length && side > 0) {            if (forward)
+                return null;
+            startIndex = order[spanI = order.length - 1].side(true, this.ltr);
+        }
+        else {
+            spanI = BidiSpan.find(order, startIndex, side);
+        }
         let span = order[spanI], spanEnd = span.side(forward, ltr);
         if (startIndex == spanEnd) {
             let nextI = spanI += forward ? 1 : -1;
@@ -463,8 +475,14 @@ class TextblockMap {
         if (skipped)
             skipped[0] = this.text.slice(Math.min(startIndex, nextIndex), Math.max(startIndex, nextIndex));
         let nextSpan = spanI == (forward ? order.length - 1 : 0) ? null : order[spanI + (forward ? 1 : -1)];
-        if (nextSpan && nextIndex == spanEnd && nextSpan.level + (forward ? 0 : 1) < span.level)
-            return { pos: this.fromIndex(nextSpan.side(!forward, ltr)), side: nextSpan.forward(forward, ltr) ? 1 : -1 };
+        if (nextIndex == spanEnd) {
+            if (!nextSpan)
+                return forward ? { pos: this.start + this.node.contentLength, side: 1 }
+                    : { pos: this.start, side: -1 };
+            if (nextSpan.level + (forward ? 0 : 1) < span.level)
+                return { pos: this.fromIndex(nextSpan.side(!forward, this.ltr)),
+                    side: nextSpan.forward(forward, this.ltr) ? 1 : -1 };
+        }
         return { pos: this.fromIndex(nextIndex), side: nextIndex != spanEnd ? 1 : span.forward(forward, ltr) ? -1 : 1 };
     }
     skipWord(start, side, forward, visually) {
@@ -499,18 +517,6 @@ class TextblockMap {
         if (!Intl.Segmenter)
             return cur;        let segments = [...new Intl.Segmenter(undefined, { granularity: "word" }).segment(word)];
         return history.get(segments[forward ? 0 : segments.length - 1].segment.length) || cur;
-    }
-    visualSide(start) {
-        let pos, side;
-        if (start) {
-            let span = this.order[0];
-            [pos, side] = span.ltr == this.ltr ? [span.from, 1] : [span.to, -1];
-        }
-        else {
-            let span = this.order[this.order.length - 1];
-            [pos, side] = span.ltr == this.ltr ? [span.to, -1] : [span.from, 1];
-        }
-        return { pos: this.fromIndex(pos), side };
     }
     moveLogically(start, forward) {
         let index = this.toIndex(start);
@@ -550,6 +556,14 @@ class GardSelection {
     get ranges() { return [this]; }
     get replacementRange() { return this; }
     get domSelection() { return this; }
+    toSlice(doc) {
+        let slice;
+        for (let range of this.ranges) {
+            let cur = Slice.get(doc, range.from, range.to);
+            slice = slice ? slice.concat(cur) : cur;
+        }
+        return slice;
+    }
     get headSide() { return this.head > this.anchor ? -1 : 1; }
     get anchorSide() { return this.anchor > this.head ? -1 : 1; }
     eqPos(other) {
@@ -580,14 +594,17 @@ class GardSelection {
         return type.fromJSON(doc, json);
     }
     static cursor(pos, side, goalColumn) {
-        return GardSelection.Text.createInner(pos, pos, side, goalColumn);
+        return GardSelection.Text.createInner(pos, pos, side, true, goalColumn);
     }
     static near(cx, pos, side = 1, goalColumn) {
         let norm = findNormalAt(cx, pos, side);
         return GardSelection.cursor(norm.pos, norm.side, goalColumn);
     }
     static range(anchor, head, headSide, goalColumn) {
-        return GardSelection.Text.createInner(anchor, head ?? anchor, headSide, goalColumn);
+        return GardSelection.Text.createInner(anchor, head ?? anchor, headSide, true, goalColumn);
+    }
+    static undirectionalRange(from, to) {
+        return GardSelection.Text.createInner(from, to, 1, false);
     }
     static node(pos, node, goalColumn) {
         return GardSelection.Node.create(pos, node, goalColumn);
@@ -604,9 +621,8 @@ class GardSelection {
         return cursorAtStart(cx, block);
     }
     static atEnd(cx, block) {
-        let found = block
-            ? TextblockMap.get(cx, block.start, block.node).visualSide(false)
-            : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(false)
+        let found = block ? { pos: block.end, side: 1 }
+            : cx.doc.inlineContent ? { pos: cx.doc.length, side: 1 }
                 : findNormalAt(cx, cx.doc.length, -1);
         return GardSelection.cursor(found.pos, found.side);
     }
@@ -618,15 +634,18 @@ class GardSelection {
     GardSelection.define = define;
     class Text extends GardSelection {
         _headSide;
+        directional;
         marks;
-        constructor(anchor, head, _headSide, goalColumn, 
+        constructor(anchor, head, _headSide, 
+        directional, goalColumn, 
         marks) {
             super(anchor, head, goalColumn);
             this._headSide = _headSide;
+            this.directional = directional;
             this.marks = marks;
         }
-        static createInner(anchor, head, side, goalColumn, marks) {
-            return new Text(anchor, head, side ?? (head > anchor ? -1 : 1), goalColumn, marks);
+        static createInner(anchor, head, side, directional, goalColumn, marks) {
+            return new Text(anchor, head, side ?? (head > anchor ? -1 : 1), directional, goalColumn, marks);
         }
         get headSide() {
             return this._headSide;
@@ -636,7 +655,7 @@ class GardSelection {
         }
         static create(spec) {
             let { anchor, head = anchor } = spec;
-            return Text.createInner(anchor, head, spec.headSide, spec.goalColumn, spec.marks);
+            return Text.createInner(anchor, head, spec.headSide, spec.directional !== false, spec.goalColumn, spec.marks);
         }
         map(change, cx, assoc = -1) {
             let from, to;
@@ -647,7 +666,7 @@ class GardSelection {
                 from = change.mapPos(this.from, 1);
                 to = Math.max(from, change.mapPos(this.to, -1));
             }
-            return Text.createInner(from, to, this.headSide, this.goalColumn, this.marks);
+            return Text.createInner(from, to, this.headSide, this.directional, this.goalColumn, this.marks);
         }
         eq(other) {
             return other instanceof Text && this.eqPos(other) && this.headSide == other.headSide &&
@@ -674,7 +693,7 @@ class GardSelection {
                 throw new ValidationError("Invalid JSON representation for GardSelection.Text");
             let anchor = json.anchor, head = typeof json.head == "number" ? json.head : anchor;
             let marks = json.marks ? doc.schema.marksFromJSON(json.marks) : undefined;
-            return Text.createInner(anchor, head, json.side == 1 || json.side == -1 ? json.side : undefined, undefined, marks);
+            return Text.createInner(anchor, head, json.side == 1 || json.side == -1 ? json.side : undefined, json.directional !== false, undefined, marks);
         }));
     })(Text = GardSelection.Text || (GardSelection.Text = {}));
     class Node extends GardSelection {
@@ -744,8 +763,8 @@ class GardSelection {
 ;return GardSelection})(GardSelection);
 function cursorAtStart(cx, block) {
     let found = block
-        ? TextblockMap.get(cx, block.start, block.node).visualSide(true)
-        : cx.doc.inlineContent ? TextblockMap.get(cx, 0, cx.doc).visualSide(true)
+        ? { pos: block.start, side: -1 }
+        : cx.doc.inlineContent ? { pos: 0, side: -1 }
             : findNormalAt(cx, 0, 1);
     return GardSelection.cursor(found.pos, found.side);
 }
@@ -790,11 +809,8 @@ function scanNormalFrom(cx, from, side, forward) {
     let bottom = pos.pos, step = forward ? 1 : -1;
     for (let { parent, index } = pos, p = pos.pos;;) {
         let { node, parent: next } = parent;
-        if (node.inlineContent) {
-            if (cx.config.visualCursorMotion)
-                return TextblockMap.get(cx, parent.start, parent.node).visualSide(forward);
-            return { pos: p, side: forward ? 1 : -1 };
-        }
+        if (node.inlineContent)
+            return { pos: p, side: forward ? -1 : 1 };
         if (index == (forward ? node.content.length : 0)) {
             let barrier = !next || isBarrier(cx, node);
             if ((bottom != from) && pastBarrier && barrier)
@@ -857,10 +873,8 @@ function findNormalAt(cx, pos, bias) {
                 let nextIndex = index + (dir > 0 ? 0 : -1), next = parent.node.content[nextIndex];
                 if (next.isLeaf || isBarrier(cx, next))
                     break;
-                if (!parent.node.inlineContent && next.inlineContent && cx.config.visualCursorMotion) {
-                    let startPos = curPos - (dir > 0 ? 0 : next.length) + 1;
-                    return TextblockMap.get(cx, startPos, next).visualSide(dir > 0);
-                }
+                if (!parent.node.inlineContent && next.inlineContent)
+                    return { pos: curPos + dir, side: -dir };
                 parent = Pos.Plot.create(parent, next, curPos, nextIndex);
                 index = dir > 0 ? 0 : next.content.length;
                 curPos += dir;
@@ -886,8 +900,7 @@ function skipWord(cx, start, side, forward) {
                 return next;
             if (!block.parent)
                 return last;
-            let end = visually ? map.visualSide(!forward)
-                : forward ? { pos: block.end, side: -1 } : { pos: block.start, side: 1 };
+            let end = forward ? { pos: block.end, side: 1 } : { pos: block.start, side: -1 };
             if (end.pos != start)
                 last = end;
             pos = forward ? block.after : block.before;
@@ -932,13 +945,14 @@ function wordAt(state, pos, bias) {
         cur = res.parent.node.content[i++];
     }
     if (!Intl.Segmenter)
-        return GardSelection.range(start, end);
+        return GardSelection.undirectionalRange(start, end);
     let best = null, local = pos - start;
     for (let segment of new Intl.Segmenter(undefined, { granularity: "word" }).segment(text)) {
         if (segment.isWordLike && segment.index <= local && segment.index + segment.segment.length >= local && (!best || bias > 0))
             best = segment;
     }
-    return best ? GardSelection.range(start + best.index, start + best.index + best.segment.length) : GardSelection.cursor(pos, bias);
+    return best ? GardSelection.undirectionalRange(start + best.index, start + best.index + best.segment.length)
+        : GardSelection.cursor(pos, bias);
 }
 
 class Transaction {
@@ -1240,7 +1254,7 @@ class GardState {
         if (addr == null) {
             if (require)
                 throw new RangeError("Field is not present in this state");
-            return undefined;
+            return field instanceof GardState.Field ? undefined : field.value(this);
         }
         let track = this.trackAccess;
         if (track) {
@@ -1413,6 +1427,65 @@ class GardState {
         }
     }
     GardState.Field = Field;
+    (function (Field) {
+        class Derived {
+            value;
+            compareF;
+            id = nextID++;
+            dependencies = [];
+            constructor(
+            value, compareF) {
+                this.value = value;
+                this.compareF = compareF;
+            }
+            static define(compute, spec = {}) {
+                return new Derived(compute, spec.compare || ((a, b) => a === b));
+            }
+            get extension() { return this; }
+            slot(addresses) {
+                let idx = addresses[this.id] >> 1;
+                let depSet = new DependencySet;
+                return {
+                    create: state => {
+                        state.values[idx] = state.recordAccess(this.dependencies, this.value);
+                        return 1;
+                    },
+                    update: (state, tr) => {
+                        depSet.update(this.dependencies, addresses);
+                        if ((depSet.doc && tr.docChanged) || (depSet.sel && (tr.docChanged || tr.selection)) ||
+                            (depSet.schema && tr.startState.schema != state.schema) || ensureAll(state, depSet.addrs)) {
+                            let newVal = state.recordAccess(this.dependencies, this.value);
+                            if (!this.compareF(newVal, state.values[idx])) {
+                                state.values[idx] = newVal;
+                                return 1;
+                            }
+                        }
+                        return 0;
+                    },
+                    reconfigure: (state, oldState) => {
+                        let newVal, oldAddr = oldState.config.address[this.id];
+                        if (oldAddr != null) {
+                            let oldVal = getAddr(oldState, oldAddr);
+                            if (this.dependencies.every(dep => {
+                                return dep instanceof GardState.Facet ? oldState.facet(dep) === state.facet(dep)
+                                    : dep instanceof GardState.Field ? oldState.field(dep, false) == state.field(dep, false)
+                                        : true;
+                            }) || this.compareF(newVal = state.recordAccess(this.dependencies, this.value), oldVal)) {
+                                state.values[idx] = oldVal;
+                                return 0;
+                            }
+                        }
+                        else {
+                            newVal = state.recordAccess(this.dependencies, this.value);
+                        }
+                        state.values[idx] = newVal;
+                        return 1;
+                    }
+                };
+            }
+        }
+        Field.Derived = Derived;
+    })(Field = GardState.Field || (GardState.Field = {}));
     class Facet {
         combine;
         compareInput;
@@ -1438,24 +1511,26 @@ class GardState {
             return new GardState.Facet(config.combine || ((a) => a), config.compareInput || ((a, b) => a === b), config.compare || (!config.combine ? sameArray : (a, b) => a === b), !!config.static, config.enables);
         }
         of(value) {
-            return new FacetProvider(none, this, 1, value);
+            return new FacetProvider(this, nextID++, 1, value);
         }
-        compute(get) {
+        derive(get) {
             if (this.isStatic)
-                throw new Error("Can't compute a static facet");
-            return new FacetProvider([], this, 4, get);
+                throw new Error("Can't derive a static facet");
+            let field = Field.Derived.define(get, { compare: this.compareInput });
+            return [field, new FacetProvider(this, field.id, 0, null)];
         }
-        computeN(get) {
+        deriveN(get) {
             if (this.isStatic)
-                throw new Error("Can't compute a static facet");
-            return new FacetProvider([], this, 2 | 4, get);
+                throw new Error("Can't derive a static facet");
+            let field = Field.Derived.define(get, { compare: (a, b) => compareArray(a, b, this.compareInput) });
+            return [field, new FacetProvider(this, field.id, 2, null)];
         }
         from(field, get) {
             if (this.isStatic)
-                throw new Error("Can't compute a static facet");
+                throw new Error("Can't derive a static facet");
             if (!get)
-                get = x => x;
-            return new FacetProvider([field], this, 0, state => get(state.field(field)));
+                return new FacetProvider(this, field.id, 0, null);
+            return this.derive(s => get(s.field(field)));
         }
         tag;
     }
@@ -1547,10 +1622,6 @@ class GardState {
                             address[p.id] = (staticValues.length << 1) | 1;
                             staticValues.push(p.value);
                         }
-                        else {
-                            address[p.id] = dynamicSlots.length << 1;
-                            dynamicSlots.push(a => p.dynamicSlot(a));
-                        }
                     }
                     address[facet.id] = dynamicSlots.length << 1;
                     dynamicSlots.push(a => dynamicFacetSlot(a, facet, providers));
@@ -1616,6 +1687,9 @@ class GardState {
                 result[prec].push(ext);
                 if (ext.provides)
                     inner(ext.provides, prec);
+            }
+            else if (ext instanceof GardState.Field.Derived) {
+                result[prec].push(ext);
             }
             else if (ext instanceof FacetProvider) {
                 result[prec].push(ext);
@@ -1722,60 +1796,16 @@ class DependencySet {
 }
 class FacetProvider {
     facet;
+    id;
     flags;
     value;
-    id = nextID++;
-    extension;    dependencies;
-    constructor(dependencies, facet, flags, value) {
+    extension;    constructor(facet, 
+    id, flags, 
+    value) {
         this.facet = facet;
+        this.id = id;
         this.flags = flags;
         this.value = value;
-        this.dependencies = dependencies;    }
-    dynamicSlot(addresses) {
-        let getter = this.value;
-        let compare = this.facet.compareInput;
-        let id = this.id, idx = addresses[id] >> 1;
-        let multi = this.flags & 2;
-        let dependencies = this.dependencies;
-        let auto = this.flags & 4 ? dependencies : null;
-        let depSet = new DependencySet;
-        return {
-            create(state) {
-                state.values[idx] = state.recordAccess(auto, getter);
-                return 1;
-            },
-            update(state, tr) {
-                depSet.update(dependencies, addresses);
-                if ((depSet.doc && tr.docChanged) || (depSet.sel && (tr.docChanged || tr.selection)) ||
-                    (depSet.schema && tr.startState.schema != state.schema) || ensureAll(state, depSet.addrs)) {
-                    let newVal = state.recordAccess(auto, getter);
-                    if (multi ? !compareArray(newVal, state.values[idx], compare) : !compare(newVal, state.values[idx])) {
-                        state.values[idx] = newVal;
-                        return 1;
-                    }
-                }
-                return 0;
-            },
-            reconfigure(state, oldState) {
-                let newVal, oldAddr = oldState.config.address[id];
-                if (oldAddr != null) {
-                    let oldVal = getAddr(oldState, oldAddr);
-                    if (dependencies.every(dep => {
-                        return dep instanceof GardState.Facet ? oldState.facet(dep) === state.facet(dep)
-                            : dep instanceof GardState.Field ? oldState.field(dep, false) == state.field(dep, false)
-                                : true;
-                    }) || (multi ? compareArray(newVal = getter(state), oldVal, compare) : compare(newVal = getter(state), oldVal))) {
-                        state.values[idx] = oldVal;
-                        return 0;
-                    }
-                }
-                else {
-                    newVal = state.recordAccess(auto, getter);
-                }
-                state.values[idx] = newVal;
-                return 1;
-            }
-        };
     }
 }
 function compareArray(a, b, compare) {

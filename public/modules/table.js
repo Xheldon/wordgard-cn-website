@@ -1,7 +1,7 @@
 import { Decoration, Wordgard } from 'wordgard/editor';
 import { GardState, Transaction, GardSelection, Correction } from 'wordgard/state';
 import { Table, ColSpan, RowSpan, TableRow, Cell, BlockCell, HeaderCell, BlockHeaderCell } from 'wordgard/types';
-import { Node, ValidationError, Token, ChangeSet } from 'wordgard/doc';
+import { Node, Slice, ValidationError, Token, ChangeSet } from 'wordgard/doc';
 import { Command, moveByUnit, moveByWord, moveByLine, moveToLineSide, Menu } from 'wordgard/command';
 import { tablePhrases } from 'wordgard/phrases';
 
@@ -329,6 +329,24 @@ class CellSelection extends GardSelection {
     get domSelection() {
         let { from, to } = this.replacementRange;
         return { anchor: from, anchorSide: 1, head: to, headSide: -1 };
+    }
+    toSlice(doc) {
+        let base = doc.resolve(this.anchorCell), table = base.parent.parent;
+        let map = TableMap.get(table.node, table.start);
+        let rect = map.rectBetween(this.anchorCell, this.headCell);
+        let rows = [], added = new Set();
+        for (let row = rect.startRow; row < rect.endRow; row++) {
+            let rowContent = [];
+            for (let col = rect.startCol; col < rect.endCol; col++) {
+                let cell = map.cellAt(col, row);
+                if (added.has(cell))
+                    continue;
+                added.add(cell);
+                rowContent.push(map.getCell(cell));
+            }
+            rows.push(table.node.content[row].tag.create(rowContent));
+        }
+        return Slice.of(rows, [table.node.tag]);
     }
     eq(other) {
         return other instanceof CellSelection && other.anchor == this.anchor && other.head == this.head;
@@ -768,7 +786,7 @@ const splitCell = ({ state }) => {
     };
 };
 
-function fitSlice(schema, parent, slice, context) {
+function fitSlice(schema, parent, slice) {
     let wrap = schema.findWrapping(schema.docTag.type, parent.type);
     if (!wrap)
         return null;
@@ -776,7 +794,7 @@ function fitSlice(schema, parent, slice, context) {
     for (let i = wrap.length - 1; i >= 0; i--)
         content = [wrap[i].create(content)];
     let doc = schema.doc(content);
-    let changes = ChangeSet.create(doc, { from: wrap.length + 1, to: doc.length - wrap.length - 1, insert: slice, fit: context });
+    let changes = ChangeSet.create(doc, { from: wrap.length + 1, to: doc.length - wrap.length - 1, insert: slice, fit: true });
     doc = changes.apply(doc);
     let node = doc.length > wrap.length && doc.plotAt(wrap.length);
     return node && node.type == parent.type ? node : null;
@@ -784,15 +802,15 @@ function fitSlice(schema, parent, slice, context) {
 function isTableContent(schema, type) {
     return type == TableRow.type || schema.matchNode(type, Node.Group.TableCell);
 }
-function pastedCells(schema, slice, context) {
+function pastedCells(schema, slice) {
     let table = null, tok;
     if (slice.content.length == 1 && (tok = slice.content[0]).tokenType == Token.Type.Node &&
         tok.type == Table.type) {
         table = tok;
     }
-    else if (context.some(tag => isTableContent(schema, tag.type)) ||
+    else if (slice.context.some(tag => isTableContent(schema, tag.type)) ||
         slice.content.some(tok => tok.tokenType != Token.Type.Close && isTableContent(schema, tok.type))) {
-        table = fitSlice(schema, Table, slice, context);
+        table = fitSlice(schema, Table, slice);
     }
     return table && ensureRectangular(schema, table.content.map(row => row.content));
 }
@@ -960,14 +978,14 @@ function insertCells(state, map, startCol, startRow, cells, event) {
         userEvent: `${event}.paste`
     };
 }
-function handleTablePaste(state, slice, context, drop) {
+function handleTablePaste(state, slice, drop) {
     if (state.readOnly)
         return false;
     let { schema } = state.doc;
     if (drop == null && state.selection instanceof CellSelection) {
-        let cells = pastedCells(schema, slice, context);
+        let cells = pastedCells(schema, slice);
         if (!cells) {
-            let single = fitSlice(schema, cellTag(schema), slice, context);
+            let single = fitSlice(schema, cellTag(schema), slice);
             if (!single)
                 return false;
             cells = { width: 1, height: 1, rows: [[single]] };
@@ -978,20 +996,20 @@ function handleTablePaste(state, slice, context, drop) {
     }
     else {
         let cx = tableContext(state, drop), cells;
-        if (!cx || !(cells = pastedCells(schema, slice, context)))
+        if (!cx || !(cells = pastedCells(schema, slice)))
             return false;
         let rect = cx.map.cellRect(cx.cells[0]);
         return insertCells(state, cx.map, rect.startCol, rect.startRow, cells, drop == null ? "drop" : "paste");
     }
 }
-const tablePasteHandler = /*@__PURE__*/Wordgard.pasteHandler.of((wg, _event, slice, context) => {
-    let tr = handleTablePaste(wg.state, slice, context);
+const tablePasteHandler = /*@__PURE__*/Wordgard.pasteHandler.of((wg, _event, slice) => {
+    let tr = handleTablePaste(wg.state, slice);
     return tr && (wg.dispatch(tr), true);
 });
-const tableDropHandler = /*@__PURE__*/Wordgard.dropHandler.of((wg, _event, pos, move, slice, context) => {
+const tableDropHandler = /*@__PURE__*/Wordgard.dropHandler.of((wg, _event, pos, move, slice) => {
     if (wg.state.readOnly)
         return false;
-    let tr = handleTablePaste(wg.state, slice, context, pos);
+    let tr = handleTablePaste(wg.state, slice, pos);
     if (!tr)
         return false;
     if (move) {

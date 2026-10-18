@@ -1,10 +1,11 @@
 import { GardState, GardSelection, TextblockMap, BidiSpan, Transaction } from 'wordgard/state';
-import { Attributes, Elt, Node, Leaf, parse, Slice, Plot, serialize, Pos, ChangeSet, ValidationError, Mark } from 'wordgard/doc';
+import { Attributes, Elt, Node, Mark, Leaf, parse, Slice, Plot, serialize, Pos, ChangeSet, ValidationError } from 'wordgard/doc';
 import { StyleModule } from 'style-mod';
 import { findClusterBreak } from '@marijn/find-cluster-break';
 import { findAbove, PointSet, RangeSet } from 'wordgard/set';
 import { enter, insertLineBreak, selectAll, undo, redo, killToLineEnd, yankKilled, transposeChars, Command, deleteUnit, deleteWord, deleteToLineEnd, moveByUnit, moveByLine, moveByWord, moveToLineSide, moveToDocSide, moveByPage, moveToTextblockSide, setAlignment, toggleUnderline, toggleEmphasis, toggleStrong, deleteLine, insertText, setDirection, deleteSelection, Menu, findWrappable, wrapBlockRange, autoJoinBlocks } from 'wordgard/command';
-import { PhraseSet, phrases } from 'wordgard/phrases';
+import { phrases, PhraseSet } from 'wordgard/phrases';
+import cr from 'crelt';
 import { history } from 'wordgard/history';
 
 function addUpdated(sections, updated) {
@@ -211,19 +212,19 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         function shape(type, shape, config) {
             let tp = Node.Type.get(type);
             let shapeFunc = typeof shape == "function"
-                ? tag => addMarkAttributes(shape(tag), tag)
-                : tag => addMarkAttributes(shape, tag);
+                ? memo(tag => shape(tag))
+                : () => shape;
             let atom = typeof shape == "function" ? config?.atom : !shape.hasContent;
-            let ext = tagShape.of({ type: tp, shape: memo(shapeFunc) });
+            let ext = tagShape.of({ type: tp, shape: shapeFunc });
             if (tp.isPlot && atom != null)
                 ext = [ext, GardState.isAtom.of([tp, atom])];
             return ext;
         }
         Tag.shape = shape;
         (function (shape_1) {
-            function dynamic(            type, shape, config) {
+            function derived(type, shape, config) {
                 let tp = Node.Type.get(type);
-                let ext = tagShape.compute(state => {
+                let ext = tagShape.derive(state => {
                     let s = shape(state);
                     return { type: tp, shape: typeof s == "function" ? memo(s) : () => s };
                 });
@@ -232,7 +233,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
                     ext = [ext, GardState.isAtom.of([tp, atom])];
                 return ext;
             }
-            shape_1.dynamic = dynamic;
+            shape_1.derived = derived;
         })(shape = Tag.shape || (Tag.shape = {}));
         function wrapper(type, wrapper, options) {
             if (!wrapper.hasContent)
@@ -256,10 +257,10 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         }
         Tag.widget = widget;
         (function (widget_1) {
-            function dynamic(type, place, widget) {
+            function derived(type, place, widget) {
                 let tp = Node.Type.get(type);
                 let p = getPlace(place);
-                return tagWidget.compute(state => {
+                return tagWidget.derive(state => {
                     let w = widget(state);
                     return {
                         type: tp,
@@ -268,7 +269,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
                     };
                 });
             }
-            widget_1.dynamic = dynamic;
+            widget_1.derived = derived;
         })(widget = Tag.widget || (Tag.widget = {}));
         function attribute(type, attr, value, options) {
             let tp = Node.Type.get(type);
@@ -277,6 +278,16 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         }
         Tag.attribute = attribute;
     })(Decoration.Tag || (Decoration.Tag = {}));
+    (function (Mark$1) {
+        function shape(type, shape) {
+            if (type instanceof Mark)
+                type = type.type;
+            if (type.spanning && !("element" in shape))
+                throw new Error("Spanning marks must have an element shape");
+            return markShape.of({ type, modified: Mark.Type.define(type.name, { ...type.spec, shape }) });
+        }
+        Mark$1.shape = shape;
+    })(Decoration.Mark || (Decoration.Mark = {}));
     class Point {
         constructor() { }
         static widget(widget, options) {
@@ -324,10 +335,15 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
     }
     Decoration.Range = Range;
 ;return Decoration})({});
-const tagShape = /*@__PURE__*/GardState.Facet.define();
+const tagShape = /*@__PURE__*/GardState.Facet.define({
+    combine: shapes => new Map(shapes.map(s => [s.type, s.shape]).reverse())
+});
 const tagWrapper = /*@__PURE__*/GardState.Facet.define();
 const tagWidget = /*@__PURE__*/GardState.Facet.define();
 const tagAttribute = /*@__PURE__*/GardState.Facet.define();
+const markShape = /*@__PURE__*/GardState.Facet.define({
+    combine: shapes => new Map(shapes.map(s => [s.type, s.modified]).reverse())
+});
 function memo(f) {
     let map = new WeakMap();
     return (arg) => {
@@ -337,11 +353,12 @@ function memo(f) {
         return found;
     };
 }
-function addMarkAttributes(shape, tag) {
+function addMarkAttributes(overrides, shape, tag) {
     let attrs;
     for (let mark of tag.marks) {
-        if (mark.type.attribute && (mark.spanning || !tag.isText)) {
-            let { get, target } = mark.type.attribute;
+        let type = overrides.get(mark.type) || mark.type;
+        if (type.attribute && (mark.spanning || !tag.isText)) {
+            let { get, target } = type.attribute;
             let markAttrs = get(mark.value);
             if (markAttrs.length) {
                 if (target && shape instanceof Elt)
@@ -367,13 +384,15 @@ function applyDeco(shape, deco, tag) {
     return shape;
 }
 const baseTagShape = /*@__PURE__*/memo((tag) => {
-    return addMarkAttributes(tag.is(Leaf.Text) ? Widget.editableText.of(tag.param)
-        : tag.type.shape.create(tag.param), tag);
+    return tag.is(Leaf.Text) ? Widget.editableText.of(tag.param) : tag.type.shape.create(tag.param);
 });
-function renderMarks(marks, around) {
-    let result = addMarkAttributes(Elt.create("span", Attributes.none, [around]), Leaf.text(around, marks));
+function renderMarks(state, marks, around) {
+    let markShapes = state.facet(markShape);
+    let result = addMarkAttributes(markShapes, Elt.create("span", Attributes.none, [around]), Leaf.text(around, marks));
     for (let i = marks.length - 1; i >= 0; i--) {
-        let mark = marks[i];
+        let mark = marks[i], shape = markShapes.get(mark.type);
+        if (shape)
+            mark = shape.of(mark.value);
         if (mark.type.element)
             result = renderMarkWrapper(mark).fill([result]);
     }
@@ -494,13 +513,10 @@ function compareDecoSet(setA, setB, cmp) {
         if (!setA.has(srcB))
             cmp(null, valB);
 }
-function compareGlobal(stateA, stateB, facet) {
-    return stateA.facet(facet) != stateB.facet(facet);
-}
+const globalDecoFacets = [tagShape, tagWidget, tagWrapper, tagAttribute, markShape];
 function findChangedRanges(prevState, prevDeco, state, deco, sections) {
     let result = [];
-    let globalChange = compareGlobal(prevState, state, tagShape) || compareGlobal(prevState, state, tagWidget) ||
-        compareGlobal(prevState, state, tagWrapper) || compareGlobal(prevState, state, tagAttribute);
+    let globalChange = globalDecoFacets.some(facet => prevState.facet(facet) !== state.facet(facet));
     let shapeChanges = [];
     for (let i = 0, posA = 0, posB = 0; i < sections.length;) {
         let len = sections[i++], ins = sections[i++];
@@ -652,24 +668,6 @@ class SpanIterator {
         return this;
     }
 }
-function nodeWrappers(schema, tag, active, atom) {
-    let wrappers;
-    for (let mark of tag.marks)
-        if (mark.type.element)
-            (wrappers || (wrappers = [])).push(mark);
-    if (active.length) {
-        for (let val of active) {
-            if (val instanceof WrapperRangeDecoration && (tagScope(tag, atom) & val.scope) &&
-                (!val.query || schema.matchNode(tag.type, val.query)))
-                (wrappers || (wrappers = [])).push(val);
-        }
-    }
-    if (!wrappers)
-        return none;
-    if (wrappers.length > 1)
-        wrappers.sort((a, b) => (a.spanning == b.spanning ? 0 : a.spanning ? -1 : 1) || a.rank - b.rank);
-    return wrappers;
-}
 function tagScope(tag, atom) {
     return 4 |
         (atom ? 1 | (tag.type.isInline ? 2 : 0) : 0);
@@ -690,6 +688,7 @@ class DecoIterator {
     globalWidgets;
     globalWrappers;
     globalAttrs;
+    markShapes;
     schema;
     pos;
     rangeCursor;
@@ -705,6 +704,7 @@ class DecoIterator {
             .some(w => (w.place == 1 || w.place == 3) && typeof w.widget == "function");
         this.globalWrappers = state.facet(tagWrapper);
         this.globalAttrs = state.facet(tagAttribute);
+        this.markShapes = state.facet(markShape);
         this.pos = state.doc.resolve(0);
         this.schema = state.schema;
         this.rangeCursor = RangeSet.cursor(state.facet(Decoration.Range.source).map(s => s(state)));
@@ -728,6 +728,26 @@ class DecoIterator {
         return this.globalWidgets.some(tw => tw.type == type &&
             (tw.place == 3 || tw.place == 1) &&
             typeof tw.widget == "function");
+    }
+    nodeWrappers(tag, active, atom) {
+        let wrappers;
+        for (let mark of tag.marks) {
+            let shape = this.markShapes.get(mark.type) || mark.type;
+            if (shape.element)
+                (wrappers || (wrappers = [])).push(shape == mark.type ? mark : shape.of(mark.value));
+        }
+        if (active.length) {
+            for (let val of active) {
+                if (val instanceof WrapperRangeDecoration && (tagScope(tag, atom) & val.scope) &&
+                    (!val.query || this.schema.matchNode(tag.type, val.query)))
+                    (wrappers || (wrappers = [])).push(val);
+            }
+        }
+        if (!wrappers)
+            return none;
+        if (wrappers.length > 1)
+            wrappers.sort((a, b) => (a.spanning == b.spanning ? 0 : a.spanning ? -1 : 1) || a.rank - b.rank);
+        return wrappers;
     }
     walk(from, inclusiveStart, to, walker) {
         this.rangeCursor.goto(from);
@@ -753,7 +773,7 @@ class DecoIterator {
                         shape = applyDeco(shape, deco, node.tag);
                 if (shape.hasContent)
                     throw new Error("Leaf nodes shapes shouldn't have a content hole");
-                walker.node(node, shape, nodeWrappers(this.schema, node.tag, iter.active, true), undefined);
+                walker.node(node, shape, this.nodeWrappers(node.tag, iter.active, true), undefined);
                 this.widgets(node.tag, 1, walker);
             },
             enterPlot: (node, pos) => {
@@ -766,7 +786,7 @@ class DecoIterator {
                 if (pendingPos == pos)
                     for (let deco of pendingDeco)
                         shape = applyDeco(shape, deco, node.tag);
-                let wrappers = nodeWrappers(this.schema, node.tag, iter.active, !shape.hasContent);
+                let wrappers = this.nodeWrappers(node.tag, iter.active, !shape.hasContent);
                 let atom = !shape.hasContent;
                 if (atom)
                     walker.node(node, shape, wrappers, pos + node.length > to ? to - pos : undefined);
@@ -842,15 +862,10 @@ class DecoIterator {
         this.pos = pos;
     }
     tagShape(tag, active) {
-        let shape;
-        if (!tag.is(Leaf.Text))
-            for (let src of this.tagShapes)
-                if (src.type == tag.type) {
-                    shape = src.shape(tag);
-                    break;
-                }
-        if (!shape)
-            shape = baseTagShape(tag);
+        let override = this.tagShapes.get(tag.type);
+        let shape = override ? override(tag) : baseTagShape(tag);
+        if (tag.marks.length)
+            shape = addMarkAttributes(this.markShapes, shape, tag);
         let add;
         for (let src of this.globalAttrs)
             if (tag.type == src.type) {
@@ -1423,6 +1438,13 @@ class CompositeTile extends Tile {
             return null;
         let { closest, rect } = result;
         let pos = this.posBeforeChild(closest, start);
+        if (textblock && textblock.start == start && (x < rect.left || x > rect.right)) {
+            let start = (x < rect.left) == textblock.ltr;
+            let span = start ? textblock.order[0] : textblock.order[textblock.order.length - 1];
+            if (span.ltr != textblock.ltr && pos >= span.from + textblock.start && pos <= span.to + textblock.start)
+                return start ? CoordPos.create(textblock.start, -1)
+                    : CoordPos.create(textblock.start + textblock.node.contentLength, 1);
+        }
         if (closest.dom.nodeName == "BR")
             return CoordPos.create(pos, 1);
         if (closest.tag && closest.tag.isPlot && closest.tag.type.isInline) {
@@ -2543,6 +2565,14 @@ class Coords {
     }
 }
 function coordsAtPos(wg, pos, assoc) {
+    let textblock = wg.state.doc.resolve(pos).textblockParent;
+    let map = textblock ? wg.state.textblockMap(textblock) : null;
+    if (textblock && textblock.node.contentLength &&
+        (pos == textblock.start && assoc < 0 || pos == textblock.end && assoc > 0)) {
+        let span = map.order[pos == textblock.start ? 0 : map.order.length - 1];
+        if (span.ltr != map.ltr)
+            pos = textblock.start + (pos == textblock.start ? span.to : span.from);
+    }
     let { offset, tile, pos: tilePos } = wg.docTile.resolve(pos, assoc);
     if (tile instanceof TextTile) {
         let from = offset, to = offset;
@@ -2551,7 +2581,7 @@ function coordsAtPos(wg, pos, assoc) {
             to++;
         else
             from--;
-        return new Coords(tile, flattenV(singleRect(textRange(tile.dom, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc)));
+        return new Coords(tile, flattenV(singleRect(textRange(tile.dom, from, to), side, true), (side < 0) == ltrAt(wg.state, pos, assoc, map)));
     }
     let tagTile = tile;
     while (!tagTile.tag)
@@ -2562,7 +2592,7 @@ function coordsAtPos(wg, pos, assoc) {
         if (tile.widget.type.inFlow) {
             let rect = singleRect(tile.dom, after ? 1 : -1);
             if (rect.width || rect.height)
-                return new Coords(tile, horizontal ? flattenH(rect, !after) : flattenV(rect, ltrAt(wg.state, pos, 1) == !after));
+                return new Coords(tile, horizontal ? flattenH(rect, !after) : flattenV(rect, ltrAt(wg.state, pos, 1, map) == !after));
         }
         if (!tile.parent)
             return new Coords(tile, new DOMRect);
@@ -2579,7 +2609,7 @@ function coordsAtPos(wg, pos, assoc) {
                     break;
                 let rect = singleRect(before.dom, 1);
                 if (rect.width || rect.height)
-                    return new Coords(before, horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1)));
+                    return new Coords(before, horizontal ? flattenH(rect, false) : flattenV(rect, !ltrAt(wg.state, pos, 1, map)));
             }
         }
         else {            for (let i = offset; i < tile.children.length; i++) {
@@ -2588,7 +2618,7 @@ function coordsAtPos(wg, pos, assoc) {
                     continue;
                 let rect = singleRect(after.dom, -1);
                 if (rect.width || rect.height)
-                    return new Coords(after, horizontal ? flattenH(rect, true) : flattenV(rect, ltrAt(wg.state, pos, 1)));
+                    return new Coords(after, horizontal ? flattenH(rect, true) : flattenV(rect, ltrAt(wg.state, pos, 1, map)));
             }
         }
     }
@@ -2632,19 +2662,18 @@ const clipboardInputFilter = /*@__PURE__*/GardState.Facet.define();
 const clipboardInputHTMLFilter = /*@__PURE__*/GardState.Facet.define();
 const clipboardTextParser = /*@__PURE__*/GardState.Facet.define();
 const clipboardInputTextFilter = /*@__PURE__*/GardState.Facet.define();
-function writeClipboard(state, slice, context, data) {
+function writeClipboard(state, slice, data) {
     for (let filter of state.facet(clipboardOutputFilter))
         slice = filter(slice, state);
     let includeContext = 0;
-    for (let i = 0; i < context.length; i++) {
-        let next = context[i];
-        if (next.type.defining && (!includeContext || next.type != context[includeContext - 1].type))
+    for (let i = 0; i < slice.context.length; i++) {
+        let next = slice.context[i];
+        if (next.type.defining && (!includeContext || next.type != slice.context[includeContext - 1].type))
             includeContext = i + 1;
         else if (next.type.defining || !next.isTextblock)
             break;
     }
     let doc = detachedDoc(), dom = serialize.slice(slice, {
-        context,
         includeContext,
         openAttr: "wg-open"
     }).toDOM();
@@ -2668,7 +2697,7 @@ function writeClipboard(state, slice, context, data) {
     data.setData("text/html", html);
     let text;
     for (let serialize of state.facet(clipboardTextSerializer)) {
-        if ((text = serialize(slice, context, state)) != null)
+        if ((text = serialize(slice, state)) != null)
             break;
     }
     if (text == null)
@@ -2683,7 +2712,7 @@ function isOpen(elt) {
 function readClipboard(state, data, targetContext, plain) {
     let html = data.getData("text/html");
     let text = data.getData("text/plain") || data.getData("Text") || data.getData("text/uri-list").replace(/\r?\n/g, " ");
-    let slice, context = [];
+    let slice;
     if (text && (targetContext.parent.node.type.hasRole(Node.Role.Code) || !html || plain)) {
         for (let filter of state.facet(clipboardInputTextFilter))
             text = filter(text, state);
@@ -2699,14 +2728,14 @@ function readClipboard(state, data, targetContext, plain) {
         if (browser.webkit)
             restoreReplacedSpaces(dom);
         let fromWordgard = dom.querySelector("[wg-content=true]");
-        ({ slice, context } = parse.slice(state.schema, dom, {
+        slice = parse.slice(state.schema, dom, {
             collapseWhiteSpace: !fromWordgard,
             isOpen: fromWordgard ? isOpen : undefined
-        }));
+        });
     }
     for (let filter of state.facet(clipboardInputFilter))
         slice = filter(slice, state);
-    return { slice, context };
+    return slice;
 }
 function readClipboardText(state, text, context, plain) {
     if (!plain)
@@ -2839,7 +2868,6 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         whiteSpace: "pre-wrap",
         overflowWrap: "anywhere",
         wordBreak: "break-word",        boxSizing: "border-box",
-        minHeight: "100%",
         padding: "4px 12px",
         outline: "none",
         caretColor: "transparent",
@@ -2924,14 +2952,26 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
     },
     ".wg-panels-top": { top: "0" },
     ".wg-panels-bottom": { bottom: "0" },
-    "wg-dialog": {
-        display: "block",
-        padding: "5px 19px 5px 6px",
-        position: "relative",
-        "& label, & .wg-label": {
-            fontSize: "90%"
-        },
-        borderBottom: "1px solid var(--wg-border-color)"
+    dialog: {
+        font: "var(--wg-dialog-font)",
+        padding: "7px 22px 7px 8px",
+        minWidth: "120px",
+        border: "1px solid var(--wg-border-color)",
+        borderRadius: "5px",
+        boxShadow: "0 0 8px 0 rgba(128, 128, 128, 0.2)",
+        inset: "unset",
+        "&.wg-free-dialog": {
+            position: "fixed"
+        }
+    },
+    "h3.wg-dialog-title": {
+        fontSize: "90%",
+        fontWeight: "bold",
+        textAlign: "center",
+        margin: "0 0 0.8em"
+    },
+    "dialog label, dialog .wg-label": {
+        fontSize: "90%"
     },
     ".wg-dialog-close": {
         position: "absolute",
@@ -2961,6 +3001,24 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
             backgroundColor: "#222"
         }
     },
+    ".wg-key-help": {
+        padding: "15px 4px 4px",
+        maxWidth: "350px"
+    },
+    ".wg-key-list": {
+        padding: "11px",
+        outline: "none",
+        maxHeight: "calc(min(70vh, 300px))",
+        overflowY: "auto",
+        display: "grid",
+        gridTemplateColumns: "max-content auto",
+        gap: "8px 15px",
+        "& h4": {
+            gridColumn: "span 2",
+            margin: "0.5em 0",
+            fontSize: "110%"
+        }
+    }
 }, lightDarkIDs);
 
 function setDOMSelection(wg) {
@@ -3013,7 +3071,7 @@ function rangeForClick(wg, pos, type) {
     }
     else {        let cx = wg.state.doc.resolve(pos.pos), block = cx.textblockParent;
         if (block)
-            return GardSelection.range(block.start, block.end);
+            return GardSelection.undirectionalRange(block.start, block.end);
         else
             return GardSelection.near(wg.state, pos.pos, pos.side || -1);
     }
@@ -3126,12 +3184,23 @@ function moveToLineBoundary(wg, start, forward) {
     let startCoords = wg.coordsAtPos(start.head, start.headSide);
     let ltr = wg.state.textblockLTR(block.node);
     let y = (startCoords.top + startCoords.bottom) / 2, left = forward != ltr;
-    let { pos } = wg.posAtCoords({ x: left ? -1e7 : 1e7, y });
+    let { pos, side } = wg.posAtCoords({ x: left ? -1e7 : 1e7, y });
     if (pos < block.start || pos > block.end) {
         let blockRect = wg.docTile.nodeTile(block.before).dom.getBoundingClientRect();
-        pos = wg.posAtCoords({ x: left ? blockRect.left : blockRect.right, y }).pos;
+        let result = wg.posAtCoords({ x: left ? blockRect.left + 0.2 : blockRect.right - 0.2, y });
+        if (result.pos < block.start) {
+            pos = block.start;
+            side = -1;
+        }
+        else if (result.pos > block.end) {
+            pos = block.end;
+            side = 1;
+        }
+        else {
+            ({ pos, side } = result);
+        }
     }
-    return GardSelection.cursor(pos, forward ? -1 : 1);
+    return GardSelection.cursor(pos, side);
 }
 
 const observeOptions = {
@@ -3269,7 +3338,7 @@ class DOMObserver {
             if (selRange)
                 range = buildSelectionRangeFromRange(wg, selRange);
         }
-        if (!range || this.selectionRange.eq(range))
+        if (!range || !range.focusNode || this.selectionRange.eq(range))
             return false;
         let context = range.anchorNode && wg.docTile.nearest(range.anchorNode);
         if (context instanceof WidgetTile)
@@ -3279,10 +3348,6 @@ class DOMObserver {
     }
     setSelectionRange(anchor, head) {
         this.selectionRange.set(anchor.dom, anchor.offset, head.dom, head.offset);
-        this.selectionChanged = false;
-    }
-    clearSelectionRange() {
-        this.selectionRange.set(null, 0, null, 0);
         this.selectionChanged = false;
     }
     ignore(f) {
@@ -3378,18 +3443,46 @@ class KeyBinding {
     static of(spec) { return new KeyBinding(spec); }
 }
 ;KeyBinding = /*@__PURE__*/(function (KeyBinding) {
-    function runScopeHandlers(wg, event, scope) {
-        let map = getKeymap(wg.state.facet(KeyBinding.source), wg.state.facet(KeyBinding.useDefaultKeymap));
-        return runHandlers(map, event, wg, scope);
+    function handle(wg, event) {
+        let map = getKeymap(wg.state);
+        return runHandlers(map, event, wg);
     }
-    KeyBinding.runScopeHandlers = runScopeHandlers;
-    KeyBinding.source = GardState.Facet.define();
+    KeyBinding.handle = handle;
+    KeyBinding.keymap = GardState.Field.Derived.define(s => {
+        let bindings = s.facet(KeyBinding.source);
+        return s.facet(KeyBinding.useDefaultKeymap) ? bindings.concat(KeyBinding.defaultKeymap) : bindings;
+    });
+    KeyBinding.source = GardState.Facet.define({
+        enables: KeyBinding.keymap
+    });
     KeyBinding.useDefaultKeymap = GardState.Facet.define({
         combine: input => input.length ? input[0] : true
     });
+    class Group {
+        description;
+        rank;
+        constructor(
+        description, 
+        rank) {
+            this.description = description;
+            this.rank = rank;
+        }
+        static define(spec) {
+            return new Group(spec.description, spec.rank || 1000);
+        }
+        static Inline = new Group(phrases.ref("group_inline"), 20);
+        static Block = new Group(phrases.ref("group_block"), 30);
+        static History = new Group(phrases.ref("group_history"), 70);
+    }
+    KeyBinding.Group = Group;
+    function lookupByDescription(state, desc) {
+        return getDescMap(state).get(desc) || null;
+    }
+    KeyBinding.lookupByDescription = lookupByDescription;
     KeyBinding.defaultKeymap = [
         { key: "Enter", run: enter },
-        { key: "Shift-Enter", run: insertLineBreak },
+        { key: "Shift-Enter", run: insertLineBreak,
+            description: phrases.ref("insert_break"), group: Group.Inline },
         { key: "Backspace", run: Command.bind(deleteUnit, "backward") },
         { key: "Delete", run: Command.bind(deleteUnit, "forward") },
         { key: "Ctrl-Backspace", mac: "Alt-Backspace", run: Command.bind(deleteWord, "backward") },
@@ -3433,9 +3526,9 @@ class KeyBinding {
         { key: "Mod-End", run: Command.bind(moveToDocSide, { side: "end" }),
             shift: Command.bind(moveToDocSide, { side: "end", extend: true }) },
         { key: "Mod-a", run: selectAll },
-        { key: "Mod-z", run: undo },
-        { key: "Mod-y", mac: "Mod-Shift-z", run: redo },
-        { linux: "Ctrl-Shift-z", run: redo },
+        { key: "Mod-z", run: undo, description: phrases.ref("undo"), group: Group.History },
+        { key: "Mod-y", mac: "Mod-Shift-z", run: redo, description: phrases.ref("redo"), group: Group.History },
+        { linux: "Ctrl-Shift-z", run: redo, description: phrases.ref("redo"), group: Group.History },
         { mac: "Ctrl-b", run: Command.bind(moveByUnit, { dir: "backward" }),
             shift: Command.bind(moveByUnit, { dir: "backward", extend: true }) },
         { mac: "Ctrl-f", run: Command.bind(moveByUnit, { dir: "forward" }),
@@ -3469,15 +3562,15 @@ function normalizeKeyName(name, platform) {
     let alt, ctrl, shift, meta;
     for (let i = 0; i < parts.length - 1; ++i) {
         const mod = parts[i];
-        if (/^(cmd|meta|m)$/i.test(mod))
+        if (mod == "Cmd" || mod == "Meta")
             meta = true;
-        else if (/^a(lt)?$/i.test(mod))
+        else if (mod == "Alt")
             alt = true;
-        else if (/^(c|ctrl|control)$/i.test(mod))
+        else if (mod == "Ctrl")
             ctrl = true;
-        else if (/^s(hift)?$/i.test(mod))
+        else if (mod == "Shift")
             shift = true;
-        else if (/^mod$/i.test(mod)) {
+        else if (mod == "Mod") {
             if (platform == "mac")
                 meta = true;
             else
@@ -3491,18 +3584,18 @@ function normalizeKeyName(name, platform) {
     if (ctrl)
         result = "Ctrl-" + result;
     if (meta)
-        result = "Meta-" + result;
+        result = (platform == "mac" ? "Meta-" : "Cmd-") + result;
     if (shift)
         result = "Shift-" + result;
     return result;
 }
-function modifiers(name, event) {
+function modifiers(name, event, platform) {
     if (event.altKey)
         name = "Alt-" + name;
     if (event.ctrlKey)
         name = "Ctrl-" + name;
     if (event.metaKey)
-        name = "Meta-" + name;
+        name = (platform == "mac" ? "Cmd-" : "Meta-") + name;
     if (event.shiftKey)
         name = "Shift-" + name;
     return name;
@@ -3518,56 +3611,65 @@ class NormalizedBinding {
     }
 }
 const keymapCache = /*@__PURE__*/(() => new WeakMap())();
-function getKeymap(bindings, addDefault) {
+function getKeymap(state) {
+    let bindings = state.field(KeyBinding.keymap);
     let found = keymapCache.get(bindings);
-    if (!found || found.deflt != addDefault) {
-        found = {
-            map: buildKeymap(addDefault ? bindings.concat(KeyBinding.defaultKeymap) : bindings, currentPlatform),
-            deflt: addDefault
-        };
-        keymapCache.set(bindings, found);
+    if (!found)
+        keymapCache.set(bindings, found = buildKeymap(bindings, currentPlatform));
+    return found;
+}
+const lookupCache = /*@__PURE__*/(() => new WeakMap())();
+function getDescMap(state) {
+    let bindings = state.field(KeyBinding.keymap);
+    let map = lookupCache.get(bindings);
+    if (!map) {
+        lookupCache.set(bindings, map = new Map);
+        for (let binding of bindings) {
+            let { description, shiftDescription } = binding.spec;
+            if (description || shiftDescription) {
+                let name = binding.spec[currentPlatform] || binding.spec.key;
+                if (name && description)
+                    map.set(description, normalizeKeyName(name, currentPlatform));
+                if (name && shiftDescription)
+                    map.set(shiftDescription, "Shift-" + normalizeKeyName(name, currentPlatform));
+            }
+        }
     }
-    return found.map;
+    return map;
 }
 function bind(run) {
     return (wg) => Command.dispatch(wg, run);
 }
 function buildKeymap(bindings, platform) {
-    let scopes = Object.create(null);
+    let map = [];
     for (let { spec: b } of bindings) {
         let baseFlags = (b.allowDefault ? 8 : 0);
-        for (let scope of b.scope ? b.scope.split(" ") : ["editor"]) {
-            let array = scopes[scope] || (scopes[scope] = []);
-            let key = b[platform] || b.key;
-            if (b.char) {
-                if (key)
-                    throw new Error("A key binding may not provide both a char and a key field");
-                if (b.shift)
-                    throw new Error("Shift-modified bindings are not supported for char bindings");
-                array.push(new NormalizedBinding(baseFlags | 1, b.char, bind(b.run)));
-            }
+        let key = b[platform] || b.key;
+        if (b.char) {
             if (key)
-                array.push(new NormalizedBinding(baseFlags | 2, normalizeKeyName(key, platform), bind(b.run)));
-            if (key && b.shift)
-                array.push(new NormalizedBinding(baseFlags | 2, normalizeKeyName("Shift-" + key, platform), bind(b.shift)));
-            if (b.any)
-                array.push(new NormalizedBinding(4, "", b.any));
+                throw new Error("A key binding may not provide both a char and a key field");
+            if (b.shift)
+                throw new Error("Shift-modified bindings are not supported for char bindings");
+            map.push(new NormalizedBinding(baseFlags | 1, b.char, bind(b.run)));
         }
+        if (key)
+            map.push(new NormalizedBinding(baseFlags | 2, normalizeKeyName(key, platform), bind(b.run)));
+        if (key && b.shift)
+            map.push(new NormalizedBinding(baseFlags | 2, normalizeKeyName("Shift-" + key, platform), bind(b.shift)));
+        if (b.any)
+            map.push(new NormalizedBinding(4, "", b.any));
     }
-    return scopes;
+    return map;
 }
-function runHandlers(map, event, wg, scope) {
-    let handlers = map[scope];
-    if (!handlers)
-        return false;
+function runHandlers(map, event, wg) {
     let key = event.key, charCode = key.codePointAt(0);
     let altGr = event.getModifierState("AltGraph"), fromCode = charKeyCodes[event.keyCode];
     let isChar = codePointSize(charCode) == key.length;
     let char = isChar ? String.fromCodePoint(charCode) : null;
-    let base = modifiers(key, event);
-    let fallback = isChar && !altGr && fromCode && fromCode != base ? modifiers(fromCode, event) : null;
+    let base = modifiers(key, event, currentPlatform);
+    let fallback = isChar && !altGr && fromCode && fromCode != base ? modifiers(fromCode, event, currentPlatform) : null;
     let handled = false, didMatch = false, allowDefault = false;
-    for (let binding of handlers) {
+    for (let binding of map) {
         let matched = ((binding.flags & 1) && (altGr || !event.ctrlKey && !event.metaKey) && binding.name == char) ||
             ((binding.flags & 2) && (binding.name == base || binding.name == fallback)) ||
             (binding.flags & 4);
@@ -3795,12 +3897,13 @@ class InputState {
         }
         else if (type == "insertFromPaste") {
             let { from, to } = this.unflushedSelection ? wg.state.selection.replacementRange : range;
-            let content = readClipboard(wg.state, event.dataTransfer, wg.state.doc.resolve(from), wg.inputState.shiftKey);
+            let slice = readClipboard(wg.state, event.dataTransfer, wg.state.doc.resolve(from), wg.inputState.shiftKey);
             let isSel = from == wg.state.selection.replacementRange.from && to == wg.state.selection.replacementRange.to;
-            if (isSel && wg.state.facet(pasteHandler).some(h => h(wg, event, content ? content.slice : Slice.empty, content ? content.context : [])))
+            if (isSel && wg.state.facet(pasteHandler).some(h => h(wg, event, slice || Slice.empty)))
                 return;
-            if (content) {                wg.dispatch({
-                    changes: { from, to, insert: content.slice, fit: content.context },
+            if (slice) {
+                wg.dispatch({
+                    changes: { from, to, insert: slice, fit: true },
                     selection: isSel ? (cx, changes) => GardSelection.near(cx, changes.mapPos(to, 1), -1) : undefined,
                     userEvent: "input.paste",
                     scrollIntoView: isSel
@@ -3813,7 +3916,7 @@ class InputState {
             let sel = wg.state.selection, touchesSel = from <= sel.to && to >= sel.from;
             if (read)
                 wg.dispatch({
-                    changes: { from, to, insert: read.slice, fit: read.context },
+                    changes: { from, to, insert: read, fit: true },
                     selection: touchesSel ? (cx, changes) => {
                         return GardSelection.near(cx, changes.mapPos(to, 1), -1);
                     } : undefined,
@@ -3910,6 +4013,7 @@ class InputState {
     clearComposition() {
         let comp = this.composing;
         this.composing = null;
+        this.compositionPendingKey = true;
         this.compositionEndedAt = Date.now();
         if (!comp.target)
             return false;
@@ -4151,32 +4255,38 @@ function basicMouseSelection(wg, event) {
         get(event, extend) {
             let cur = queryPos(wg, event), range = rangeForClick(wg, cur, type), { from, to } = range;
             if (extend) {
+                let startAnchor = !(startSel instanceof GardSelection.Text) || startSel.directional ? startSel.anchor
+                    : from < startSel.from ? startSel.to : startSel.from;
                 if (from < startSel.anchor)
-                    return GardSelection.range(startSel.anchor, from, from < to ? 1 : cur.side);
+                    return GardSelection.range(startAnchor, from, from < to ? 1 : cur.side);
                 else
-                    return GardSelection.range(startSel.anchor, to, from < to ? -1 : cur.side);
+                    return GardSelection.range(startAnchor, to, from < to ? -1 : cur.side);
             }
+            let { anchor, head } = range;
             if (start.pos != cur.pos) {
                 let startRange = rangeForClick(wg, start, type);
-                from = Math.min(startRange.from, from);
-                to = Math.max(startRange.to, to);
+                let from = Math.min(range.from, startRange.from), to = Math.max(range.to, startRange.to);
+                if (startRange.from < range.from) {
+                    anchor = from;
+                    head = to;
+                }
+                else {
+                    anchor = to;
+                    head = from;
+                }
             }
-            return from == range.from && to == range.to ? range : GardSelection.range(from, to, cur.side);
+            return anchor == range.anchor && head == range.head ? range
+                : GardSelection.range(anchor, head, head == cur.pos ? cur.side : undefined);
         }
     };
 }
 const dropHandler = /*@__PURE__*/GardState.Facet.define();
 const pasteHandler = /*@__PURE__*/GardState.Facet.define();
-function selectionSlice(state) {
-    return {
-        slice: state.doc.slice(state.selection.from, state.selection.to),
-        context: state.doc.contextAt(state.selection.from)
-    };
-}
 function copy(wg, event) {
     let { state } = wg;
-    if (!state.selection.empty && event.clipboardData) {        let { slice, context } = selectionSlice(state);
-        writeClipboard(state, slice, context, event.clipboardData);
+    if (!state.selection.empty && event.clipboardData) {
+        let slice = state.selection.toSlice(state.doc);
+        writeClipboard(state, slice, event.clipboardData);
         if (event.type == "cut" && !state.readOnly)
             wg.dispatch({
                 changes: state.selection.ranges.map(r => ({ from: r.from, to: r.to, fit: true })),
@@ -4269,7 +4379,7 @@ const baseHandlers = {
     keydown(wg, event) {
         if ((browser.ios || browser.android) && (event.key == "Backspace" || event.key == "Enter"))
             return false;
-        return KeyBinding.runScopeHandlers(wg, event, "editor");
+        return KeyBinding.handle(wg, event);
     },
     mousedown(wg, event) {
         wg.inputState.shiftKey = event.shiftKey;
@@ -4308,8 +4418,8 @@ const baseHandlers = {
             inputState.mouseSelection.dragging = true;
         inputState.draggedContent = selection;
         if (event.dataTransfer) {
-            let { slice, context } = selectionSlice(wg.state);
-            writeClipboard(wg.state, slice, context, event.dataTransfer);
+            let slice = wg.state.selection.toSlice(wg.state.doc);
+            writeClipboard(wg.state, slice, event.dataTransfer);
             event.dataTransfer.effectAllowed = "copyMove";
         }
         return false;
@@ -4323,21 +4433,21 @@ const baseHandlers = {
     drop(wg, event) {
         if (!event.dataTransfer || wg.state.readOnly)
             return true;
-        let content = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, false);
-        if (!content)
+        let slice = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, false);
+        if (!slice)
             return false;
         let dropPos = wg.posAtCoords({ x: event.clientX, y: event.clientY }).pos;
         let { draggedContent } = wg.inputState;
         let del = draggedContent && dragMovesSelection(wg, event)
             ? { from: draggedContent.from, to: draggedContent.to } : null;
-        if (wg.state.facet(dropHandler).some(f => f(wg, event, dropPos, del, content.slice, content.context)))
+        if (wg.state.facet(dropHandler).some(f => f(wg, event, dropPos, del, slice)))
             return true;
-        let ins = { from: dropPos, insert: content.slice, fit: content.context };
+        let ins = { from: dropPos, insert: slice, fit: true };
         let changes = ChangeSet.create(wg.state.doc, del ? [del, ins] : ins);
         wg.focus();
         wg.dispatch({
             changes,
-            selection: GardSelection.range(changes.mapPos(dropPos, -1), changes.mapPos(dropPos, 1)),
+            selection: GardSelection.undirectionalRange(changes.mapPos(dropPos, -1), changes.mapPos(dropPos, 1)),
             userEvent: del ? "move.drop" : "input.drop"
         });
         wg.inputState.draggedContent = null;
@@ -4402,7 +4512,6 @@ const baseObservers = {
         updateForFocusChange(wg);
     },
     blur(wg) {
-        wg.observer.clearSelectionRange();
         updateForFocusChange(wg);
     },
     compositionstart: compositionUpdate,
@@ -4486,15 +4595,18 @@ class ViewState {
     measure(wg) {
         let dom = wg.contentDOM, style = window.getComputedStyle(dom);
         this.styleLTR = style.direction == "ltr";
-        let domRect = dom.getBoundingClientRect();
-        this.contentDOMHeight = domRect.height;
         let result = 0;
+        let domRect = dom.getBoundingClientRect();
+        if (Math.abs(this.contentDOMHeight - domRect.height) > 0.5) {
+            result |= 2;
+            this.contentDOMHeight = domRect.height;
+        }
         if (this.editorWidth != wg.scrollDOM.clientWidth) {
             this.editorWidth = wg.scrollDOM.clientWidth;
             result |= 2;
         }
         let contentWidth = domRect.width;
-        if (this.contentDOMWidth != contentWidth || this.editorHeight != wg.scrollDOM.clientHeight ||
+        if (Math.abs(this.contentDOMWidth - contentWidth) > 0.5 || this.editorHeight != wg.scrollDOM.clientHeight ||
             this.editorOffset != wg.scrollDOM.offsetTop) {
             this.contentDOMWidth = domRect.width;
             this.editorHeight = wg.scrollDOM.clientHeight;
@@ -4683,7 +4795,7 @@ function getCursorInfo(wg, plugin, cont) {
         return finish(null);
     let target = sel.head.parent.node.isDoc ? wg.contentDOM : wg.nodeDOM(sel.head.parent.before);
     wg.scheduleDOMWrite(() => {
-        let temp = renderMarks(marks, "M");
+        let temp = renderMarks(wg.state, marks, "M");
         temp.style.position = "absolute";
         wg.observer.ignore(() => target.insertBefore(temp, target.firstChild));
         wg.scheduleDOMRead(() => {
@@ -5397,926 +5509,6 @@ class PluginInstance {
     }
 }
 
-function offset(add, offset) {
-    return (v, from, to) => add(v, from + offset, to == null ? undefined : to + offset);
-}
-function init(type, create, source, doc) {
-    return create(add => {
-        doc.iterate((node, pos) => {
-            if (node.isPlot && doc.schema.matchNode(node.type, type))
-                source(node, pos + 1, add);
-        });
-    });
-}
-function refreshByPred(type, source, doc, deco, pred) {
-    let recreate = [];
-    doc.iterate((node, pos) => {
-        if (doc.schema.matchNode(node.type, type) && pred(node))
-            recreate.push({
-                from: pos, to: pos + node.length,
-                add: add => source(node, pos + 1, add)
-            });
-    });
-    return recreate.length ? deco.modify({ replace: recreate }) : deco;
-}
-function update(config, create, source, deco, tr) {
-    let doc = tr.newDoc;
-    let refresh = config.refresh && config.refresh(tr);
-    if (refresh === true)
-        return init(config.type, create, source, doc);
-    if (refresh)
-        deco = refreshByPred(config.type, source, tr.startState.doc, deco, refresh);
-    if (!tr.docChanged && !refresh)
-        return deco;
-    let recreate = [];
-    let clear = [];
-    tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
-        let covered = false;
-        doc.iterate(fromB, toB, (node, pos) => {
-            if (doc.schema.matchNode(node.type, config.type)) {
-                recreate.push({
-                    from: pos, to: pos + node.length,
-                    add: add => source(node, pos + 1, add)
-                });
-                if (pos < toB && pos + node.length > toB)
-                    covered = true;
-                return false;
-            }
-        });
-        if (!covered) {
-            let end = tr.startState.doc.resolve(toA);
-            let open = end.matchingParent(p => doc.schema.matchNode(p.type, config.type));
-            if (open && open.before >= fromA)
-                clear.push({ from: open.before, to: open.after });
-        }
-    });
-    if (clear.length)
-        deco = deco.modify({ replace: clear });
-    deco = deco.map(tr.changes, recreate);
-    return deco;
-}
-function decoratePlots(config) {
-    let result = [];
-    let { type, points, ranges } = config;
-    if (points) {
-        let source = (plot, start, add) => points(plot, offset(add, start));
-        let field = GardState.Field.define({
-            create(state) { return init(type, PointSet.create, source, state.doc); },
-            update(value, tr) { return update(config, PointSet.create, source, value, tr); }
-        });
-        result.push(field, Decoration.Point.source.of(s => s.field(field)));
-    }
-    if (ranges) {
-        let source = (plot, start, add) => ranges(plot, offset(add, start));
-        let field = GardState.Field.define({
-            create(state) { return init(type, RangeSet.create, source, state.doc); },
-            update(value, tr) { return update(config, RangeSet.create, source, value, tr); }
-        });
-        result.push(field, Decoration.Range.source.of(s => s.field(field)));
-    }
-    return result;
-}
-
-const panelConfig = /*@__PURE__*/GardState.Facet.define({
-    combine(configs) {
-        let topContainer, bottomContainer;
-        for (let c of configs) {
-            topContainer ||= c.topContainer;
-            bottomContainer ||= c.bottomContainer;
-        }
-        return { topContainer, bottomContainer };
-    }
-});
-const panelPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
-    input;
-    specs;
-    panels;
-    top;
-    bottom;
-    constructor(wg) {
-        this.input = wg.state.facet(Panel.show);
-        this.specs = this.input.filter(s => s);
-        this.panels = this.specs.map(spec => spec(wg));
-        for (let p of this.panels)
-            p.dom.classList.add("wg-panel");
-        let conf = wg.state.facet(panelConfig);
-        this.top = new PanelGroup(wg, true, conf.topContainer);
-        this.bottom = new PanelGroup(wg, false, conf.bottomContainer);
-        this.top.sync(this.panels.filter(p => p.top), wg);
-        this.bottom.sync(this.panels.filter(p => !p.top), wg);
-    }
-    update(update) {
-        let conf = update.state.facet(panelConfig);
-        if (this.top.container != conf.topContainer) {
-            this.top.sync([], update.editor);
-            this.top = new PanelGroup(update.editor, true, conf.topContainer);
-        }
-        if (this.bottom.container != conf.bottomContainer) {
-            this.bottom.sync([], update.editor);
-            this.bottom = new PanelGroup(update.editor, false, conf.bottomContainer);
-        }
-        this.top.syncClasses();
-        this.bottom.syncClasses();
-        let input = update.state.facet(Panel.show);
-        if (input != this.input) {
-            let specs = input.filter(x => x);
-            let panels = [], top = [], bottom = [], mount = [];
-            for (let spec of specs) {
-                let known = this.specs.indexOf(spec), panel;
-                if (known < 0) {
-                    panel = spec(update.editor);
-                    mount.push(panel);
-                }
-                else {
-                    panel = this.panels[known];
-                    if (panel.update)
-                        panel.update(update);
-                }
-                panels.push(panel);
-                (panel.top ? top : bottom).push(panel);
-            }
-            this.specs = specs;
-            this.panels = panels;
-            this.top.sync(top, update.editor);
-            this.bottom.sync(bottom, update.editor);
-            for (let p of mount) {
-                p.dom.classList.add("wg-panel");
-                if (p.connect && update.editor.connected)
-                    p.connect(update.editor);
-            }
-        }
-        else {
-            for (let p of this.panels)
-                if (p.update)
-                    p.update(update);
-        }
-    }
-    connect(wg) {
-        for (let p of this.panels)
-            p.connect?.(wg);
-    }
-    disconnect(wg) {
-        for (let p of this.panels)
-            p.disconnect?.(wg);
-    }
-    remove(wg) {
-        this.top.sync([], wg);
-        this.bottom.sync([], wg);
-    }
-}, plugin => Wordgard.coveredMargins.of(wg => {
-    let value = wg.plugin(plugin);
-    return value && { top: value.top.scrollMargin(), bottom: value.bottom.scrollMargin() };
-}));
-const Panel = /*@__PURE__*/(function (Panel) {
-    Panel.show = GardState.Facet.define({
-        enables: panelPlugin
-    });
-    function get(wg, constructor) {
-        let plugin = wg.plugin(panelPlugin);
-        let index = plugin ? plugin.specs.indexOf(constructor) : -1;
-        return index > -1 ? plugin.panels[index] : null;
-    }
-    Panel.get = get;
-    function configure(config) {
-        return config ? [panelConfig.of(config)] : [];
-    }
-    Panel.configure = configure;
-;return Panel})({});
-class PanelGroup {
-    wg;
-    top;
-    container;
-    dom = undefined;
-    classes = "";
-    panels = [];
-    constructor(wg, top, container) {
-        this.wg = wg;
-        this.top = top;
-        this.container = container;
-        this.syncClasses();
-    }
-    sync(panels, wg) {
-        for (let p of this.panels)
-            if (!panels.includes(p)) {
-                if (wg.connected)
-                    p.disconnect?.(wg);
-                p.remove?.(wg);
-            }
-        this.panels = panels;
-        this.syncDOM();
-    }
-    syncDOM() {
-        if (this.panels.length == 0) {
-            if (this.dom) {
-                this.dom.remove();
-                this.dom = undefined;
-            }
-            return;
-        }
-        if (!this.dom) {
-            this.dom = document.createElement("wg-panels");
-            this.dom.className = this.top ? "wg-panels-top" : "wg-panels-bottom";
-            let parent = this.container || this.wg.dom;
-            parent.insertBefore(this.dom, this.top ? parent.firstChild : null);
-        }
-        let curDOM = this.dom.firstChild;
-        for (let panel of this.panels) {
-            if (panel.dom.parentNode == this.dom) {
-                while (curDOM != panel.dom)
-                    curDOM = rmDOM(curDOM);
-                curDOM = curDOM.nextSibling;
-            }
-            else {
-                this.dom.insertBefore(panel.dom, curDOM);
-            }
-        }
-        while (curDOM)
-            curDOM = rmDOM(curDOM);
-    }
-    scrollMargin() {
-        return !this.dom || this.container ? 0
-            : Math.max(0, this.top ?
-                this.dom.getBoundingClientRect().bottom - Math.max(0, this.wg.scrollDOM.getBoundingClientRect().top) :
-                Math.min(innerHeight, this.wg.scrollDOM.getBoundingClientRect().bottom) - this.dom.getBoundingClientRect().top);
-    }
-    syncClasses() {
-        if (!this.container || this.classes == this.wg.themeClasses)
-            return;
-        for (let cls of this.classes.split(" "))
-            if (cls)
-                this.container.classList.remove(cls);
-        for (let cls of (this.classes = this.wg.themeClasses).split(" "))
-            if (cls)
-                this.container.classList.add(cls);
-    }
-}
-
-let nextID = 0;
-function id(prefix) {
-    return prefix + "-" + (nextID++ % 0xffffff).toString(16);
-}
-const SVG = "http://www.w3.org/2000/svg";
-function labelButton(wg, button, label) {
-    button.textContent = "";
-    if (!label) ;
-    else if (typeof label == "function" || typeof label == "string") {
-        let span = button.appendChild(document.createElement("span"));
-        span.className = "wg-button-label";
-        span.textContent = typeof label == "string" ? label : label(wg.state);
-    }
-    else if ("icon" in label) {
-        let svg = button.appendChild(document.createElementNS(SVG, "svg"));
-        svg.classList.add("wg-icon");
-        svg.setAttribute("viewBox", "0 0 100 100");
-        let path = svg.appendChild(document.createElementNS(SVG, "path"));
-        path.setAttribute("d", label.icon);
-        if (label.directional && !wg.state.textLTR)
-            svg.setAttribute("transform", "scale(-1, 1)");
-    }
-}
-class BarButton {
-    item;
-    dom;
-    flags = 0;
-    index = 0;
-    constructor(item, wg) {
-        this.item = item;
-        this.dom = document.createElement("button");
-        this.dom.className = "wg-menu-button";
-        this.dom.type = "button";
-        this.dom.tabIndex = -1;
-        labelButton(wg, this.dom, item.label);
-        if (item.description) {
-            let desc = typeof item.description == "function" ? item.description(wg.state) : item.description;
-            this.dom.title = desc;
-            this.dom.setAttribute("aria-label", desc);
-        }
-    }
-    get focusDOM() { return this.dom; }
-    update(flags, wg, update) {
-        if (flags != this.flags) {
-            if ((flags & 32) != (this.flags & 32))
-                this.dom.style.display = flags & 32 ? "none" : "";
-            if ((flags & 8) != (this.flags & 8)) {
-                if (flags & 8)
-                    this.dom.setAttribute("aria-disabled", "true");
-                else
-                    this.dom.removeAttribute("aria-disabled");
-            }
-            if ((flags & 4) != (this.flags & 4)) {
-                if (flags & 4)
-                    this.dom.setAttribute("aria-selected", "true");
-                else
-                    this.dom.removeAttribute("aria-selected");
-                this.dom.tabIndex = flags & 4 ? 0 : -1;
-            }
-            if ((flags & 16) != (this.flags & 16)) {
-                if (flags & 16)
-                    this.dom.setAttribute("aria-pressed", "true");
-                else
-                    this.dom.removeAttribute("aria-pressed");
-            }
-            this.flags = flags;
-        }
-    }
-    get children() { return null; }
-    run(wg) {
-        Command.dispatch(wg, this.item.run);
-    }
-}
-class BarControl {
-    item;
-    dom;
-    focusDOM;
-    flags = 0;
-    index = 0;
-    constructor(item, wg, done) {
-        this.item = item;
-        let { dom, focus } = item.render(wg, done);
-        this.dom = dom;
-        this.focusDOM = focus || dom;
-        this.focusDOM.tabIndex = -1;
-    }
-    update(flags, wg, update) {
-        if (flags != this.flags) {
-            if ((flags & 32) != (this.flags & 32))
-                this.dom.style.display = flags & 32 ? "none" : "";
-            if ((flags & 8) != (this.flags & 8) && this.item.setEnabled)
-                this.item.setEnabled(this.dom, !(flags & 8));
-            if ((flags & 4) != (this.flags & 4)) {
-                if (flags & 4)
-                    this.focusDOM.setAttribute("aria-selected", "true");
-                else
-                    this.focusDOM.removeAttribute("aria-selected");
-                this.focusDOM.tabIndex = flags & 4 ? 0 : -1;
-            }
-            this.flags = flags;
-        }
-    }
-    get children() { return null; }
-    get run() { return null; }
-}
-class BarSubmenu {
-    item;
-    dom;
-    button;
-    list;
-    flags = 0;
-    activeChild = -3;
-    index = 0;
-    children;
-    constructor(item, children, wg) {
-        this.item = item;
-        this.dom = document.createElement("wg-submenu");
-        this.button = this.dom.appendChild(document.createElement("button"));
-        this.button.type = "button";
-        this.button.tabIndex = -1;
-        this.button.className = "wg-menu-button";
-        this.button.setAttribute("aria-haspopup", "true");
-        this.button.setAttribute("aria-expanded", "false");
-        if (item.description) {
-            let desc = typeof item.description == "function" ? item.description(wg.state) : item.description;
-            this.dom.title = desc;
-            this.dom.setAttribute("aria-label", desc);
-        }
-        if (item.label) {
-            labelButton(wg, this.button, item.label);
-            this.activeChild = -2;
-        }
-        if (item.width != null)
-            this.dom.style.setProperty("--wg-submenu-width", item.width + "ch");
-        if (item.arrow)
-            this.button.classList.add("wg-submenu-arrow");
-        this.list = this.dom.appendChild(document.createElement("wg-menu-list"));
-        this.list.style.display = "none";
-        this.list.role = "menu";
-        this.list.id = id("wg-popup");
-        this.list.setAttribute("aria-label", this.button.title);
-        this.button.setAttribute("aria-controls", this.list.id);
-        this.children = children.filter((ch) => !(ch instanceof BarSpacer));
-        for (let child of children) {
-            this.list.appendChild(child.dom);
-            if (!(child instanceof BarSpacer))
-                child.focusDOM.role = "menuitem";
-        }
-    }
-    get focusDOM() { return this.button; }
-    update(flags, wg) {
-        if (flags != this.flags) {
-            if ((flags & 32) != (this.flags & 32))
-                this.dom.style.display = flags & 32 ? "none" : "";
-            if ((flags & 8) != (this.flags & 8)) {
-                if (flags & 8)
-                    this.button.setAttribute("aria-disabled", "true");
-                else
-                    this.button.removeAttribute("aria-disabled");
-            }
-            if ((flags & 4) != (this.flags & 4)) {
-                if (flags & 4)
-                    this.button.setAttribute("aria-selected", "true");
-                else
-                    this.button.removeAttribute("aria-selected");
-                this.button.tabIndex = flags & 4 ? 0 : -1;
-            }
-            if ((flags & 2) != (this.flags & 2))
-                this.list.style.display = flags & 2 ? "" : "none";
-            this.flags = flags;
-        }
-        if (this.activeChild != -2) {
-            let activeChild = this.children.findIndex(ch => ch.flags & 16);
-            if (this.activeChild != activeChild) {
-                this.activeChild = activeChild;
-                let label = activeChild < 0 ? this.item.defaultLabel : this.children[activeChild].item.label;
-                labelButton(wg, this.button, label);
-            }
-        }
-    }
-    get run() { return null; }
-}
-class BarSpacer {
-    dom;
-    constructor() {
-        this.dom = document.createElement("wg-menu-spacer");
-    }
-}
-function instantiate(item, bar, flat) {
-    let elt;
-    if (item instanceof Menu.Submenu.Resolved)
-        elt = new BarSubmenu(item.item, item.content.map(i => instantiate(i, bar, flat)), bar.wg);
-    else if (item === "|")
-        return new BarSpacer();
-    else if (item instanceof Menu.Button)
-        elt = new BarButton(item, bar.wg);
-    else
-        elt = new BarControl(item, bar.wg, () => bar.up());
-    elt.index = flat.length;
-    flat.push(elt);
-    return elt;
-}
-class MenuBar {
-    wg;
-    dom;
-    focusTimeout = -1;
-    items;
-    constructor(wg) {
-        this.wg = wg;
-        this.dom = document.createElement("wg-menubar");
-        this.dom.role = "toolbar";
-        this.dom.addEventListener("keydown", this.key.bind(this));
-        this.dom.addEventListener("mousedown", this.click.bind(this));
-        this.dom.addEventListener("focusout", this.focusout.bind(this));
-        this.items = wg.state.facet(Menu.Item.source);
-        this.init();
-        this.globalClick = this.globalClick.bind(this);
-    }
-    static create(wg) { return new MenuBar(wg); }
-    init() {
-        let elts = [];
-        this.elts = elts;
-        let children = Menu.resolve(this.items, this.wg.state.facet(barTemplate)).map(i => instantiate(i, this, elts));
-        this.children = children.filter((ch) => !(ch instanceof BarSpacer));
-        for (let elt of children)
-            this.dom.appendChild(elt.dom);
-        this.selection = this.children.length ? [this.children[0]] : [];
-        this.updateElts(true, this.selection);
-    }
-    update(update) {
-        let items = update.state.facet(Menu.Item.source);
-        if (items != this.items ||
-            update.startState.facet(barTemplate) != update.state.facet(barTemplate) ||
-            update.startState.textLTR != update.state.textLTR ||
-            PhraseSet.didChange(update.startState, update.state)) {
-            this.items = items;
-            this.dom.textContent = "";
-            this.init();
-        }
-        else {
-            this.updateElts(update, this.selection);
-        }
-    }
-    connect() {
-        this.dom.setAttribute("aria-controls", this.wg.contentDOM.id);
-    }
-    updateElts(update, selection) {
-        let { state } = this.wg;
-        let changed = typeof update == "boolean" ? update : update.docChanged || update.selectionSet;
-        let updateObj = typeof update == "boolean" ? null : update;
-        for (let i = 0; i < this.elts.length; i++) {
-            let elt = this.elts[i], flags;
-            if (update && (update === true || (elt.item.updateFor ? update.transactions.some(tr => elt.item.updateFor(tr)) : changed))) {
-                flags = ((elt.item.select ? elt.item.select(state) : true) ? 0 : 32) |
-                    ((elt.item.enable ? elt.item.enable(state) : true) ? 0 : 8) |
-                    ((elt.item instanceof Menu.Button && elt.item.active ? elt.item.active(state) : false) ? 16 : 0);
-            }
-            else {
-                flags = elt.flags & (32 | 8 | 16);
-            }
-            if (selection.length) {
-                let selected = selection.indexOf(elt);
-                if (selected == selection.length - 1)
-                    flags |= 4;
-                else if (selected > -1)
-                    flags |= 2;
-            }
-            elt.update(flags, this.wg, updateObj);
-        }
-        if (update && selection.some(e => e.flags & 32)) {
-            let reset = selection[0].flags & 32 ? findChild(this.children, true) : selection[0];
-            this.setSelection(reset ? [reset] : [], this.dom.contains(this.wg.root.activeElement));
-        }
-    }
-    setSelection(selection, focus = true) {
-        this.updateElts(false, selection);
-        if (selection.length > 1 && this.selection.length <= 1)
-            this.dom.ownerDocument.addEventListener("mousedown", this.globalClick);
-        this.selection = selection;
-        if (focus && selection.length)
-            selection[selection.length - 1].focusDOM.focus();
-    }
-    key(event) {
-        if (event.ctrlKey || event.altKey || event.metaKey || event.defaultPrevented)
-            return;
-        let sLen = this.selection.length;
-        if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
-            if (sLen) {
-                let forward = (event.key == "ArrowRight") == (getComputedStyle(this.dom).direction == "ltr");
-                let next = findNextChild(this.children, this.selection[0], forward ? 1 : -1);
-                this.setSelection(next ? [next] : []);
-            }
-        }
-        else if (event.key == "ArrowDown" || event.key == "ArrowUp") {
-            if (sLen > 1) {
-                let parent = this.selection[sLen - 2];
-                let next = findNextChild(parent.children, this.selection[sLen - 1], event.key == "ArrowUp" ? -1 : 1);
-                if (next)
-                    this.setSelection(this.selection.slice(0, sLen - 1).concat(next));
-            }
-            else if (sLen == 1 && this.selection[0].children) {
-                let inner = defaultChild(this.selection[0].children);
-                if (inner)
-                    this.setSelection([this.selection[0], inner]);
-            }
-        }
-        else if (event.key == "Home" || event.key == "End") {
-            let child = findChild(sLen > 1 ? this.selection[sLen - 2].children : this.children, event.key == "Home");
-            if (child)
-                this.setSelection(this.selection.slice(0, sLen - 1).concat(child));
-        }
-        else if (event.key == " " || event.key == "Enter") {
-            if (sLen) {
-                let child = this.selection[sLen - 1];
-                if (child.flags & 8) ;
-                else if (child.children) {
-                    let inner = defaultChild(child.children);
-                    if (inner)
-                        this.setSelection(this.selection.concat(inner));
-                }
-                else {
-                    if (child.run)
-                        child.run(this.wg);
-                    this.setSelection([this.selection[0]]);
-                }
-            }
-        }
-        else if (event.key == "Escape" && sLen > 1) {
-            this.setSelection(this.selection.slice(0, sLen - 1));
-        }
-        else {
-            return;
-        }
-        event.preventDefault();
-    }
-    click(event) {
-        if (event.defaultPrevented)
-            return;
-        let target, idx;
-        for (let node = event.target;; node = node.parentNode) {
-            if (!node || node == this.dom)
-                return;
-            target = this.elts.find(e => e.dom == node);
-            if (target)
-                break;
-        }
-        if (target.flags & 8) ;
-        else if (target.children) {
-            if ((idx = this.selection.indexOf(target)) > -1 && idx < this.selection.length - 1) {
-                this.setSelection(this.selection.slice(0, idx + 1), false);
-            }
-            else {
-                for (let i = 0; i < this.selection.length; i++) {
-                    let { children } = i ? this.selection[i - 1] : this;
-                    if (children.includes(target)) {
-                        let next = defaultChild(target.children);
-                        if (next)
-                            this.setSelection(this.selection.slice(0, i).concat([target, next]), false);
-                    }
-                }
-            }
-        }
-        else {
-            if (target.run)
-                target.run(this.wg);
-            this.setSelection(this.children.includes(target) ? [target] : this.selection.length ? [this.selection[0]] : [], false);
-        }
-        event.preventDefault();
-    }
-    globalClick(event) {
-        if (!event.composedPath().includes(this.dom)) {
-            this.dom.ownerDocument.removeEventListener("mousedown", this.globalClick);
-            if (this.selection.length > 1)
-                this.setSelection([this.selection[0]], false);
-        }
-    }
-    focusout() {
-        clearTimeout(this.focusTimeout);
-        if (this.selection.length > 1) {
-            this.focusTimeout = setTimeout(() => {
-                let active = this.wg.root.activeElement;
-                for (let i = 0; i < this.selection.length - 1; i++) {
-                    if (!active || !this.selection[i].dom.contains(active)) {
-                        this.setSelection([this.selection[0]], false);
-                        break;
-                    }
-                }
-            }, 20);
-        }
-    }
-    up() {
-        if (this.selection.length > 1)
-            this.setSelection([this.selection[0]], false);
-    }
-    get top() { return true; }
-}
-const menuBarPanel = /*@__PURE__*/(() => Panel.show.of(MenuBar.create))();
-function findChild(children, start) {
-    for (let i = start ? 0 : children.length - 1; start ? i < children.length : i >= 0; start ? i++ : i--) {
-        let child = children[i];
-        if (!(child.flags & 8))
-            return child;
-    }
-    return null;
-}
-function findNextChild(children, child, dir) {
-    let index = children.indexOf(child);
-    if (index < 0)
-        return null;
-    for (let i = index + dir;; i += dir) {
-        if (i < 0)
-            i = children.length - 1;
-        else if (i >= children.length)
-            i = 0;
-        if (i == index)
-            return null;
-        let child = children[i];
-        if (!(child.flags & 32))
-            return child;
-    }
-}
-function defaultChild(children) {
-    return children.length ? children.find(ch => ch.flags & 16) || children[0] : null;
-}
-const theme = /*@__PURE__*/Wordgard.styles({
-    "&": {
-        "--wg-menu-item-size": "20px"
-    },
-    "&light": {
-        "--wg-menu-color": "#555"
-    },
-    "&dark": {
-        "--wg-menu-color": "#ccc"
-    },
-    "wg-menubar": {
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "5px",
-        padding: "3px",
-        color: "var(--wg-menu-color)",
-        borderBottom: "1px solid var(--wg-border-color)",
-    },
-    ".wg-menu-button:focus": {
-        outline: "1.5px solid var(--wg-highlight-color)"
-    },
-    ".wg-menu-button": {
-        border: 0,
-        padding: "3px",
-        borderRadius: "4px",
-        boxSizing: "content-box",
-        backgroundColor: "transparent",
-        font: "inherit",
-        color: "inherit",
-        height: "var(--wg-menu-item-size)",
-        textAlign: "left",
-        "&[aria-disabled]": {
-            opacity: "0.3"
-        },
-        "&[aria-pressed]": {
-            color: "var(--wg-highlight-color)"
-        },
-        "&:hover": {
-            backgroundColor: "#88888820",
-        },
-    },
-    ".wg-button-label": {
-        display: "inline-block",
-        minWidth: "var(--wg-submenu-width)",
-        padding: "0 3px",
-    },
-    "svg.wg-icon": {
-        fill: "currentColor",
-        width: "var(--wg-menu-item-size)",
-        height: "var(--wg-menu-item-size)",
-    },
-    "wg-menu-spacer": {
-        display: "block",
-        width: "7px"
-    },
-    "wg-submenu": {
-        display: "block",
-        position: "relative",
-        lineHeight: ".6",
-        whiteSpace: "nowrap"
-    },
-    "wg-menu-list": {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "stretch",
-        gap: "5px",
-        padding: "5px",
-        borderRadius: "4px",
-        backgroundColor: "var(--wg-panel-color)",
-        position: "absolute",
-        zIndex: "10",
-        top: "100%",
-        boxShadow: "0 2px 8px 0 rgba(128, 128, 128, 0.2)",
-        "& wg-menu-list": {
-            left: "100%",
-            top: 0
-        }
-    },
-    ".wg-submenu-arrow:after": {
-        padding: "0 2px",
-        fontSize: "80%",
-        verticalAlign: "10%",
-        opacity: "0.4",
-        content: "'▾'"
-    },
-    ".wg-submenu-arrow.wg-submenu-arrow-open:after": {
-        content: "'▴'"
-    },
-});
-const barTemplate = /*@__PURE__*/GardState.Facet.define({
-    combine: inputs => inputs.length ? inputs[0] : [Menu.Group.top.template()]
-});
-function menuBar(config = {}) {
-    let extensions = [menuBarPanel, theme];
-    if (config.template)
-        extensions.push(barTemplate.of(Array.isArray(config.template) ? config.template : [config.template]));
-    return extensions;
-}
-
-const Dialog = /*@__PURE__*/(function (Dialog) {
-    function show(wg, config) {
-        let resolve;
-        let promise = new Promise(r => resolve = r);
-        let panelCtor = (wg) => createDialog(wg, config, resolve);
-        if (wg.state.field(dialogField, false)) {
-            wg.dispatch({ effects: openDialogEffect.of(panelCtor) });
-        }
-        else {
-            wg.dispatch({ effects: GardState.appendConfig.of(dialogField.init(() => [panelCtor])) });
-        }
-        let close = closeDialogEffect.of(panelCtor);
-        return { close, result: promise.then(form => {
-                let queue = wg.win.queueMicrotask || ((f) => wg.win.setTimeout(f, 10));
-                queue(() => {
-                    if (wg.state.field(dialogField).indexOf(panelCtor) > -1)
-                        wg.dispatch({ effects: close });
-                });
-                return form;
-            }) };
-    }
-    Dialog.show = show;
-    function get(wg, className) {
-        let dialogs = wg.state.field(dialogField, false) || [];
-        for (let open of dialogs) {
-            let panel = Panel.get(wg, open);
-            if (panel && panel.dom.classList.contains(className))
-                return panel;
-        }
-        return null;
-    }
-    Dialog.get = get;
-    function close(wg, className) {
-        let dialogs = wg.state.field(dialogField, false) || [];
-        for (let open of dialogs) {
-            let panel = Panel.get(wg, open);
-            if (panel && panel.dom.classList.contains(className)) {
-                wg.dispatch({ effects: closeDialogEffect.of(open) });
-                return true;
-            }
-        }
-        return false;
-    }
-    Dialog.close = close;
-;return Dialog})({});
-const dialogField = /*@__PURE__*/GardState.Field.define({
-    create() { return []; },
-    update(dialogs, tr) {
-        for (let e of tr.effects) {
-            if (e.is(openDialogEffect))
-                dialogs = [e.value].concat(dialogs);
-            else if (e.is(closeDialogEffect))
-                dialogs = dialogs.filter(d => d != e.value);
-        }
-        return dialogs;
-    },
-    provide: f => Panel.show.computeN(state => state.field(f))
-});
-const openDialogEffect = /*@__PURE__*/Transaction.Effect.define();
-const closeDialogEffect = /*@__PURE__*/Transaction.Effect.define();
-function createDialog(wg, config, result) {
-    let content = config.content ? config.content(wg, () => done(null)) : null;
-    if (!content) {
-        content = document.createElement("form");
-        content.className = "wg-form";
-        if (config.input) {
-            let input = document.createElement("input");
-            for (let attr in config.input) {
-                if (attr == "style")
-                    input.style.cssText = config.input[attr];
-                else
-                    input.setAttribute(attr, config.input[attr]);
-            }
-            if (/^(text|password|number|email|tel|url)$/.test(input.type))
-                input.classList.add("wg-textfield");
-            if (!input.name)
-                input.name = "input";
-            let label = content.appendChild(document.createElement("label"));
-            if (config.label)
-                label.append(config.label + ": ");
-            label.append(input);
-        }
-        else if (config.label) {
-            content.append(document.createTextNode(config.label));
-        }
-        let button = document.createElement("button");
-        button.className = "wg-dialog-button";
-        button.type = "submit";
-        content.append(" ", button);
-        button.append(config.submitLabel ?? "OK");
-    }
-    let forms = content.nodeName == "FORM" ? [content] : content.querySelectorAll("form");
-    for (let i = 0; i < forms.length; i++) {
-        let form = forms[i];
-        form.addEventListener("keydown", (event) => {
-            if (event.keyCode == 27) {                event.preventDefault();
-                done(null);
-            }
-            else if (event.keyCode == 13) {                event.preventDefault();
-                done(form);
-            }
-        });
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            done(form);
-        });
-    }
-    let close = document.createElement("button");
-    close.onclick = () => done(null);
-    close.setAttribute("aria-label", phrases.get(wg.state, "dialog_close"));
-    close.className = "wg-dialog-close";
-    close.type = "button";
-    close.append("×");
-    let panel = document.createElement("wg-dialog");
-    panel.append(content, close);
-    if (config.class)
-        panel.className = config.class;
-    function done(form) {
-        if (panel.contains(panel.ownerDocument.activeElement))
-            wg.focus();
-        result(form);
-    }
-    let mustFocus = config.focus;
-    return {
-        dom: panel,
-        top: config.top !== false,
-        connect: () => {
-            if (mustFocus) {
-                mustFocus = false;
-                let focus;
-                if (typeof config.focus == "string")
-                    focus = content.querySelector(config.focus);
-                else
-                    focus = content.querySelector("input") || content.querySelector("button");
-                if (focus && "select" in focus)
-                    focus.select();
-                else if (focus && "focus" in focus)
-                    focus.focus();
-            }
-        }
-    };
-}
-
 const Outside = "-10000px";
 class TooltipViewManager {
     facet;
@@ -6837,7 +6029,7 @@ class HoverTooltipHost {
     get overlap() { return this.passProp("overlap"); }
     get resize() { return this.passProp("resize"); }
 }
-const showHoverTooltipHost = /*@__PURE__*/Tooltip.show.compute(state => {
+const showHoverTooltipHost = /*@__PURE__*/Tooltip.show.derive(state => {
     let tooltips = state.facet(showHoverTooltip);
     if (tooltips.length === 0)
         return null;
@@ -6972,6 +6164,1164 @@ function isOverRange(wg, from, to, x, y, margin) {
         return false;
     let pos = wg.posAtCoords({ x, y }).pos;
     return pos >= from && pos <= to;
+}
+
+const Dialog = /*@__PURE__*/(function (Dialog) {
+    function show(wg, config) {
+        let resolve;
+        let result = new Promise(r => resolve = r);
+        let hint = config.positioningHint === true ? PositioningHint.get() : config.positioningHint;
+        let tooltip = hint || !config.tooltip ? null : {
+            ...config.tooltip,
+            create: (wg) => createDialog(wg, dialog),
+        }, offset = null;
+        if (hint) {
+            let editorRect = wg.dom.getBoundingClientRect();
+            offset = {
+                x: wg.state.textLTR ? hint.left - editorRect.left : editorRect.right - hint.right,
+                y: hint.bottom - editorRect.top
+            };
+        }
+        let dialog = new OpenDialog(config, resolve, tooltip, offset);
+        let effects = [openDialog.of(dialog)];
+        if (!wg.state.field(dialogs, false))
+            effects.push(GardState.appendConfig.of([dialogs, renderDialogs]));
+        wg.dispatch({ effects });
+        wg.scheduleDOMRead(() => {
+            if (!wg.state.field(dialogs).includes(dialog))
+                dialog.resolve(null);
+        });
+        return {
+            close: () => doCloseDialog(wg, dialog),
+            result
+        };
+    }
+    Dialog.show = show;
+    function get(wg, key) {
+        let active = wg.state.field(dialogs, false);
+        let found = active && active.find(d => d.spec.key === key);
+        if (!found)
+            return null;
+        return { dom: dialogDOM(wg, found), close: () => doCloseDialog(wg, found) };
+    }
+    Dialog.get = get;
+;return Dialog})({});
+function dialogDOM(wg, dialog) {
+    let plugin = wg.plugin(renderDialogs);
+    let index = plugin ? plugin.active.indexOf(dialog) : -1;
+    return index > -1 ? plugin.elements[index] : null;
+}
+function doCloseDialog(wg, dialog) {
+    let active = wg.state.field(dialogs, false);
+    if (active && active.includes(dialog)) {
+        let dom = dialogDOM(wg, dialog);
+        if (dom && dom.contains(wg.win.document.activeElement))
+            wg.focus();
+        wg.dispatch({ effects: closeDialog.of(dialog) });
+    }
+}
+function createDialog(wg, dialog) {
+    let config = dialog.spec;
+    let content = config.content ? config.content(wg, () => done(null)) : null;
+    if (!content) {
+        content = document.createElement("form");
+        content.className = "wg-form";
+        if (config.input) {
+            let input = document.createElement("input");
+            for (let attr in config.input) {
+                if (attr == "style")
+                    input.style.cssText = config.input[attr];
+                else
+                    input.setAttribute(attr, config.input[attr]);
+            }
+            if (/^(text|password|number|email|tel|url)$/.test(input.type))
+                input.classList.add("wg-textfield");
+            if (!input.name)
+                input.name = "input";
+            let label = content.appendChild(document.createElement("label"));
+            if (config.label)
+                label.append(config.label + ": ");
+            label.append(input);
+        }
+        else if (config.label) {
+            content.append(document.createTextNode(config.label));
+        }
+        let button = document.createElement("button");
+        button.className = "wg-dialog-button";
+        button.type = "submit";
+        content.append(" ", button);
+        button.append(config.submitLabel ?? "OK");
+    }
+    let forms = content.nodeName == "FORM" ? [content] : content.querySelectorAll("form");
+    for (let i = 0; i < forms.length; i++) {
+        let form = forms[i];
+        form.addEventListener("keydown", (event) => {
+            if (event.keyCode == 13) {                event.preventDefault();
+                done(form);
+            }
+        });
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            done(form);
+        });
+    }
+    let close = document.createElement("button");
+    close.onclick = () => done(null);
+    close.setAttribute("aria-label", phrases.get(wg.state, "dialog_close"));
+    close.className = "wg-dialog-close";
+    close.type = "button";
+    close.append("×");
+    let dom = document.createElement("dialog");
+    dom.open = true;
+    dom.append(content, close);
+    dom.addEventListener("keydown", event => {
+        if (event.keyCode == 27) {            event.preventDefault();
+            done(null);
+        }
+    });
+    if (config.class)
+        dom.className = config.class;
+    function done(form) {
+        dialog.resolve(form);
+        doCloseDialog(wg, dialog);
+    }
+    let focus = null;
+    if (config.focus) {
+        if (typeof config.focus == "string")
+            focus = dom.querySelector(config.focus);
+        else
+            focus = content.querySelector("input") || content.querySelector("button");
+    }
+    return {
+        dom,
+        connect: () => {
+            if (focus) {
+                if ("select" in focus)
+                    focus.select();
+                else if ("focus" in focus)
+                    focus.focus();
+                focus = null;
+            }
+        }
+    };
+}
+class OpenDialog {
+    spec;
+    resolve;
+    tooltip;
+    offset;
+    constructor(spec, resolve, tooltip, offset) {
+        this.spec = spec;
+        this.resolve = resolve;
+        this.tooltip = tooltip;
+        this.offset = offset;
+    }
+}
+const openDialog = /*@__PURE__*/Transaction.Effect.define();
+const closeDialog = /*@__PURE__*/Transaction.Effect.define();
+const dialogs = /*@__PURE__*/GardState.Field.define({
+    create: () => [],
+    update: (value, tr) => {
+        for (let e of tr.effects) {
+            if (e.is(openDialog))
+                value = value.concat(e.value);
+            else if (e.is(closeDialog))
+                value = value.filter(d => d != e.value);
+        }
+        for (let i = 0; i < value.length; i++) {
+            let { closedBy } = value[i].spec;
+            if (closedBy && closedBy(tr)) {
+                value = value.slice(0, i).concat(value.slice(i + 1));
+                i--;
+            }
+        }
+        return value;
+    },
+    provide: f => Tooltip.show.deriveN(state => {
+        let tooltips = [];
+        for (let d of state.field(f))
+            if (d.tooltip)
+                tooltips.push(d.tooltip);
+        return tooltips;
+    })
+});
+const renderDialogs = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
+    active = [];
+    elements = [];
+    mustPosition = false;
+    constructor(wg) {
+        this.positionDialogs = this.positionDialogs.bind(this);
+        this.updateTo(wg, wg.state.field(dialogs));
+        if (this.mustPosition)
+            wg.scheduleDOMRead(this.positionDialogs);
+    }
+    update(update) {
+        let active = update.state.field(dialogs), changed = this.active != active;
+        if (changed)
+            this.updateTo(update.editor, active);
+        if ((update.geometryChanged || changed) && this.mustPosition)
+            update.editor.scheduleDOMRead(this.positionDialogs);
+    }
+    updateTo(wg, active) {
+        for (let i = 0; i < this.active.length; i++)
+            if (!active.includes(this.active[i])) {
+                let elt = this.elements[i], dialog = this.active[i];
+                if (elt)
+                    elt.remove();
+                dialog.resolve(null);
+            }
+        this.mustPosition = false;
+        this.elements = active.map((dialog, i) => {
+            if (dialog.tooltip)
+                return null;
+            this.mustPosition = true;
+            let panel;
+            let found = this.active.indexOf(dialog);
+            if (found > -1) {
+                panel = this.elements[found];
+            }
+            else {
+                let { dom, connect } = createDialog(wg, dialog);
+                dom.classList.add("wg-free-dialog");
+                wg.dom.appendChild(dom);
+                connect();
+                panel = dom;
+            }
+            panel.style.zIndex = String(400 + i);
+            return panel;
+        });
+        this.active = active;
+    }
+    positionDialogs(wg) {
+        let sizes = this.elements.map(e => e && e.getBoundingClientRect());
+        let editor = wg.dom.getBoundingClientRect();
+        let windowWidth = wg.win.innerWidth, windowHeight = wg.win.innerHeight;
+        let midX = (Math.max(0, editor.left) + Math.min(windowWidth, editor.right)) / 2;
+        let midY = (Math.max(0, editor.top) + Math.min(windowHeight, editor.bottom)) / 2;
+        let ltr = wg.state.textLTR;
+        wg.scheduleDOMWrite(() => {
+            for (let i = 0; i < sizes.length; i++) {
+                let size = sizes[i];
+                if (!size)
+                    continue;
+                let { offset } = this.active[i];
+                let baseX, baseY;
+                if (offset) {
+                    baseY = editor.top + offset.y;
+                    baseX = ltr ? editor.left + offset.x : editor.right - offset.x - size.width;
+                }
+                else {
+                    baseX = midX - size.width / 2;
+                    baseY = midY - size.height / 2;
+                }
+                if (baseX < 0)
+                    baseX = 0;
+                else if (baseX + size.width > windowWidth && size.width < windowWidth)
+                    baseX = windowWidth - size.width;
+                if (baseY < 0)
+                    baseY = 0;
+                else if (baseY + size.height > windowHeight && size.height < windowHeight)
+                    baseY = windowHeight - size.height;
+                let elt = this.elements[i];
+                elt.style.left = baseX + "px";
+                elt.style.top = baseY + "px";
+            }
+        });
+    }
+    destroy() {
+        for (let elt of this.elements)
+            if (elt)
+                elt.remove();
+        for (let dialog of this.active)
+            dialog.resolve(null);
+    }
+}, plugin => plugin.eventHandler("scroll", (event, wg, val) => {
+    if (val.mustPosition)
+        wg.scheduleDOMRead(val.positionDialogs);
+}));
+const PositioningHint = /*@__PURE__*/(function (PositioningHint) {
+    let currentHint = null;
+    function runWith(hint, run) {
+        let prev = currentHint;
+        currentHint = hint;
+        try {
+            return run();
+        }
+        finally {
+            currentHint = prev;
+        }
+    }
+    PositioningHint.runWith = runWith;
+    function get() {
+        return currentHint ? currentHint() : null;
+    }
+    PositioningHint.get = get;
+;return PositioningHint})({});
+
+function collectKeyDescs(bindings) {
+    let groups = [];
+    let add = (group, key, desc) => {
+        let found = groups.find(g => g.group == group);
+        if (!found)
+            groups.push(found = { group, bindings: [] });
+        found.bindings.push({ key, desc });
+    };
+    for (let binding of bindings) {
+        let group = binding.spec.group || null;
+        let name = binding.spec[currentPlatform] || binding.spec.key;
+        if (name) {
+            if (binding.spec.description)
+                add(group, normalizeKeyName(name, currentPlatform), binding.spec.description);
+            if (binding.spec.shiftDescription)
+                add(group, "Shift-" + normalizeKeyName(name, currentPlatform), binding.spec.shiftDescription);
+        }
+    }
+    return groups.sort((a, b) => (a.group?.rank ?? 0) - (b.group?.rank || 0));
+}
+function resolveText(state, text) {
+    return typeof text == "string" ? text : text(state);
+}
+function renderKeyDescs(state, groups) {
+    let frag = document.createDocumentFragment();
+    frag.append(cr("h3", { class: "wg-dialog-title" }, phrases.get(state, "key_bindings")));
+    frag.append(cr("div", { class: "wg-key-list", tabindex: "-1" }, groups.map(group => [
+        group.group ? cr("h4", resolveText(state, group.group.description)) : null,
+        group.bindings.map(({ key, desc }) => [
+            cr("div", cr("kbd", key)),
+            cr("div", resolveText(state, desc))
+        ])
+    ])));
+    return frag;
+}
+function keyBindingHelp() {
+    return [keyBindingHelp.keyBindings, keyBindingHelp.button];
+}
+;keyBindingHelp = /*@__PURE__*/(function (keyBindingHelp) {
+    keyBindingHelp.showKeyBindings = wg => {
+        let open = Dialog.get(wg, keyBindingHelp.showKeyBindings);
+        if (open) {
+            open.close();
+            return true;
+        }
+        let descs = collectKeyDescs(wg.state.field(KeyBinding.keymap));
+        if (!descs.length)
+            return false;
+        Dialog.show(wg, {
+            key: keyBindingHelp.showKeyBindings,
+            content: () => renderKeyDescs(wg.state, descs),
+            class: "wg-key-help",
+            focus: ".wg-key-list",
+            positioningHint: true
+        });
+        return true;
+    };
+    keyBindingHelp.button = Menu.Button.define({
+        run: keyBindingHelp.showKeyBindings,
+        label: { icon: "M24 31c-2 0-4-2-4-4C22 14 32 5 49 5c17 0 28 10 28 24 0 10-5 17-13 22-8 5-11 8-11 15v0a4 4 0 0 1-4 4h-6a4 4 0 0 1-4-4l0-1c0-9 4-15 12-20 8-5 10-9 10-15 0-7-6-13-14-13-8 0-13 4-15 11 0 2-2 3-4 3h-6ZM46 95c5 0 8-4 8-8 0-5-4-8-8-8-5 0-8 4-8 8S42 95 46 95" },
+        description: phrases.ref("show_keys"),
+        parent: Menu.Group.top,
+        rank: 99
+    });
+    keyBindingHelp.keyBindings = [
+        KeyBinding.of({ key: "Mod-?", run: keyBindingHelp.showKeyBindings, description: phrases.ref("show_keys"),
+            shift: keyBindingHelp.showKeyBindings }),
+        KeyBinding.of({ key: "Mod-Shift-/", run: keyBindingHelp.showKeyBindings }),
+    ];
+;return keyBindingHelp})(keyBindingHelp);
+
+function offset(add, offset) {
+    return (v, from, to) => add(v, from + offset, to == null ? undefined : to + offset);
+}
+function init(type, create, source, doc) {
+    return create(add => {
+        doc.iterate((node, pos) => {
+            if (node.isPlot && doc.schema.matchNode(node.type, type))
+                source(node, pos + 1, add);
+        });
+    });
+}
+function refreshByPred(type, source, doc, deco, pred) {
+    let recreate = [];
+    doc.iterate((node, pos) => {
+        if (doc.schema.matchNode(node.type, type) && pred(node))
+            recreate.push({
+                from: pos, to: pos + node.length,
+                add: add => source(node, pos + 1, add)
+            });
+    });
+    return recreate.length ? deco.modify({ replace: recreate }) : deco;
+}
+function update(config, create, source, deco, tr) {
+    let doc = tr.newDoc;
+    let refresh = config.refresh && config.refresh(tr);
+    if (refresh === true)
+        return init(config.type, create, source, doc);
+    if (refresh)
+        deco = refreshByPred(config.type, source, tr.startState.doc, deco, refresh);
+    if (!tr.docChanged && !refresh)
+        return deco;
+    let recreate = [];
+    let clear = [];
+    tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
+        let covered = false;
+        doc.iterate(fromB, toB, (node, pos) => {
+            if (doc.schema.matchNode(node.type, config.type)) {
+                recreate.push({
+                    from: pos, to: pos + node.length,
+                    add: add => source(node, pos + 1, add)
+                });
+                if (pos < toB && pos + node.length > toB)
+                    covered = true;
+                return false;
+            }
+        });
+        if (!covered) {
+            let end = tr.startState.doc.resolve(toA);
+            let open = end.matchingParent(p => doc.schema.matchNode(p.type, config.type));
+            if (open && open.before >= fromA)
+                clear.push({ from: open.before, to: open.after });
+        }
+    });
+    if (clear.length)
+        deco = deco.modify({ replace: clear });
+    deco = deco.map(tr.changes, recreate);
+    return deco;
+}
+function decoratePlots(config) {
+    let result = [];
+    let { type, points, ranges } = config;
+    if (points) {
+        let source = (plot, start, add) => points(plot, offset(add, start));
+        let field = GardState.Field.define({
+            create(state) { return init(type, PointSet.create, source, state.doc); },
+            update(value, tr) { return update(config, PointSet.create, source, value, tr); }
+        });
+        result.push(field, Decoration.Point.source.of(s => s.field(field)));
+    }
+    if (ranges) {
+        let source = (plot, start, add) => ranges(plot, offset(add, start));
+        let field = GardState.Field.define({
+            create(state) { return init(type, RangeSet.create, source, state.doc); },
+            update(value, tr) { return update(config, RangeSet.create, source, value, tr); }
+        });
+        result.push(field, Decoration.Range.source.of(s => s.field(field)));
+    }
+    return result;
+}
+
+const panelConfig = /*@__PURE__*/GardState.Facet.define({
+    combine(configs) {
+        let topContainer, bottomContainer;
+        for (let c of configs) {
+            topContainer ||= c.topContainer;
+            bottomContainer ||= c.bottomContainer;
+        }
+        return { topContainer, bottomContainer };
+    }
+});
+const panelPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
+    input;
+    specs;
+    panels;
+    top;
+    bottom;
+    constructor(wg) {
+        this.input = wg.state.facet(Panel.show);
+        this.specs = this.input.filter(s => s);
+        this.panels = this.specs.map(spec => spec(wg));
+        for (let p of this.panels)
+            p.dom.classList.add("wg-panel");
+        let conf = wg.state.facet(panelConfig);
+        this.top = new PanelGroup(wg, true, conf.topContainer);
+        this.bottom = new PanelGroup(wg, false, conf.bottomContainer);
+        this.top.sync(this.panels.filter(p => p.top), wg);
+        this.bottom.sync(this.panels.filter(p => !p.top), wg);
+    }
+    update(update) {
+        let conf = update.state.facet(panelConfig);
+        if (this.top.container != conf.topContainer) {
+            this.top.sync([], update.editor);
+            this.top = new PanelGroup(update.editor, true, conf.topContainer);
+        }
+        if (this.bottom.container != conf.bottomContainer) {
+            this.bottom.sync([], update.editor);
+            this.bottom = new PanelGroup(update.editor, false, conf.bottomContainer);
+        }
+        this.top.syncClasses();
+        this.bottom.syncClasses();
+        let input = update.state.facet(Panel.show);
+        if (input != this.input) {
+            let specs = input.filter(x => x);
+            let panels = [], top = [], bottom = [], mount = [];
+            for (let spec of specs) {
+                let known = this.specs.indexOf(spec), panel;
+                if (known < 0) {
+                    panel = spec(update.editor);
+                    mount.push(panel);
+                }
+                else {
+                    panel = this.panels[known];
+                    if (panel.update)
+                        panel.update(update);
+                }
+                panels.push(panel);
+                (panel.top ? top : bottom).push(panel);
+            }
+            this.specs = specs;
+            this.panels = panels;
+            this.top.sync(top, update.editor);
+            this.bottom.sync(bottom, update.editor);
+            for (let p of mount) {
+                p.dom.classList.add("wg-panel");
+                if (p.connect && update.editor.connected)
+                    p.connect(update.editor);
+            }
+        }
+        else {
+            for (let p of this.panels)
+                if (p.update)
+                    p.update(update);
+        }
+    }
+    connect(wg) {
+        for (let p of this.panels)
+            p.connect?.(wg);
+    }
+    disconnect(wg) {
+        for (let p of this.panels)
+            p.disconnect?.(wg);
+    }
+    remove(wg) {
+        this.top.sync([], wg);
+        this.bottom.sync([], wg);
+    }
+}, plugin => Wordgard.coveredMargins.of(wg => {
+    let value = wg.plugin(plugin);
+    return value && { top: value.top.scrollMargin(), bottom: value.bottom.scrollMargin() };
+}));
+const Panel = /*@__PURE__*/(function (Panel) {
+    Panel.show = GardState.Facet.define({
+        enables: panelPlugin
+    });
+    function get(wg, constructor) {
+        let plugin = wg.plugin(panelPlugin);
+        let index = plugin ? plugin.specs.indexOf(constructor) : -1;
+        return index > -1 ? plugin.panels[index] : null;
+    }
+    Panel.get = get;
+    function configure(config) {
+        return config ? [panelConfig.of(config)] : [];
+    }
+    Panel.configure = configure;
+;return Panel})({});
+class PanelGroup {
+    wg;
+    top;
+    container;
+    dom = undefined;
+    classes = "";
+    panels = [];
+    constructor(wg, top, container) {
+        this.wg = wg;
+        this.top = top;
+        this.container = container;
+        this.syncClasses();
+    }
+    sync(panels, wg) {
+        for (let p of this.panels)
+            if (!panels.includes(p)) {
+                if (wg.connected)
+                    p.disconnect?.(wg);
+                p.remove?.(wg);
+            }
+        this.panels = panels;
+        this.syncDOM();
+    }
+    syncDOM() {
+        if (this.panels.length == 0) {
+            if (this.dom) {
+                this.dom.remove();
+                this.dom = undefined;
+            }
+            return;
+        }
+        if (!this.dom) {
+            this.dom = document.createElement("wg-panels");
+            this.dom.className = this.top ? "wg-panels-top" : "wg-panels-bottom";
+            let parent = this.container || this.wg.dom;
+            parent.insertBefore(this.dom, this.top ? parent.firstChild : null);
+        }
+        let curDOM = this.dom.firstChild;
+        for (let panel of this.panels) {
+            if (panel.dom.parentNode == this.dom) {
+                while (curDOM != panel.dom)
+                    curDOM = rmDOM(curDOM);
+                curDOM = curDOM.nextSibling;
+            }
+            else {
+                this.dom.insertBefore(panel.dom, curDOM);
+            }
+        }
+        while (curDOM)
+            curDOM = rmDOM(curDOM);
+    }
+    scrollMargin() {
+        return !this.dom || this.container ? 0
+            : Math.max(0, this.top ?
+                this.dom.getBoundingClientRect().bottom - Math.max(0, this.wg.scrollDOM.getBoundingClientRect().top) :
+                Math.min(innerHeight, this.wg.scrollDOM.getBoundingClientRect().bottom) - this.dom.getBoundingClientRect().top);
+    }
+    syncClasses() {
+        if (!this.container || this.classes == this.wg.themeClasses)
+            return;
+        for (let cls of this.classes.split(" "))
+            if (cls)
+                this.container.classList.remove(cls);
+        for (let cls of (this.classes = this.wg.themeClasses).split(" "))
+            if (cls)
+                this.container.classList.add(cls);
+    }
+}
+
+let nextID = 0;
+function id(prefix) {
+    return prefix + "-" + (nextID++ % 0xffffff).toString(16);
+}
+const SVG = "http://www.w3.org/2000/svg";
+function labelButton(wg, button, label) {
+    button.textContent = "";
+    if (!label) ;
+    else if (typeof label == "function" || typeof label == "string") {
+        let span = button.appendChild(document.createElement("span"));
+        span.className = "wg-button-label";
+        span.textContent = typeof label == "string" ? label : label(wg.state);
+    }
+    else if ("icon" in label) {
+        let svg = button.appendChild(document.createElementNS(SVG, "svg"));
+        svg.classList.add("wg-icon");
+        svg.setAttribute("viewBox", "0 0 100 100");
+        let path = svg.appendChild(document.createElementNS(SVG, "path"));
+        path.setAttribute("d", label.icon);
+        if (label.directional && !wg.state.textLTR)
+            svg.setAttribute("transform", "scale(-1, 1)");
+    }
+}
+class BarButton {
+    item;
+    dom;
+    flags = 0;
+    index = 0;
+    constructor(item, wg) {
+        this.item = item;
+        this.dom = document.createElement("button");
+        this.dom.className = "wg-menu-button";
+        this.dom.type = "button";
+        this.dom.tabIndex = -1;
+        labelButton(wg, this.dom, item.label);
+        this.setDesc(wg);
+    }
+    setDesc(wg) {
+        let { item: { label, description } } = this;
+        let someDesc = description || (typeof label == "string" || typeof label == "function" ? label : null);
+        let key = someDesc ? KeyBinding.lookupByDescription(wg.state, someDesc) : null;
+        let desc = typeof someDesc == "function" ? someDesc(wg.state) : someDesc;
+        if (description)
+            this.dom.setAttribute("aria-label", desc);
+        else
+            this.dom.removeAttribute("aria-label");
+        if (key)
+            this.dom.setAttribute("aria-keyshortcuts", key);
+        else
+            this.dom.removeAttribute("aria-keyshortcuts");
+        this.dom.title = desc ? desc + (key ? ` (${key})` : "") : key || "";
+    }
+    get focusDOM() { return this.dom; }
+    update(flags, wg, update) {
+        if (flags != this.flags) {
+            if ((flags & 32) != (this.flags & 32))
+                this.dom.style.display = flags & 32 ? "none" : "";
+            if ((flags & 8) != (this.flags & 8)) {
+                if (flags & 8)
+                    this.dom.setAttribute("aria-disabled", "true");
+                else
+                    this.dom.removeAttribute("aria-disabled");
+            }
+            if ((flags & 4) != (this.flags & 4)) {
+                if (flags & 4)
+                    this.dom.setAttribute("aria-selected", "true");
+                else
+                    this.dom.removeAttribute("aria-selected");
+                this.dom.tabIndex = flags & 4 ? 0 : -1;
+            }
+            if ((flags & 16) != (this.flags & 16)) {
+                if (flags & 16)
+                    this.dom.setAttribute("aria-pressed", "true");
+                else
+                    this.dom.removeAttribute("aria-pressed");
+            }
+            this.flags = flags;
+        }
+    }
+    get children() { return null; }
+    run(wg) {
+        PositioningHint.runWith(() => this.dom.getBoundingClientRect(), () => {
+            Command.dispatch(wg, this.item.run);
+        });
+    }
+}
+class BarControl {
+    item;
+    dom;
+    focusDOM;
+    flags = 0;
+    index = 0;
+    constructor(item, wg, done) {
+        this.item = item;
+        let { dom, focus } = item.render(wg, done);
+        this.dom = dom;
+        this.focusDOM = focus || dom;
+        this.focusDOM.tabIndex = -1;
+    }
+    update(flags, wg, update) {
+        if (flags != this.flags) {
+            if ((flags & 32) != (this.flags & 32))
+                this.dom.style.display = flags & 32 ? "none" : "";
+            if ((flags & 8) != (this.flags & 8) && this.item.setEnabled)
+                this.item.setEnabled(this.dom, !(flags & 8));
+            if ((flags & 4) != (this.flags & 4)) {
+                if (flags & 4)
+                    this.focusDOM.setAttribute("aria-selected", "true");
+                else
+                    this.focusDOM.removeAttribute("aria-selected");
+                this.focusDOM.tabIndex = flags & 4 ? 0 : -1;
+            }
+            this.flags = flags;
+        }
+    }
+    get children() { return null; }
+    get run() { return null; }
+}
+class BarSubmenu {
+    item;
+    dom;
+    button;
+    list;
+    flags = 0;
+    activeChild = -3;
+    index = 0;
+    children;
+    constructor(item, children, wg) {
+        this.item = item;
+        this.dom = document.createElement("wg-submenu");
+        this.button = this.dom.appendChild(document.createElement("button"));
+        this.button.type = "button";
+        this.button.tabIndex = -1;
+        this.button.className = "wg-menu-button";
+        this.button.setAttribute("aria-haspopup", "true");
+        this.button.setAttribute("aria-expanded", "false");
+        if (item.description) {
+            let desc = typeof item.description == "function" ? item.description(wg.state) : item.description;
+            this.dom.title = desc;
+            this.dom.setAttribute("aria-label", desc);
+        }
+        if (item.label) {
+            labelButton(wg, this.button, item.label);
+            this.activeChild = -2;
+        }
+        if (item.width != null)
+            this.dom.style.setProperty("--wg-submenu-width", item.width + "ch");
+        if (item.arrow)
+            this.button.classList.add("wg-submenu-arrow");
+        this.list = this.dom.appendChild(document.createElement("wg-menu-list"));
+        this.list.style.display = "none";
+        this.list.role = "menu";
+        this.list.id = id("wg-popup");
+        this.list.setAttribute("aria-label", this.button.title);
+        this.button.setAttribute("aria-controls", this.list.id);
+        this.children = children.filter((ch) => !(ch instanceof BarSpacer));
+        for (let child of children) {
+            this.list.appendChild(child.dom);
+            if (!(child instanceof BarSpacer))
+                child.focusDOM.role = "menuitem";
+        }
+    }
+    get focusDOM() { return this.button; }
+    update(flags, wg) {
+        if (flags != this.flags) {
+            if ((flags & 32) != (this.flags & 32))
+                this.dom.style.display = flags & 32 ? "none" : "";
+            if ((flags & 8) != (this.flags & 8)) {
+                if (flags & 8)
+                    this.button.setAttribute("aria-disabled", "true");
+                else
+                    this.button.removeAttribute("aria-disabled");
+            }
+            if ((flags & 4) != (this.flags & 4)) {
+                if (flags & 4)
+                    this.button.setAttribute("aria-selected", "true");
+                else
+                    this.button.removeAttribute("aria-selected");
+                this.button.tabIndex = flags & 4 ? 0 : -1;
+            }
+            if ((flags & 2) != (this.flags & 2))
+                this.list.style.display = flags & 2 ? "" : "none";
+            this.flags = flags;
+        }
+        if (this.activeChild != -2) {
+            let activeChild = this.children.findIndex(ch => ch.flags & 16);
+            if (this.activeChild != activeChild) {
+                this.activeChild = activeChild;
+                let label = activeChild < 0 ? this.item.defaultLabel : this.children[activeChild].item.label;
+                labelButton(wg, this.button, label);
+            }
+        }
+    }
+    get run() { return null; }
+}
+class BarSpacer {
+    dom;
+    constructor() {
+        this.dom = document.createElement("wg-menu-spacer");
+    }
+}
+function instantiate(item, bar, flat) {
+    let elt;
+    if (item instanceof Menu.Submenu.Resolved)
+        elt = new BarSubmenu(item.item, item.content.map(i => instantiate(i, bar, flat)), bar.wg);
+    else if (item === "|")
+        return new BarSpacer();
+    else if (item instanceof Menu.Button)
+        elt = new BarButton(item, bar.wg);
+    else
+        elt = new BarControl(item, bar.wg, () => bar.up());
+    elt.index = flat.length;
+    flat.push(elt);
+    return elt;
+}
+class MenuBar {
+    wg;
+    dom;
+    focusTimeout = -1;
+    items;
+    constructor(wg) {
+        this.wg = wg;
+        this.dom = document.createElement("wg-menubar");
+        this.dom.role = "toolbar";
+        this.dom.addEventListener("keydown", this.key.bind(this));
+        this.dom.addEventListener("mousedown", this.click.bind(this));
+        this.dom.addEventListener("focusout", this.focusout.bind(this));
+        this.items = wg.state.facet(Menu.Item.source);
+        this.init();
+        this.globalClick = this.globalClick.bind(this);
+    }
+    static create(wg) { return new MenuBar(wg); }
+    init() {
+        let elts = [];
+        this.elts = elts;
+        let children = Menu.resolve(this.items, this.wg.state.facet(barTemplate)).map(i => instantiate(i, this, elts));
+        this.children = children.filter((ch) => !(ch instanceof BarSpacer));
+        for (let elt of children)
+            this.dom.appendChild(elt.dom);
+        this.selection = this.children.length ? [this.children[0]] : [];
+        this.updateElts(true, this.selection);
+    }
+    update(update) {
+        let items = update.state.facet(Menu.Item.source);
+        if (items != this.items ||
+            update.startState.facet(barTemplate) != update.state.facet(barTemplate) ||
+            update.startState.textLTR != update.state.textLTR ||
+            PhraseSet.didChange(update.startState, update.state)) {
+            this.items = items;
+            this.dom.textContent = "";
+            this.init();
+        }
+        else {
+            this.updateElts(update, this.selection);
+            if (update.startState.facet(KeyBinding.source) != update.state.facet(KeyBinding.source)) {
+                for (let elt of this.elts)
+                    if (elt instanceof BarButton)
+                        elt.setDesc(update.editor);
+            }
+        }
+    }
+    connect() {
+        this.dom.setAttribute("aria-controls", this.wg.contentDOM.id);
+    }
+    updateElts(update, selection) {
+        let { state } = this.wg;
+        let changed = typeof update == "boolean" ? update : update.docChanged || update.selectionSet;
+        let updateObj = typeof update == "boolean" ? null : update;
+        for (let i = 0; i < this.elts.length; i++) {
+            let elt = this.elts[i], flags;
+            if (update && (update === true || (elt.item.updateFor ? update.transactions.some(tr => elt.item.updateFor(tr)) : changed))) {
+                flags = ((elt.item.select ? elt.item.select(state) : true) ? 0 : 32) |
+                    ((elt.item.enable ? elt.item.enable(state) : true) ? 0 : 8) |
+                    ((elt.item instanceof Menu.Button && elt.item.active ? elt.item.active(state) : false) ? 16 : 0);
+            }
+            else {
+                flags = elt.flags & (32 | 8 | 16);
+            }
+            if (selection.length) {
+                let selected = selection.indexOf(elt);
+                if (selected == selection.length - 1)
+                    flags |= 4;
+                else if (selected > -1)
+                    flags |= 2;
+            }
+            elt.update(flags, this.wg, updateObj);
+        }
+        if (update && selection.some(e => e.flags & 32)) {
+            let reset = selection[0].flags & 32 ? findChild(this.children, true) : selection[0];
+            this.setSelection(reset ? [reset] : [], this.dom.contains(this.wg.root.activeElement));
+        }
+    }
+    setSelection(selection, focus = true) {
+        this.updateElts(false, selection);
+        if (selection.length > 1 && this.selection.length <= 1)
+            this.dom.ownerDocument.addEventListener("mousedown", this.globalClick);
+        this.selection = selection;
+        if (focus && selection.length)
+            selection[selection.length - 1].focusDOM.focus();
+    }
+    key(event) {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.defaultPrevented)
+            return;
+        let sLen = this.selection.length;
+        if (event.key == "ArrowLeft" || event.key == "ArrowRight") {
+            if (sLen) {
+                let forward = (event.key == "ArrowRight") == (getComputedStyle(this.dom).direction == "ltr");
+                let next = findNextChild(this.children, this.selection[0], forward ? 1 : -1);
+                this.setSelection(next ? [next] : []);
+            }
+        }
+        else if (event.key == "ArrowDown" || event.key == "ArrowUp") {
+            if (sLen > 1) {
+                let parent = this.selection[sLen - 2];
+                let next = findNextChild(parent.children, this.selection[sLen - 1], event.key == "ArrowUp" ? -1 : 1);
+                if (next)
+                    this.setSelection(this.selection.slice(0, sLen - 1).concat(next));
+            }
+            else if (sLen == 1 && this.selection[0].children) {
+                let inner = defaultChild(this.selection[0].children);
+                if (inner)
+                    this.setSelection([this.selection[0], inner]);
+            }
+        }
+        else if (event.key == "Home" || event.key == "End") {
+            let child = findChild(sLen > 1 ? this.selection[sLen - 2].children : this.children, event.key == "Home");
+            if (child)
+                this.setSelection(this.selection.slice(0, sLen - 1).concat(child));
+        }
+        else if (event.key == " " || event.key == "Enter") {
+            if (sLen) {
+                let child = this.selection[sLen - 1];
+                if (child.flags & 8) ;
+                else if (child.children) {
+                    let inner = defaultChild(child.children);
+                    if (inner)
+                        this.setSelection(this.selection.concat(inner));
+                }
+                else {
+                    if (child.run)
+                        child.run(this.wg);
+                    this.setSelection([this.selection[0]]);
+                }
+            }
+        }
+        else if (event.key == "Escape" && sLen > 1) {
+            this.setSelection(this.selection.slice(0, sLen - 1));
+        }
+        else {
+            return;
+        }
+        event.preventDefault();
+    }
+    click(event) {
+        if (event.defaultPrevented)
+            return;
+        let target, idx;
+        for (let node = event.target;; node = node.parentNode) {
+            if (!node || node == this.dom)
+                return;
+            target = this.elts.find(e => e.dom == node);
+            if (target)
+                break;
+        }
+        if (target.flags & 8) ;
+        else if (target.children) {
+            if ((idx = this.selection.indexOf(target)) > -1 && idx < this.selection.length - 1) {
+                this.setSelection(this.selection.slice(0, idx + 1), false);
+            }
+            else {
+                for (let i = 0; i < this.selection.length; i++) {
+                    let { children } = i ? this.selection[i - 1] : this;
+                    if (children.includes(target)) {
+                        let next = defaultChild(target.children);
+                        if (next)
+                            this.setSelection(this.selection.slice(0, i).concat([target, next]), false);
+                    }
+                }
+            }
+        }
+        else {
+            if (target.run)
+                target.run(this.wg);
+            this.setSelection(this.children.includes(target) ? [target] : this.selection.length ? [this.selection[0]] : [], false);
+        }
+        event.preventDefault();
+    }
+    globalClick(event) {
+        if (!event.composedPath().includes(this.dom)) {
+            this.dom.ownerDocument.removeEventListener("mousedown", this.globalClick);
+            if (this.selection.length > 1)
+                this.setSelection([this.selection[0]], false);
+        }
+    }
+    focusout() {
+        clearTimeout(this.focusTimeout);
+        if (this.selection.length > 1) {
+            this.focusTimeout = setTimeout(() => {
+                let active = this.wg.root.activeElement;
+                for (let i = 0; i < this.selection.length - 1; i++) {
+                    if (!active || !this.selection[i].dom.contains(active)) {
+                        this.setSelection([this.selection[0]], false);
+                        break;
+                    }
+                }
+            }, 20);
+        }
+    }
+    up() {
+        if (this.selection.length > 1)
+            this.setSelection([this.selection[0]], false);
+    }
+    get top() { return true; }
+}
+const menuBarPanel = /*@__PURE__*/(() => Panel.show.of(MenuBar.create))();
+function findChild(children, start) {
+    for (let i = start ? 0 : children.length - 1; start ? i < children.length : i >= 0; start ? i++ : i--) {
+        let child = children[i];
+        if (!(child.flags & 8))
+            return child;
+    }
+    return null;
+}
+function findNextChild(children, child, dir) {
+    let index = children.indexOf(child);
+    if (index < 0)
+        return null;
+    for (let i = index + dir;; i += dir) {
+        if (i < 0)
+            i = children.length - 1;
+        else if (i >= children.length)
+            i = 0;
+        if (i == index)
+            return null;
+        let child = children[i];
+        if (!(child.flags & 32))
+            return child;
+    }
+}
+function defaultChild(children) {
+    return children.length ? children.find(ch => ch.flags & 16) || children[0] : null;
+}
+const theme = /*@__PURE__*/Wordgard.styles({
+    "&": {
+        "--wg-menu-item-size": "20px"
+    },
+    "&light": {
+        "--wg-menu-color": "#555"
+    },
+    "&dark": {
+        "--wg-menu-color": "#ccc"
+    },
+    "wg-menubar": {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "5px",
+        padding: "3px",
+        color: "var(--wg-menu-color)",
+        borderBottom: "1px solid var(--wg-border-color)",
+    },
+    ".wg-menu-button:focus": {
+        outline: "1.5px solid var(--wg-highlight-color)"
+    },
+    ".wg-menu-button": {
+        border: 0,
+        padding: "3px",
+        borderRadius: "4px",
+        boxSizing: "content-box",
+        backgroundColor: "transparent",
+        font: "inherit",
+        color: "inherit",
+        height: "var(--wg-menu-item-size)",
+        textAlign: "left",
+        "&[aria-disabled]": {
+            opacity: "0.3"
+        },
+        "&[aria-pressed]": {
+            color: "var(--wg-highlight-color)"
+        },
+        "&:hover": {
+            backgroundColor: "#88888820",
+        },
+    },
+    ".wg-button-label": {
+        display: "inline-block",
+        minWidth: "var(--wg-submenu-width)",
+        padding: "0 3px",
+    },
+    "svg.wg-icon": {
+        fill: "currentColor",
+        width: "var(--wg-menu-item-size)",
+        height: "var(--wg-menu-item-size)",
+    },
+    "wg-menu-spacer": {
+        display: "block",
+        width: "7px"
+    },
+    "wg-submenu": {
+        display: "block",
+        position: "relative",
+        lineHeight: ".6",
+        whiteSpace: "nowrap"
+    },
+    "wg-menu-list": {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: "5px",
+        padding: "5px",
+        borderRadius: "4px",
+        backgroundColor: "var(--wg-panel-color)",
+        position: "absolute",
+        zIndex: "10",
+        top: "100%",
+        boxShadow: "0 2px 8px 0 rgba(128, 128, 128, 0.2)",
+        "& wg-menu-list": {
+            left: "100%",
+            top: 0
+        }
+    },
+    ".wg-submenu-arrow:after": {
+        padding: "0 2px",
+        fontSize: "80%",
+        verticalAlign: "10%",
+        opacity: "0.4",
+        content: "'▾'"
+    },
+    ".wg-submenu-arrow.wg-submenu-arrow-open:after": {
+        content: "'▴'"
+    },
+});
+const barTemplate = /*@__PURE__*/GardState.Facet.define({
+    combine: inputs => inputs.length ? inputs[0] : [Menu.Group.top.template()]
+});
+function menuBar(config = {}) {
+    let extensions = [menuBarPanel, theme];
+    if (config.template)
+        extensions.push(barTemplate.of(Array.isArray(config.template) ? config.template : [config.template]));
+    return extensions;
 }
 
 const inputRule = /*@__PURE__*/GardState.Facet.define();
@@ -7236,4 +7586,4 @@ function dropCursor() {
     return [dropCursorPos, drawDropCursor];
 }
 
-export { Decoration, Dialog, InputRule, KeyBinding, Panel, Tooltip, Widget, Wordgard, decoratePlots, dropCursor, menuBar, placeholder };
+export { Decoration, Dialog, InputRule, KeyBinding, Panel, PositioningHint, Tooltip, Widget, Wordgard, decoratePlots, dropCursor, keyBindingHelp, menuBar, placeholder };

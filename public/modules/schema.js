@@ -1,10 +1,10 @@
 import { ChangeSet, Leaf, Plot, Elt } from 'wordgard/doc';
 import { GardState, GardSelection, BidiSpan, Transaction } from 'wordgard/state';
-import { Paragraph, Heading, Direction, Blockquote, HorizontalRule, Alignment, Doc, InlineDoc, BulletList, OrderedList, InlineListItem, ListItem, CodeBlock, CodeBlockLanguage, Strong, Emphasis, Code, Underline, Strikethrough, Superscript, Subscript, ImageSize, ImageAlt, Image, Figure, CaptionedFigure, Color, BackgroundColor, Link, LineBreak } from 'wordgard/types';
+import { Paragraph, Heading, Direction, Blockquote, HorizontalRule, Alignment, Doc, InlineDoc, BulletList, OrderedList, InlineListItem, ListItem, CodeBlock, CodeBlockLanguage, Strong, Emphasis, Code, Underline, Strikethrough, Superscript, Subscript, Image, Figure, CaptionedFigure, ImageSize, ImageAlt, Color, BackgroundColor, Link, LineBreak } from 'wordgard/types';
 import { phrases, imagePhrases, colorNames } from 'wordgard/phrases';
 import { Command, setTextblockType, Menu, setAlignment, setDirection, toggleBlock, listIsActive, toggleList, enter, toggleMark } from 'wordgard/command';
 import { history } from 'wordgard/history';
-import { KeyBinding, InputRule, Wordgard, Widget, Decoration, Panel, Dialog, Tooltip } from 'wordgard/editor';
+import { KeyBinding, InputRule, Wordgard, Widget, Decoration, Dialog, Tooltip } from 'wordgard/editor';
 import cr from 'crelt';
 
 function blockDoc() {
@@ -25,6 +25,8 @@ function paragraph() {
 ;paragraph = /*@__PURE__*/(function (paragraph) {
     paragraph.keyBinding = KeyBinding.of({
         key: "Ctrl-Shift-0",
+        description: phrases.ref("paragraph"),
+        group: KeyBinding.Group.Block,
         run: Command.bind(setTextblockType, Paragraph)
     });
     paragraph.button = Menu.Button.define({
@@ -43,12 +45,18 @@ function heading() {
 }
 ;heading = /*@__PURE__*/(function (heading) {
     heading.keyBindings = [
-        KeyBinding.of({ key: "Ctrl-Shift-1", run: Command.bind(setTextblockType, Heading.of(1)) }),
-        KeyBinding.of({ key: "Ctrl-Shift-2", run: Command.bind(setTextblockType, Heading.of(2)) }),
-        KeyBinding.of({ key: "Ctrl-Shift-3", run: Command.bind(setTextblockType, Heading.of(3)) }),
-        KeyBinding.of({ key: "Ctrl-Shift-4", run: Command.bind(setTextblockType, Heading.of(4)) }),
-        KeyBinding.of({ key: "Ctrl-Shift-5", run: Command.bind(setTextblockType, Heading.of(5)) }),
-        KeyBinding.of({ key: "Ctrl-Shift-6", run: Command.bind(setTextblockType, Heading.of(6)) })
+        KeyBinding.of({ key: "Ctrl-Shift-1", run: Command.bind(setTextblockType, Heading.of(1)),
+            description: phrases.ref("heading_1"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Ctrl-Shift-2", run: Command.bind(setTextblockType, Heading.of(2)),
+            description: phrases.ref("heading_2"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Ctrl-Shift-3", run: Command.bind(setTextblockType, Heading.of(3)),
+            description: phrases.ref("heading_3"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Ctrl-Shift-4", run: Command.bind(setTextblockType, Heading.of(4)),
+            description: phrases.ref("heading_4"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Ctrl-Shift-5", run: Command.bind(setTextblockType, Heading.of(5)),
+            description: phrases.ref("heading_5"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Ctrl-Shift-6", run: Command.bind(setTextblockType, Heading.of(6)),
+            description: phrases.ref("heading_6"), group: KeyBinding.Group.Block })
     ];
     heading.button1 = Menu.Button.define({
         run: Command.bind(setTextblockType, Heading.of(1)),
@@ -85,9 +93,12 @@ function alignmentAtCursor(state) {
 }
 ;alignment = /*@__PURE__*/(function (alignment) {
     alignment.keyBindings = [
-        KeyBinding.of({ key: "Mod-Shift-l", run: Command.bind(setAlignment, "left") }),
-        KeyBinding.of({ key: "Mod-Shift-r", run: Command.bind(setAlignment, "right") }),
-        KeyBinding.of({ key: "Mod-Shift-e", run: Command.bind(setAlignment, "center") })
+        KeyBinding.of({ key: "Mod-Shift-l", run: Command.bind(setAlignment, "left"),
+            description: phrases.ref("align_left"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Mod-Shift-r", run: Command.bind(setAlignment, "right"),
+            description: phrases.ref("align_right"), group: KeyBinding.Group.Block }),
+        KeyBinding.of({ key: "Mod-Shift-e", run: Command.bind(setAlignment, "center"),
+            description: phrases.ref("align_center"), group: KeyBinding.Group.Block })
     ];
     alignment.buttonStart = Menu.Button.define({
         run: Command.bind(setAlignment, null),
@@ -288,7 +299,9 @@ function codeBlock() {
 ;codeBlock = /*@__PURE__*/(function (codeBlock) {
     codeBlock.keyBinding = KeyBinding.of({
         key: "Ctrl-Shift-\\",
-        run: Command.bind(setTextblockType, CodeBlock)
+        run: Command.bind(setTextblockType, CodeBlock),
+        description: phrases.ref("code_block"),
+        group: KeyBinding.Group.Block
     });
     codeBlock.button = Menu.Button.define({
         run: Command.bind(setTextblockType, CodeBlock),
@@ -401,7 +414,7 @@ const languageWidget = /*@__PURE__*/Widget.define({
     },
     inFlow: false
 });
-const languageSelect = /*@__PURE__*/Decoration.Tag.widget.dynamic(CodeBlock, "end", state => {
+const languageSelect = /*@__PURE__*/Decoration.Tag.widget.derived(CodeBlock, "end", state => {
     let options = state.facet(languageOptions);
     return tag => {
         return languageWidget.of({ options, value: tag.mark(CodeBlockLanguage) });
@@ -421,7 +434,9 @@ const languageSelect = /*@__PURE__*/Decoration.Tag.widget.dynamic(CodeBlock, "en
     };
     codeBlockLanguage.selectLanguageBinding = KeyBinding.of({
         key: "Shift-Mod-l",
-        run: codeBlockLanguage.selectLanguage
+        run: codeBlockLanguage.selectLanguage,
+        description: phrases.ref("code_block_language"),
+        group: KeyBinding.Group.Block
     });
     codeBlockLanguage.options = languageOptions;
 ;return codeBlockLanguage})(codeBlockLanguage);
@@ -433,6 +448,8 @@ function strong() {
     strong.keyBinding = KeyBinding.of({
         key: "Mod-b",
         run: Command.bind(toggleMark, Strong),
+        description: phrases.ref("toggle_strong"),
+        group: KeyBinding.Group.Inline
     });
     strong.button = Menu.Button.toggleMark({
         mark: Strong,
@@ -451,6 +468,8 @@ function emphasis() {
     emphasis.keyBinding = KeyBinding.of({
         key: "Mod-i",
         run: Command.bind(toggleMark, Emphasis),
+        description: phrases.ref("toggle_em"),
+        group: KeyBinding.Group.Inline
     });
     emphasis.button = Menu.Button.toggleMark({
         mark: Emphasis,
@@ -469,6 +488,8 @@ function code() {
     code.keyBinding = KeyBinding.of({
         key: "Mod-`",
         run: Command.bind(toggleMark, Code),
+        description: phrases.ref("toggle_code"),
+        group: KeyBinding.Group.Inline
     });
     code.button = Menu.Button.toggleMark({
         mark: Code,
@@ -486,7 +507,9 @@ function underline() {
 ;underline = /*@__PURE__*/(function (underline) {
     underline.keyBinding = KeyBinding.of({
         key: "Mod-u",
-        run: Command.bind(toggleMark, Underline)
+        run: Command.bind(toggleMark, Underline),
+        description: phrases.ref("toggle_underline"),
+        group: KeyBinding.Group.Inline
     });
     underline.button = Menu.Button.toggleMark({
         mark: Underline,
@@ -505,6 +528,8 @@ function strikethrough() {
     strikethrough.keyBinding = KeyBinding.of({
         key: "Mod-/",
         run: Command.bind(toggleMark, Strikethrough),
+        description: phrases.ref("toggle_strikethrough"),
+        group: KeyBinding.Group.Inline
     });
     strikethrough.button = Menu.Button.toggleMark({
         mark: Strikethrough,
@@ -523,6 +548,8 @@ function superscript() {
     superscript.keyBinding = KeyBinding.of({
         key: "Mod-.",
         run: Command.bind(toggleMark, Superscript),
+        description: phrases.ref("toggle_super"),
+        group: KeyBinding.Group.Inline
     });
     superscript.button = Menu.Button.toggleMark({
         mark: Superscript,
@@ -541,6 +568,8 @@ function subscript() {
     subscript.keyBinding = KeyBinding.of({
         key: "Mod-,",
         run: Command.bind(toggleMark, Subscript),
+        description: phrases.ref("toggle_sub"),
+        group: KeyBinding.Group.Inline
     });
     subscript.button = Menu.Button.toggleMark({
         mark: Subscript,
@@ -619,22 +648,6 @@ function imageTypeButtons(state, active) {
     }
     return [cr("span", { class: "wg-label" }, imagePhrases.get(state, "image_style"), ":"), cr("span", buttons)];
 }
-const setImageDialog = /*@__PURE__*/Transaction.Effect.define();
-const createImagePanel = wg => {
-    let dom = buildImagePanel(wg), mustFocus = true;
-    return {
-        top: true,
-        dom,
-        connect() {
-            if (mustFocus) {
-                mustFocus = false;
-                let target = dom.querySelector("input[name=src]");
-                if (target)
-                    target.focus();
-            }
-        }
-    };
-};
 function startUpload(wg, file, set) {
     let imageFile = file.files?.[0], handler = wg.state.facet(imageUploader)[0];
     if (!imageFile || !handler)
@@ -656,9 +669,8 @@ function startUpload(wg, file, set) {
         Dialog.show(wg, { label: imagePhrases.get(wg.state, "upload_failed") + ": " + err });
     });
 }
-function buildImagePanel(wg) {
-    let { state } = wg;
-    let sel = (state.field(imageDialog) || state.selection).resolve(state.doc);
+function buildImageDialog(wg, close) {
+    let { state } = wg, { sel } = state;
     let active = activeImage(sel);
     let size = !wg.state.schema.has(ImageSize) ? null :
         [cr("label", { for: "wg-img-size" }, imagePhrases.get(state, "width"), ":"),
@@ -671,90 +683,78 @@ function buildImagePanel(wg) {
         file = cr("input", { type: "file", id: "wg-img-file", name: "file", "aria-label": imagePhrases.get(state, "upload_image"),
             onchange: (e) => startUpload(wg, e.target, url => src.value = url) });
     }
-    let form = cr("form", { class: "wg-img-form", onkeydown }, cr("div", { class: "wg-dialog-title" }, imagePhrases.get(state, active ? "update_image" : "insert_image")), cr("label", { for: "wg-img-src" }, imagePhrases.get(state, "image_source"), ":"), cr("span", { class: "wg-img-src-line" }, src, file), cr("label", { for: "wg-img-alt" }, imagePhrases.get(state, "alt_text"), ":"), cr("input", { type: "text", id: "wg-img-alt", name: "alt",
+    return cr("form", { class: "wg-img-form", onkeydown }, cr("h3", { class: "wg-dialog-title" }, imagePhrases.get(state, active ? "update_image" : "insert_image")), cr("label", { for: "wg-img-src" }, imagePhrases.get(state, "image_source"), ":"), cr("span", { class: "wg-img-src-line" }, src, file), cr("label", { for: "wg-img-alt" }, imagePhrases.get(state, "alt_text"), ":"), cr("input", { type: "text", id: "wg-img-alt", name: "alt",
         value: active && active.mark(ImageAlt) || "",
         placeholder: imagePhrases.get(state, "describe_image") }), imageTypeButtons(state, active), size, cr("div", { class: "wg-img-buttons" }, cr("button", { type: "submit", class: "wg-dialog-button" }, imagePhrases.get(state, active ? "update" : "insert")), " ", cr("button", { type: "button", class: "wg-dialog-button", onclick: close }, imagePhrases.get(state, "cancel"))));
-    function onsubmit(e) {
-        e.preventDefault();
-        let { state } = wg, sel = (state.field(imageDialog) || state.selection).resolve(state.doc);
-        let data = new FormData(form);
-        let src = data.get("src");
-        if (!src)
-            return;
-        let type = data.get("type") ?? (state.schema.has(Image) ? "inline" : "start");
-        let cap = !!data.get("caption") || !state.schema.has(Figure);
-        let marks = [];
-        if (type == "center" || type == "end")
-            marks = Alignment.of(type).addToSet(marks);
-        if (data.get("alt"))
-            marks = ImageAlt.of(data.get("alt")).addToSet(marks);
-        if (data.get("size"))
-            marks = ImageSize.of(Number(data.get("size"))).addToSet(marks);
-        let tag = type == "inline" ? Image.of(src, marks) : cap ? CaptionedFigure.of(src, marks) : Figure.of(src, marks);
-        let change;
-        if (sel.from.parent.node.type == CaptionedFigure && sel.to.parent.start == sel.from.parent.start) {
-            let from = sel.from.parent.before;
-            if (tag instanceof Plot.Tag)
-                change = { from, to: from + 1, insert: [tag] };
-            else
-                change = { from, to: sel.from.parent.after, insert: [tag], fit: true };
-        }
-        else {
-            change = { from: sel.from.pos, to: sel.to.pos, insert: [tag instanceof Plot.Tag ? tag.create() : tag], fit: true };
-        }
-        wg.focus();
-        let changes = ChangeSet.create(state.doc, change), pos = changes.findInserted(t => t == tag) ?? change.from;
-        wg.dispatch({
-            changes: change,
-            effects: setImageDialog.of(false),
-            userEvent: "insert.image",
-            selection: tag instanceof Plot.Tag ? { anchor: pos + 1 } : GardSelection.node(pos, tag)
-        });
-    }
-    function close() {
-        wg.focus();
-        wg.dispatch({ effects: setImageDialog.of(false) });
-    }
-    function onkeydown(e) {
-        if (e.key == "Escape") {
-            e.preventDefault();
-            close();
-        }
-    }
-    return cr("wg-dialog", { class: "wg-img-dialog", onsubmit }, form);
 }
-const insertImage = wg => {
-    let val = wg.state.field(imageDialog, false);
-    if (val) {
-        wg.dispatch({ effects: setImageDialog.of(false) });
+function finishInsertImage(wg, form) {
+    if (!form)
+        return;
+    let { state } = wg, { sel } = state;
+    let data = new FormData(form);
+    let src = data.get("src");
+    if (!src)
+        return;
+    let type = data.get("type") ?? (state.schema.has(Image) ? "inline" : "start");
+    let cap = !!data.get("caption") || !state.schema.has(Figure);
+    let marks = [];
+    if (type == "center" || type == "end")
+        marks = Alignment.of(type).addToSet(marks);
+    if (data.get("alt"))
+        marks = ImageAlt.of(data.get("alt")).addToSet(marks);
+    if (data.get("size"))
+        marks = ImageSize.of(Number(data.get("size"))).addToSet(marks);
+    let tag = type == "inline" ? Image.of(src, marks) : cap ? CaptionedFigure.of(src, marks) : Figure.of(src, marks);
+    let change;
+    if (sel.from.parent.node.type == CaptionedFigure && sel.to.parent.start == sel.from.parent.start) {
+        let from = sel.from.parent.before;
+        if (tag instanceof Plot.Tag)
+            change = { from, to: from + 1, insert: [tag] };
+        else
+            change = { from, to: sel.from.parent.after, insert: [tag], fit: true };
     }
     else {
-        let effects = [setImageDialog.of(true)];
-        if (val === undefined)
-            effects.push(GardState.appendConfig.of(imageDialog));
-        wg.dispatch({ effects });
+        change = { from: sel.from.pos, to: sel.to.pos, insert: [tag instanceof Plot.Tag ? tag.create() : tag], fit: true };
+    }
+    let changes = ChangeSet.create(state.doc, change), pos = changes.findInserted(t => t == tag) ?? change.from;
+    wg.dispatch({
+        changes: change,
+        userEvent: "insert.image",
+        selection: tag instanceof Plot.Tag ? { anchor: pos + 1 } : GardSelection.node(pos, tag)
+    });
+}
+const insertImage = wg => {
+    let open = Dialog.get(wg, insertImage);
+    if (open) {
+        open.close();
+    }
+    else {
+        Dialog.show(wg, {
+            key: insertImage,
+            content: buildImageDialog,
+            closedBy: tr => !!tr.selection,
+            focus: "input[name=src]",
+            class: "wg-img-dialog",
+            tooltip: { pos: wg.state.selection.from },
+            positioningHint: true
+        }).result.then(form => finishInsertImage(wg, form));
     }
     return true;
 };
 const imageDialogTheme = /*@__PURE__*/Wordgard.styles({
-    ".wg-img-dialog": {
-        borderBottom: "1px solid var(--wg-border-color)"
-    },
+    ".wg-img-dialog": {},
     ".wg-img-form": {
-        padding: "5px 3px",
         display: "grid",
         gap: "8px",
         alignItems: "center",
         gridTemplateColumns: "max-content auto",
         "& label, & .wg-label": {
-            textAlign: "right"
+            textAlign: "end"
         }
     },
-    ".wg-dialog-title": {
+    ".wg-img-form .wg-dialog-title": {
         gridColumn: "span 2",
-        fontSize: "90%",
-        fontWeight: "bold",
-        textAlign: "center"
+        margin: "0"
     },
     ".wg-img-buttons": {
         gridColumn: "2"
@@ -794,23 +794,11 @@ const imageDialogTheme = /*@__PURE__*/Wordgard.styles({
         fontSize: "80%"
     }
 });
-const imageDialog = /*@__PURE__*/GardState.Field.define({
-    create: () => null,
-    update(value, tr) {
-        for (let e of tr.effects)
-            if (e.is(setImageDialog))
-                return e.value ? tr.state.selection : null;
-        return value && value.map(tr.changes, tr.state);
-    },
-    provide: f => [
-        GardState.prec.lowest(Panel.show.from(f, val => val && createImagePanel)),
-        imageDialogTheme
-    ]
-});
 
 function baseSupport() {
-    return [GardState.schemaElement.of(ImageAlt), image.button, imageDialog, image.keyBinding, image.dropHandler];
+    return [GardState.schemaElement.of(ImageAlt), image.button, imageDialogTheme, image.keyBinding, image.dropHandler];
 }
+const ImageGroup = /*@__PURE__*/(() => KeyBinding.Group.define({ description: imagePhrases.ref("group_image"), rank: 90 }))();
 function image() {
     return [GardState.schemaElement.of(Image), baseSupport()];
 }
@@ -931,8 +919,18 @@ const resizeHandlers = /*@__PURE__*/(() => [
         return false;
     };
     imageResizing.keyBindings = [
-        KeyBinding.of({ key: "Ctrl-Alt-l", mac: "Ctrl-Cmd-l", run: imageResizing.resizeCommand(1.1, true) }),
-        KeyBinding.of({ key: "Ctrl-Alt-k", mac: "Ctrl-Cmd-k", run: imageResizing.resizeCommand(0.9091, true) }),
+        KeyBinding.of({
+            key: "Ctrl-Alt-l", mac: "Ctrl-Cmd-l",
+            run: imageResizing.resizeCommand(1.1, true),
+            description: imagePhrases.ref("resize_up"),
+            group: ImageGroup
+        }),
+        KeyBinding.of({
+            key: "Ctrl-Alt-k", mac: "Ctrl-Cmd-k",
+            run: imageResizing.resizeCommand(0.9091, true),
+            description: imagePhrases.ref("resize_down"),
+            group: ImageGroup
+        }),
     ];
     imageResizing.dragHandle = [
         GardState.prec.high(resizeHandlers),
@@ -942,7 +940,12 @@ const resizeHandlers = /*@__PURE__*/(() => [
     ];
 ;return imageResizing})(imageResizing);
 ;image = /*@__PURE__*/(function (image) {
-    image.keyBinding = KeyBinding.of({ key: "Ctrl-Alt-i", mac: "Ctrl-Cmd-i", run: insertImage });
+    image.keyBinding = KeyBinding.of({
+        key: "Ctrl-Alt-i", mac: "Ctrl-Cmd-i",
+        run: insertImage,
+        description: imagePhrases.ref("insert_image"),
+        group: ImageGroup
+    });
     image.button = Menu.Button.define({
         run: insertImage,
         active: state => !!activeImage(state.sel),
@@ -1268,11 +1271,9 @@ const backgroundPicker = /*@__PURE__*/Menu.CustomControl.define({
 function toggleLink(wg) {
     if (wg.state.readOnly)
         return false;
-    let open = Dialog.get(wg, "wg-link-dialog");
+    let open = Dialog.get(wg, toggleLink);
     if (open) {
-        if (open.dom.contains(wg.contentDOM.ownerDocument.activeElement))
-            wg.focus();
-        Dialog.close(wg, "wg-link-dialog");
+        open.close();
         return true;
     }
     let { selection, doc } = wg.state;
@@ -1290,11 +1291,14 @@ function toggleLink(wg) {
     }
     else {
         Dialog.show(wg, {
+            key: toggleLink,
             label: phrases.get(wg.state, "link_target"),
             input: { type: "text", name: "url" },
             submitLabel: phrases.get(wg.state, "create_link"),
             class: "wg-link-dialog",
-            focus: true
+            focus: true,
+            closedBy: tr => !!tr.selection,
+            tooltip: { pos: wg.state.selection.from }
         }).result.then(form => {
             wg.focus();
             let url = form && form.elements.namedItem("url")?.value;
@@ -1368,6 +1372,8 @@ function link() {
     link_1.keyBinding = KeyBinding.of({
         key: "Mod-k",
         run: toggleLink,
+        description: phrases.ref("create_link"),
+        group: KeyBinding.Group.Inline
     });
     link_1.button = Menu.Button.define({
         run: toggleLink,

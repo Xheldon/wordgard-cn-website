@@ -5806,5 +5806,305 @@
   "A facet that allows you to add options to the language selection drop-down.": {
     "_translate": "允许您向语言选择下拉列表添加选项的 Facet。",
     "_note": ""
+  },
+  "Create a token slice of the content between from and to.": {
+    "_translate": "创建位于 <code>from</code> 和 <code>to</code> 之间的内容的令牌切片。",
+    "_note": ""
+  },
+  "Replace the given range with this slice. If fit is true and a Slice is given here, its context will be used to do the fitting.": {
+    "_translate": "用此切片替换给定的范围。如果 <code>fit</code> 为 <code>true</code> 且此处提供了 <a href=\"#doc.Slice\"><code>Slice</code></a>，则其上下文将用于执行适配。",
+    "_note": ""
+  },
+  "For deletions or insertions where it isn't obvious that the replacement will produce a valid document, set this to true.": {
+    "_translate": "对于无法明显判断替换后是否会产生有效文档的删除或插入操作，请将此项设置为 <code>true</code>。",
+    "_note": ""
+  },
+  "A slice represents a part of a document, as an array of tokens plus a context. It is used to represent things like clipboard content and insertions given when building a change set.": {
+    "_translate": "Slice 表示文档的一部分，由一个令牌数组加上上下文组成。它用于表示诸如剪贴板内容以及在构建 <a href=\"#doc.ChangeSet\">变更集</a> 时提供的插入内容等对象。",
+    "_note": ""
+  },
+  "The tokens contained in this slice.": {
+    "_translate": "此切片中包含的令牌。",
+    "_note": ""
+  },
+  "This slice's context, an array of tags that can be used as a hint when the slice's content needs to be wrapped in additional content to fit somewhere, ordered with the innermost nodes in front. May be empty when there is no context available.": {
+    "_translate": "此切片上下文是一个标签数组，当需要将切片内容包装在额外内容中以适配某处时，可将其用作提示；数组按最内层节点在前的顺序排列。若无可用上下文，该数组可能为空。",
+    "_note": ""
+  },
+  "Create a slice (with context) from the given range of document content. to defaults to the end of the document.": {
+    "_translate": "从给定的文档内容范围创建一个切片（包含上下文）。<code>to</code> 默认为文档末尾。",
+    "_note": ""
+  },
+  "A token's JSON representation.": {
+    "_translate": "令牌的 JSON 表示。",
+    "_note": ""
+  },
+  "Read a token from its JSON representation.": {
+    "_translate": "从其 JSON 表示中读取令牌。",
+    "_note": ""
+  },
+  "Retrieve the value of a state field or derived field. Throws an error when the state doesn't have that field, unless you pass false as second parameter, in which case you'll get undefined for a regular field, or the value will be eagerly computed for a derived field.": {
+    "_translate": "获取<a href=\"#state.GardState.Field\">状态字段</a>或<a href=\"#state.GardState.Field.Derived\">派生字段</a>的值。如果状态中不存在该字段，则抛出错误，除非您将第二个参数传递为<code>false</code>，此时对于普通字段将返回<code>undefined</code>，而对于派生字段则会立即计算其值。",
+    "_note": ""
+  },
+  "Optional function used to compare the value of the field, to prevent propagating a change when a recomputed result is the same as the old value. Should return true when the inputs can be considered the same. Defaults to ===.": {
+    "_translate": "用于比较字段值的可选函数，以防止在重新计算的结果与旧值相同时传播更改。当输入可被视为相同时应返回 <code>true</code>。默认为 <code>===</code>。",
+    "_note": ""
+  },
+  "Define a field-like state slot that is computed from other slots in the state. Automatically tracks dependencies and only recomputes when one of the inputs accessed by the given function changes. Use field to read the value of such a field.": {
+    "_translate": "定义一个从状态中的其他槽位计算得出的类字段状态槽。它会自动跟踪依赖项，并且仅当给定函数访问的某个输入发生变化时才重新计算。使用 <a href=\"#state.GardState.field\"><code>field</code></a> 来读取此类字段的值。",
+    "_note": ""
+  },
+  "Define a derived field.": {
+    "_translate": "定义派生字段。",
+    "_note": ""
+  },
+  "Derived fields must be included in your state configuration for them to be used.": {
+    "_translate": "派生字段必须包含在您的状态配置中才能被使用。",
+    "_note": ""
+  },
+  "Create an extension that derives a value for the facet from a state. The given function should only depend on the state, not any external non-constant inputs. Its return value will be kept on state update, unless any of the fields or facets (including document and selection) that it read are changed by the update, in which case it is called again.": {
+    "_translate": "创建一个扩展，该扩展根据状态派生一个 facet 的值。给定的函数应仅依赖于状态，而不依赖任何外部非恒定输入。其返回值将在状态更新时保留，除非该函数读取的任何字段或 facet（包括文档和选择）在更新中被修改，在这种情况下将再次调用该函数。",
+    "_note": ""
+  },
+  "Create an extension that derives zero or more values for this facet from a state.": {
+    "_translate": "创建一个扩展，该扩展从状态中派生此方面的零个或多个值。",
+    "_note": ""
+  },
+  "A facet reader can be used to fetch the value of a facet, through facet or as a dependency in Facet.derive, but not to define new values for the facet.": {
+    "_translate": "Facet 读取器可用于通过 <a href=\"#state.GardState.facet\"><code>facet</code></a> 获取 Facet 的值，或作为 <a href=\"#state.GardState.Facet.derive\"><code>Facet.derive</code></a> 中的依赖项，但不能用于为 Facet 定义新值。",
+    "_note": ""
+  },
+  "Create a content slice and context from this selection. The default implementation concatenates the slices for the selection's ranges.": {
+    "_translate": "从此选择中创建一个内容切片和上下文。默认实现会连接该选择的 <code>ranges</code> 的切片。",
+    "_note": ""
+  },
+  "When false, indicates that this selection may swap head and anchor when extended. Used for things like selections created by double-clicking, which don't have a clearly defined anchor.": {
+    "_translate": "当为 <code>false</code> 时，表示在扩展此选区时可能会交换 <code>head</code> 和 <code>anchor</code>。用于诸如双击创建的选区等场景，这些选区没有明确定义的锚点。",
+    "_note": ""
+  },
+  "Set to false to indicate that this selection isn't directional.": {
+    "_translate": "设置为 <code>false</code> 表示此选择不是 <a href=\"#state.GardSelection.Text.directional\">方向性</a> 的。",
+    "_note": ""
+  },
+  "Modifiers can be given in any order. Shift-, Alt-, Ctrl- and Cmd- (or Meta-) are recognized.": {
+    "_translate": "修饰符可以按任意顺序给出。系统可识别 <code>Shift-</code>、<code>Alt-</code>、<code>Ctrl-</code> 以及 <code>Cmd-</code>（或 <code>Meta-</code>）。",
+    "_note": ""
+  },
+  "A textual description of what the shifted variant of this key does.": {
+    "_translate": "对此按键的移位变体功能的文字描述。",
+    "_note": ""
+  },
+  "A textual description of what this key does. Will be used by keyBindingHelp to create a list of active bindings.": {
+    "_translate": "此键功能的文本描述。将由 <a href=\"#editor.keyBindingHelp\"><code>keyBindingHelp</code></a> 用于创建活动绑定列表。",
+    "_note": ""
+  },
+  "The group under which the description of this key should be organized in the list of bindings.": {
+    "_translate": "此键的描述应在绑定列表中按哪个组进行组织。",
+    "_note": ""
+  },
+  "The description given for this group.": {
+    "_translate": "该组的描述。",
+    "_note": ""
+  },
+  "Key binding groups are used to organize key bindings in the user-presented list of bindings.": {
+    "_translate": "键绑定组用于在用户可见的键绑定<a href=\"#editor.keyBindingHelp\">列表</a>中<a href=\"#editor.KeyBinding.Spec.group\">组织</a>键绑定。",
+    "_note": ""
+  },
+  "A sorting rank.": {
+    "_translate": "排序等级。",
+    "_note": ""
+  },
+  "Define a key binding group.": {
+    "_translate": "定义一个按键绑定组。",
+    "_note": ""
+  },
+  "Returns an extension that binds Mod-? to keyBindingHelp.showKeyBindings.": {
+    "_translate": "返回一个扩展，将 <code>Mod-?</code> 绑定到 <a href=\"#editor.keyBindingHelp.showKeyBindings\"><code>keyBindingHelp.showKeyBindings</code></a>。",
+    "_note": ""
+  },
+  "Look for a key associated with the given description in the state's key bindings, and if found, return its key name as a string.": {
+    "_translate": "在状态的按键绑定中查找与给定描述关联的按键，如果找到，则将其按键名称作为字符串返回。",
+    "_note": ""
+  },
+  "This command opens a dialog displaying the key bindings that have a description associated with them.": {
+    "_translate": "此命令会打开一个对话框，显示具有关联描述的关键绑定。",
+    "_note": ""
+  },
+  "A menu button that, when clicked, displays the available key bindings.": {
+    "_translate": "一个菜单按钮，点击后可显示可用的按键绑定。",
+    "_note": ""
+  },
+  "Bind Mod-? to showKeyBindings.": {
+    "_translate": "将 <code>Mod-?</code> 绑定到 <a href=\"#editor.keyBindingHelp.showKeyBindings\"><code>showKeyBindings</code></a>。",
+    "_note": ""
+  },
+  "This function allows you to define a custom node shape that depends on the editor state. It will automatically track which state slots (see derive) you use, and make sure the nodes are redrawn when those change.": {
+    "_translate": "此函数允许您定义一个依赖于编辑器状态的<a href=\"#editor.Decoration.Tag.shape\">自定义节点形状</a>。它将自动跟踪您使用的状态槽（参见<a href=\"#state.GardState.Facet.derive\"><code>derive</code></a>），并确保在这些状态发生变化时重新绘制节点。",
+    "_note": ""
+  },
+  "Define a node widget decoration that depends on some aspect of the editor state. See the notes for Decoration.Tag.shape.derived.": {
+    "_translate": "定义一个依赖于编辑器状态某些方面的节点小部件装饰。请参阅 <a href=\"#editor.Decoration.Tag.shape.derived\"><code>Decoration.Tag.shape.derived</code></a> 的说明。",
+    "_note": ""
+  },
+  "Override the shape used for a given mark inside the editor.": {
+    "_translate": "在编辑器中覆盖给定标记所使用的形状。",
+    "_note": ""
+  },
+  "Dialogs are temporary UI elements used to display a message or request input from the user.": {
+    "_translate": "对话框是临时 UI 元素，用于显示消息或向用户请求输入。",
+    "_note": ""
+  },
+  "Dialogs are UI elements opened as a side-effect and closed by user action. They may be either placed near some document position (as a tooltip), or free-floating.": {
+    "_translate": "对话框是作为副作用打开并由用户操作关闭的 UI 元素。它们既可以放置在某个文档位置附近（作为<a href=\"#editor.Tooltip\">工具提示</a>），也可以自由浮动。",
+    "_note": ""
+  },
+  "An arbitrary value used to identify this dialog. Used to query for it via Dialog.get.": {
+    "_translate": "用于标识此对话框的任意值。可通过 <a href=\"#editor.Dialog.get\"><code>Dialog.get</code></a> 查询该对话框。",
+    "_note": ""
+  },
+  "Extra classes to add to the element.": {
+    "_translate": "要添加到元素的额外类。",
+    "_note": ""
+  },
+  "If given, a transaction for which the predicate returns true will automatically close the dialog.": {
+    "_translate": "如果提供了该事务，且谓词返回 true，则会自动关闭对话框。",
+    "_note": ""
+  },
+  "Provide this option to position this dialog like a tooltip, relative to some document position.": {
+    "_translate": "提供此选项，以便将对话框像工具提示一样定位，相对于某个文档位置。",
+    "_note": ""
+  },
+  "Show a dialog to display a message or prompt the user for input. Returns a function that closes the dialog and a promise that resolves when the dialog is closed or a form inside of it is submitted.": {
+    "_translate": "显示一个对话框以显示消息或提示用户输入。返回一个用于关闭对话框的函数，以及一个在对话框关闭或其内部表单提交时解析的 Promise。",
+    "_note": ""
+  },
+  "See whether a dialog with the given key is present in the editor, and if so return its DOM representation and a functionto close it. Note that dom may be null if the dialog is present but not yet rendered.": {
+    "_translate": "检查编辑器中是否存在具有给定键的对话框，如果存在，则返回其 DOM 表示以及一个用于关闭它的函数。请注意，如果对话框存在但尚未渲染，<code>dom</code> 可能为 <code>null</code>。",
+    "_note": ""
+  },
+  "It is sometimes useful to position a dialog (or other floating UI element) based on the position of the element that the user is currently interacting with. Positioning make it possible for things like menu buttons to provide their position to the commands they call, using dynamic scope.": {
+    "_translate": "有时，根据用户当前正在交互的元素位置来定位对话框（或其他浮动 UI 元素）会很有用。通过动态作用域，定位功能使得菜单按钮等元素能够将其位置传递给它们调用的命令。",
+    "_note": ""
+  },
+  "If given try to align the left top (or right top, in a right-to-left layout) with the corner of this rectangle. If set to true, call PositioningHint.get to try and get a rectangle. When available, this will override the tooltip option.": {
+    "_translate": "如果提供，请尝试将左上角（或在从右到左的布局中为右上角）与此矩形的角对齐。如果设置为 <code>true</code>，请调用 <a href=\"#editor.PositioningHint.get\"><code>PositioningHint.get</code></a> 以尝试获取一个矩形。如果可用，这将覆盖 <code>tooltip</code> 选项。",
+    "_note": ""
+  },
+  "Get the current positioning hint, if available.": {
+    "_translate": "获取当前的定位提示（如果可用）。",
+    "_note": ""
+  },
+  "Run function run with the positioning hint provided by hint available. Until that function returns, PositioningHint.get will return this rectangle, unless a nested call to runWith shadows it.": {
+    "_translate": "使用 <code>hint</code> 提供的定位提示运行函数 <code>run</code>。在该函数返回之前，<a href=\"#editor.PositioningHint.get\"><code>PositioningHint.get</code></a> 将返回此矩形，除非嵌套调用 <code>runWith</code> 将其遮蔽。",
+    "_note": ""
+  },
+  "The interface shared between RangeSet and PointSet.": {
+    "_translate": "<a href=\"#set.RangeSet\"><code>RangeSet</code></a> 与 <a href=\"#set.PointSet\"><code>PointSet</code></a> 之间共享的接口。",
+    "_note": ""
+  },
+  "This module defines data structures that can be used to store the positions of points or ranges in a document. Their main use is to hold decorations associated with a given document position, but they can also be used for other data.": {
+    "_translate": "此模块定义了可用于存储文档中点或范围位置的数据结构。它们的主要用途是保存与给定文档位置关联的<a href=\"#editor.Decoration\">装饰</a>，但也可用于其他数据。",
+    "_note": ""
+  },
+  "The number of values in this set.": {
+    "_translate": "此集合中的值数量。",
+    "_note": ""
+  },
+  "Adjust this set's positions for a set of document changes. Returns a new set with the adjusted positions. Will delete values when the content around them was deleted. Optionally accepts an ordered sequence of replacements, whose positions should refer to the post-change document.": {
+    "_translate": "调整此集合的位置以应对一组文档变更。返回一个包含调整后位置的新集合。当周围内容被删除时，将删除相应的值。可选地接受一个有序的替换序列，其位置应指向变更后的文档。",
+    "_note": ""
+  },
+  "If given, replace all values in these ranges.": {
+    "_translate": "如果已提供，则替换这些范围内的所有值。",
+    "_note": ""
+  },
+  "Add values from this source.": {
+    "_translate": "从此来源添加值。",
+    "_note": ""
+  },
+  "Optionally filter out any value where this predicate returns false.": {
+    "_translate": "可选地，过滤掉该谓词返回 false 的任何值。",
+    "_note": ""
+  },
+  "A cursor over a point or range set.": {
+    "_translate": "指向点或范围集的游标。",
+    "_note": ""
+  },
+  "A source, used to create or extend a set, is either an array of [value, pos, pos?] tuples, or a function that calls its argument to add a value.": {
+    "_translate": "用于创建或扩展集合的源，可以是包含 <code>[value, pos, pos?]</code> 元组的数组，也可以是调用其参数以添加值的函数。",
+    "_note": ""
+  },
+  "Represents a replaced section in a set.": {
+    "_translate": "表示集合中被替换的部分。",
+    "_note": ""
+  },
+  "For ranges, to must be given, and ranges must be provided ordered by start position. For points, to must be omitted or be the same as from, and the points must be ordered by position and side.": {
+    "_translate": "对于范围，必须提供 <code>to</code>，且范围必须按起始位置排序。对于点，必须省略 <code>to</code> 或使其与 <code>from</code> 相同，且点必须按位置和 <a href=\"#set.PointSet.Value.side\">side</a> 排序。",
+    "_note": ""
+  },
+  "Create a cursor over a collection of range sets.": {
+    "_translate": "在范围集集合上创建一个游标。",
+    "_note": ""
+  },
+  "Create a cursor over a collection of point sets.": {
+    "_translate": "在点集集合上创建一个游标。",
+    "_note": ""
+  },
+  "A set of languages to use for highlighting. A given language will be used if the block's CodeBlockLanguage mark matches its name or one of it aliases.": {
+    "_translate": "用于高亮显示的一组语言。如果代码块的 <a href=\"#types.CodeBlockLanguage\"><code>CodeBlockLanguage</code></a> 标记与其名称或任一别名匹配，则将使用该语言。",
+    "_note": ""
+  },
+  "An optional function to override the way a language is determined for a block. Can be used to provide a default highlighting language, language detection, or more advanced language name matching.": {
+    "_translate": "一个可选函数，用于覆盖确定代码块语言的方式。可用于提供默认高亮语言、语言检测或更高级的语言名称匹配。",
+    "_note": ""
+  },
+  "This package provides syntax highlighting for code blocks. It uses CodeMirror 5 style stream parsers for the highlighting. This package exports a bunch of those, but you can define your own, using parsers from @codemirror/legacy-modes or third-party parsers.": {
+    "_translate": "此包为 <a href=\"#types.CodeBlock\">代码块</a> 提供语法高亮功能。它使用 CodeMirror 5 风格的 <a href=\"https://codemirror.net/docs/ref/#streamparser\">流式解析器</a> 来实现高亮。此包导出了许多此类解析器，但您也可以使用来自 <code>@codemirror/legacy-modes</code> 或第三方解析器的 <a href=\"#highlight-code.Language\">自定义</a> 解析器。",
+    "_note": ""
+  },
+  "Returns an extension that highlights code blocks. Will add options for the block language menu for the provided languages.": {
+    "_translate": "返回一个用于高亮 <a href=\"#types.CodeBlock\">代码块</a> 的扩展。将为提供的语言向代码块语言菜单添加 <a href=\"#schema.codeBlockLanguage.options_2\">选项</a>。",
+    "_note": ""
+  },
+  "Object type used to associate a parser with a language name and optional set of aliases.": {
+    "_translate": "用于将解析器与语言名称及可选的别名集关联起来的对象类型。",
+    "_note": ""
+  },
+  "The name of this language.": {
+    "_translate": "该语言的名称。",
+    "_note": ""
+  },
+  "Alternative names for the mode (lowercased, includes this.name).": {
+    "_translate": "模式的替代名称（小写，包含 <code>this.name</code>）。",
+    "_note": ""
+  },
+  "The language's name.": {
+    "_translate": "该语言的名称。",
+    "_note": ""
+  },
+  "The parser that highlights this language.": {
+    "_translate": "用于高亮此语言的解析器。",
+    "_note": ""
+  },
+  "An optional array of alternative names.": {
+    "_translate": "可选的替代名称数组。",
+    "_note": ""
+  },
+  "The parser to use for this language.": {
+    "_translate": "用于此语言的解析器。",
+    "_note": ""
+  },
+  "Create a language object.": {
+    "_translate": "创建语言对象。",
+    "_note": ""
+  },
+  "An array of common languages. Contains C, CSS, Cpp, HTML, Java, JavaScript, JSON, Python, Ruby, Rust, TypeScript, and XML.": {
+    "_translate": "一组常用语言。包含 <code>C</code>、<code>CSS</code>、<code>Cpp</code>、<code>HTML</code>、<code>Java</code>、<code>JavaScript</code>、<code>JSON</code>、<code>Python</code>、<code>Ruby</code>、<code>Rust</code>、<code>TypeScript</code> 和 <code>XML</code>。",
+    "_note": ""
+  },
+  "This package exports constants called C, CSS, Clojure, Cobol, CommonLisp, Cpp, Csharp, Dart, Elm, Erlang, FSharp, Go, HTML, Haskell, JSON, Java, JavaScript, Jinja2, Julia, Kotlin, LaTeX, Less, Lua, MSSQL, MySQL, OCaml, ObjectiveC, Perl, PostgreSQL, Python, R, Ruby, Rust, SML, SQL, SQLite, Sass, Scala, Scheme, Shell, Swift, TypeScript, WebAssembly, XML, and YAML containing Language objects for those languages.": {
+    "_translate": "此包导出名为 <code>C</code>、<code>CSS</code>、<code>Clojure</code>、<code>Cobol</code>、<code>CommonLisp</code>、<code>Cpp</code>、<code>Csharp</code>、<code>Dart</code>、<code>Elm</code>、<code>Erlang</code>、<code>FSharp</code>、<code>Go</code>、<code>HTML</code>、<code>Haskell</code>、<code>JSON</code>、<code>Java</code>、<code>JavaScript</code>、<code>Jinja2</code>、<code>Julia</code>、<code>Kotlin</code>、<code>LaTeX</code>、<code>Less</code>、<code>Lua</code>、<code>MSSQL</code>、<code>MySQL</code>、<code>OCaml</code>、<code>ObjectiveC</code>、<code>Perl</code>、<code>PostgreSQL</code>、<code>Python</code>、<code>R</code>、<code>Ruby</code>、<code>Rust</code>、<code>SML</code>、<code>SQL</code>、<code>SQLite</code>、<code>Sass</code>、<code>Scala</code>、<code>Scheme</code>、<code>Shell</code>、<code>Swift</code>、<code>TypeScript</code>、<code>WebAssembly</code>、<code>XML</code> 和 <code>YAML</code> 的常量，其中包含针对这些语言的 <a href=\"#highlight-code.Language\"><code>Language</code></a> 对象。",
+    "_note": ""
   }
 }

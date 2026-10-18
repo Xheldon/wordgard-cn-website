@@ -16,6 +16,7 @@ class PhraseSet {
     constructor(phrases) {
         this.phrases = phrases;
     }
+    refs = new Map;
     get(state, tag, ...insert) {
         let override = state.facet(phraseOverride).get(this);
         let phrase = (override && override[tag]) ?? this.phrases[tag];
@@ -29,7 +30,10 @@ class PhraseSet {
         return phrase;
     }
     ref(tag) {
-        return (state, ...insert) => this.get(state, tag, ...insert);
+        let found = this.refs.get(tag);
+        if (!found)
+            this.refs.set(tag, found = (state, ...insert) => this.get(state, tag, ...insert));
+        return found;
     }
     translate(phrases) {
         return phraseOverride.of({ set: this, phrases });
@@ -47,6 +51,11 @@ class PhraseSet {
 
 const phrases = /*@__PURE__*/PhraseSet.define({
     dialog_close: "close",
+    group_block: "Block-level editing",
+    group_inline: "Inline editing",
+    group_history: "Undo history",
+    key_bindings: "Keyboard Shortcuts",
+    show_keys: "Show keyboard shortcuts",
     overflow_more: "More",
     block_style: "Block style",
     toggle_strong: "Toggle strong emphasis",
@@ -58,21 +67,28 @@ const phrases = /*@__PURE__*/PhraseSet.define({
     toggle_sub: "Toggle subscript",
     link_target: "Link target",
     create_link: "Create link",
+    insert_break: "Insert line break",
     text_color: "Text color",
     background_color: "Background color",
     undo: "Undo",
     redo: "Redo",
     paragraph: "Paragraph",
     code_block: "Code block",
+    code_block_language: "Select code block language",
     heading_1: "Heading 1",
     heading_2: "Heading 2",
     heading_3: "Heading 3",
+    heading_4: "Heading 4",
+    heading_5: "Heading 5",
+    heading_6: "Heading 6",
     toggle_bullet_list: "Toggle bullet list",
     toggle_ordered_list: "Toggle ordered list",
     toggle_quote: "Toggle blockquote",
     alignment: "Alignment",
     align_start: "Align text to block start",
     align_end: "Align text to block end",
+    align_left: "Align text to the left",
+    align_right: "Align text to the right",
     align_center: "Center text",
     text_dir: "Text direction",
     text_dir_ltr: "Left-to-right text",
@@ -80,6 +96,7 @@ const phrases = /*@__PURE__*/PhraseSet.define({
     text_dir_auto: "Automatic text direction",
 });
 const imagePhrases = /*@__PURE__*/PhraseSet.define({
+    group_image: "Image manipulation",
     insert_image: "Insert image",
     update_image: "Update image",
     update: "Update",
@@ -94,6 +111,8 @@ const imagePhrases = /*@__PURE__*/PhraseSet.define({
     uploading: "Uploading...",
     upload_failed: "Image upload failed",
     width: "Width in pixels",
+    resize_up: "Make image larger",
+    resize_down: "Make image smaller",
     upload_image: "Upload an image",
     image_source: "Image source",
     alt_text: "Alternative text",

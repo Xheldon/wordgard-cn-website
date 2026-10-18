@@ -42,83 +42,35 @@ const Token = /*@__PURE__*/(function (Token) {
     })(Token.Type || (Token.Type = {}));
     Token.End = {
         tokenType: Token.Type.Close,
-        toString() { return "[end]"; }
+        toString() { return "[end]"; },
+        toJSON() { return "."; }
     };
+    function fromJSON(schema, value) {
+        if (value === ".")
+            return Token.End;
+        if (!value || typeof value.type != "string")
+            throw new ValidationError("Invalid slice JSON");
+        let type = schema.getNode(value.type);
+        return type?.isLeaf || ("content" in value) ? schema.nodeFromJSON(value) : schema.tagFromJSON(value);
+    }
+    Token.fromJSON = fromJSON;
 ;return Token})({});
 class Slice {
     content;
+    context;
     length;
-    constructor(content) {
+    constructor(
+    content, 
+    context) {
         this.content = content;
+        this.context = context;
         this.length = content.reduce((l, e) => l + (e.tokenType == Token.Type.Node ? e.length : 1), 0);
     }
-    static of(content) { return new Slice(content); }
-    eq(other) {
-        if (other.content.length != this.content.length)
-            return false;
-        for (let i = 0; i < this.content.length; i++) {
-            let a = this.content[i], b = other.content[i];
-            if (a == Token.End) {
-                if (b != Token.End)
-                    return false;
-            }
-            else if (a.tokenType == Token.Type.Node) {
-                if (!((b.tokenType == Token.Type.Node) && a.eq(b)))
-                    return false;
-            }
-            else if (a.tokenType == Token.Type.Open) {
-                if (!((b.tokenType == Token.Type.Open) && a.eq(b)))
-                    return false;
-            }
-        }
-        return true;
-    }
-    run(track, startPos = 0) {
-        let pos = startPos;
-        for (let elt of this.content) {
-            if (elt.tokenType == Token.Type.Open)
-                track.open(elt, pos++);
-            else if (elt.tokenType == Token.Type.Node) {
-                track.node(elt, pos);
-                pos += elt.length;
-            }
-            else
-                track.close(pos++);
-        }
-    }
-    slice(from, to = this.length) {
-        if (from == to)
-            return Slice.empty;
-        let result = [], off = 0;
-        for (let elt of this.content) {
-            let start = off;
-            off += elt.tokenType == Token.Type.Node ? elt.length : 1;
-            if (off <= from)
-                continue;
-            if (start < from || off > to) {
-                let inner = elt.sliceInner(Math.max(0, from - start), Math.min(elt.length, to - start));
-                for (let elt of inner.content)
-                    result.push(elt);
-            }
-            else {
-                result.push(elt);
-            }
-            if (off >= to)
-                break;
-        }
-        return new Slice(result);
+    static of(content, context) {
+        return content.length || context && context.length ? new Slice(content, context || Slice.empty.context) : Slice.empty;
     }
     concat(other) {
-        let content = this.content.slice();
-        let i = 0;
-        if (content.length && other.content.length && other.content[0].tokenType == Token.Type.Node &&
-            content[content.length - 1].tokenType == Token.Type.Node) {
-            other.content[0].pushTo(content);
-            i = 1;
-        }
-        for (; i < other.content.length; i++)
-            content.push(other.content[i]);
-        return new Slice(content);
+        return new Slice(Slice.concat(this.content, other.content), this.context);
     }
     textContent(options = {}) {
         let { blockSeparator = "\n", leafText } = options;
@@ -137,24 +89,69 @@ class Slice {
         }
         return out.text;
     }
-    static empty = /*@__PURE__*/(() => new Slice([]))();
+    static empty = /*@__PURE__*/(() => new Slice([], []))();
     toString() {
         return `<${this.content.join()}>`;
     }
-    toJSON() {
-        return this.content.map(e => e.tokenType == Token.Type.Close ? "." : e.toJSON());
+    static get(doc, from, to) {
+        return new Slice(doc.slice(from, to), doc.contextAt(from));
     }
-    static fromJSON(schema, json) {
-        if (!Array.isArray(json))
-            throw new ValidationError("Invalid slice JSON");
-        return new Slice(json.map(value => {
-            if (value === ".")
-                return Token.End;
-            if (!value || typeof value.type != "string")
-                throw new ValidationError("Invalid slice JSON");
-            let type = schema.getNode(value.type);
-            return type?.isLeaf || ("content" in value) ? schema.nodeFromJSON(value) : schema.tagFromJSON(value);
-        }));
+    static run(tokens, track, startPos = 0) {
+        let pos = startPos;
+        for (let elt of tokens) {
+            if (elt.tokenType == Token.Type.Open)
+                track.open(elt, pos++);
+            else if (elt.tokenType == Token.Type.Node) {
+                track.node(elt, pos);
+                pos += elt.length;
+            }
+            else
+                track.close(pos++);
+        }
+    }
+    static concat(a, b) {
+        let tokens = a.slice();
+        let i = 0;
+        if (a.length && b.length && b[0].tokenType == Token.Type.Node &&
+            a[a.length - 1].tokenType == Token.Type.Node) {
+            b[0].pushTo(tokens);
+            i = 1;
+        }
+        for (; i < b.length; i++)
+            tokens.push(b[i]);
+        return tokens;
+    }
+    static slice(tokens, from, to = 1e9) {
+        if (from == to)
+            return Slice.empty.content;
+        let result = [], off = 0;
+        for (let elt of tokens) {
+            let start = off;
+            off += elt.tokenType == Token.Type.Node ? elt.length : 1;
+            if (off <= from)
+                continue;
+            if (start < from || off > to) {
+                let inner = elt.sliceInner(Math.max(0, from - start), Math.min(elt.length, to - start));
+                for (let elt of inner)
+                    result.push(elt);
+            }
+            else {
+                result.push(elt);
+            }
+            if (off >= to)
+                break;
+        }
+        return result;
+    }
+    static eq(a, b) {
+        if (a.length != b.length)
+            return false;
+        for (let i = 0; i < a.length; i++) {
+            let tA = a[i], tB = b[i];
+            if (tA.tokenType != tB.tokenType || (tA.tokenType != Token.Type.Close && !tA.eq(tB)))
+                return false;
+        }
+        return true;
     }
 }
 
@@ -1198,7 +1195,7 @@ class Leaf extends BaseTag {
         nodes.push(this);
     }
     sliceInner(from, to) {
-        return from == to ? Slice.empty : Slice.of([this.is(Leaf.Text) ? this.sliceText(from, to) : this]);
+        return from == to ? Slice.empty.content : [this.is(Leaf.Text) ? this.sliceText(from, to) : this];
     }
     sliceText(from, to) {
         if (!this.is(Leaf.Text))
@@ -1270,10 +1267,10 @@ class Plot {
     }
     sliceInner(from, to) {
         if (from == to)
-            return Slice.empty;
+            return Slice.empty.content;
         let content = [];
         this.slicePlot(content, from, to);
-        return Slice.of(content);
+        return content;
     }
     slicePlot(out, from, to) {
         if (from <= 0) {
@@ -1603,7 +1600,7 @@ class Schema {
     nodes, 
     marks, plotContent, markTarget, nodeGroup, 
     docTag, 
-    lineBreak    ) {
+    lineBreak) {
         this.elements = elements;
         this.nodes = nodes;
         this.marks = marks;
@@ -1953,6 +1950,7 @@ class BuildContext {
         this.parent = parent;
     }
 }
+const noTokens = /*@__PURE__*/(() => Slice.empty.content)();
 class Builder {
     stack;
     modifications = null;
@@ -2081,7 +2079,7 @@ class ChangeSet {
                 return false;
         for (let i = 0; i < this.data.length; i++) {
             let a = this.data[i], b = other.data[i];
-            if (a && !(this.sections[(i << 1) + 1] < 0 ? compareModifications(a, b) : a.eq(b)))
+            if (a && !(this.sections[(i << 1) + 1] < 0 ? compareModifications(a, b) : Slice.eq(a, b)))
                 return false;
         }
         return true;
@@ -2105,7 +2103,7 @@ class ChangeSet {
             }
             else {
                 cursor = cursor.advance(lenA);
-                this.data[i].run(builder);
+                Slice.run(this.data[i], builder);
             }
         }
         if (cursor.pos != doc.length)
@@ -2123,7 +2121,7 @@ class ChangeSet {
             else if (ins == -2)
                 result.push([len, this.data[i].map(modificationToJSON)]);
             else
-                result.push([len, this.data[i].toJSON()]);
+                result.push([len, this.data[i].map(t => t.toJSON())]);
         }
         return result;
     }
@@ -2145,9 +2143,11 @@ class ChangeSet {
                     data.push(val.map(m => modificationFromJSON(schema, m)));
                 }
                 else {
-                    let slice = Slice.fromJSON(schema, val);
-                    sections.push(len, slice.length);
-                    data.push(slice);
+                    if (!Array.isArray(val))
+                        throw new ValidationError("Invalid ChangeSet JSON");
+                    let tokens = val.map(v => Token.fromJSON(schema, v));
+                    sections.push(len, sliceLen(tokens));
+                    data.push(tokens);
                 }
             }
         }
@@ -2232,7 +2232,7 @@ class ChangeSet {
         this.iterChanges((_f, _t, pos, _to, inserted) => {
             if (found != null)
                 return;
-            for (let tok of inserted.content) {
+            for (let tok of inserted) {
                 if (tok.tokenType == Token.Type.Node) {
                     if (pred(tok.tag))
                         return found = pos;
@@ -2398,6 +2398,9 @@ class ChangeSetBuilder {
     data = [];
     pos = 0;
 }
+function sliceLen(tokens) {
+    return tokens.reduce((l, e) => l + (e.tokenType == Token.Type.Node ? e.length : 1), 0);
+}
 function createChangeSet(doc, spec, mayCorrect = true) {
     let cur = null;
     let accum = null;
@@ -2489,16 +2492,17 @@ function createChangeSet(doc, spec, mayCorrect = true) {
             else {
                 if (to == null)
                     to = from;
-                insert = (!insert ? Slice.empty : Array.isArray(insert) ? Slice.of(insert) : insert);
+                let context = insert instanceof Slice ? insert.context : Slice.empty.context;
+                insert = !insert ? noTokens : insert instanceof Slice ? insert.content : insert;
                 if (to <= from)
                     to = from;
                 if (fit) {
                     doCorrect = true;
-                    ({ from, to, slice: insert } =
-                        fitReplacement(doc, doc.resolve(from), doc.resolve(to), insert, fit === true ? [] : fit));
+                    ({ from, to, tokens: insert } =
+                        fitReplacement(doc, doc.resolve(from), doc.resolve(to), insert, context));
                 }
                 if (insert.length || to != from)
-                    section(from, to, insert.length, insert);
+                    section(from, to, sliceLen(insert), insert);
             }
         }
     };
@@ -2527,15 +2531,15 @@ function transform(setA, setB, doc, before, fit) {
             let end = pos + b.len;
             addSection(sections, data, b.ins, -1, null);
             if (fitter)
-                fitter.replaced(b.slice, pos, end, true);
+                fitter.replaced(b.tokens, pos, end, true);
             while (pos < end) {
                 if (a.done)
                     throw new ValidationError("Mismatched change sets");
                 let piece = Math.min(a.len, end - pos);
                 if (a.ins >= 0 && inserted < a.i && a.len <= piece) {
-                    addSection(sections, data, 0, a.ins, a.slice);
+                    addSection(sections, data, 0, a.ins, a.tokens);
                     if (fitter)
-                        fitter.replaced(a.slice, pos - a.off, pos + a.len);
+                        fitter.replaced(a.tokens, pos - a.off, pos + a.len);
                     inserted = a.i;
                 }
                 a.forward(piece);
@@ -2554,7 +2558,7 @@ function transform(setA, setB, doc, before, fit) {
                 }
                 else if (b.ins == 0 && pos + b.len < end) {
                     if (fitter)
-                        fitter.replaced(b.slice, pos, pos + b.len, true);
+                        fitter.replaced(b.tokens, pos, pos + b.len, true);
                     pos += b.len;
                     b.next();
                 }
@@ -2563,13 +2567,13 @@ function transform(setA, setB, doc, before, fit) {
                 }
             }
             if (inserted < a.i) {
-                addSection(sections, data, len, a.ins, a.slice);
+                addSection(sections, data, len, a.ins, a.tokens);
                 if (fitter)
-                    fitter.replaced(a.slice, start - a.off, start + a.len);
+                    fitter.replaced(a.tokens, start - a.off, start + a.len);
                 inserted = a.i;
             }
             else {
-                addSection(sections, data, len, 0, Slice.empty);
+                addSection(sections, data, len, 0, noTokens);
             }
             a.forward(pos - start);
         }
@@ -2588,10 +2592,10 @@ function compose(sectionsA, sectionsB, dataA, dataB) {
         if (a.done && b.done) {
             return { sections, data };
         }
-        else if (a.ins == 0) {            addSection(sections, data, a.len, 0, a.slice, open);
+        else if (a.ins == 0) {            addSection(sections, data, a.len, 0, a.tokens, open);
             a.next();
         }
-        else if (b.len == 0 && !b.done) {            addSection(sections, data, 0, b.ins, b.slice, open);
+        else if (b.len == 0 && !b.done) {            addSection(sections, data, 0, b.ins, b.tokens, open);
             b.next();
         }
         else if (a.done || b.done) {
@@ -2604,13 +2608,13 @@ function compose(sectionsA, sectionsB, dataA, dataB) {
                 addSection(sections, data, len, (data ? mods : a.ins == -2 || b.ins == -2) ? -2 : -1, mods, open);
             }
             else if (a.keep) {
-                addSection(sections, data, len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
+                addSection(sections, data, len, b.off ? 0 : b.ins, b.off ? noTokens : b.tokens, open);
             }
             else if (b.keep) {
                 addSection(sections, data, a.off ? 0 : a.len, len, data ? applyModsToSlice(a.slicePart(len), b.mods) : null, open);
             }
             else {
-                addSection(sections, data, a.off ? 0 : a.len, b.off ? 0 : b.ins, b.off ? Slice.empty : b.slice, open);
+                addSection(sections, data, a.off ? 0 : a.len, b.off ? 0 : b.ins, b.off ? noTokens : b.tokens, open);
             }
             open = (a.ins > len || b.ins >= 0 && b.len > len) && (open || sections.length > sectionLen);
             a.forward2(len);
@@ -2646,11 +2650,11 @@ function invertMods(mods, target) {
         return { remove: mod.add };
     });
 }
-function applyModsToSlice(slice, mods) {
+function applyModsToSlice(tokens, mods) {
     if (!mods)
-        return slice;
+        return tokens;
     let content = [];
-    for (let tok of slice.content) {
+    for (let tok of tokens) {
         if (tok.tokenType == Token.Type.Open) {
             content.push(tok.withMarks(applyModifications(mods, tok.marks, tok.type)));
         }
@@ -2665,7 +2669,7 @@ function applyModsToSlice(slice, mods) {
             content.push(tok);
         }
     }
-    return Slice.of(content);
+    return content;
 }
 class FitLevel {
     tag;
@@ -2740,13 +2744,13 @@ class ChangeFitter {
     lastCoverFrom = -1;
     lastCoverTo = -1;
     doubleDeleteDelta = 0;
-    replaced(slice, from, to, covering = false) {
+    replaced(tokens, from, to, covering = false) {
         this.doubleDeleteDelta = 0;
         if (covering) {
             this.lastCoverFrom = from;
             this.lastCoverTo = to;
         }
-        else if (slice.length) {
+        else if (tokens.length) {
             let overlapFrom = Math.max(from, this.lastCoverFrom);
             let overlapTo = Math.min(to, this.lastCoverTo);
             if (overlapFrom < overlapTo) {
@@ -2759,7 +2763,7 @@ class ChangeFitter {
             this.inputDelta -= counter.count;
         }
         this.inserting = true;
-        slice.run(this, this.pos);
+        Slice.run(tokens, this, this.pos);
         this.inserting = false;
         if (this.local)
             this.nextSync = Math.max(this.nextSync, localSyncPosAfter(this.inputPos = this.getPos(to)));
@@ -2922,8 +2926,7 @@ class ChangeFitter {
         let sections = [], data = [], pos = 0;
         for (let { from, to, insert } of this.patches) {
             addSection(sections, data, from - pos, -1, null);
-            let slice = Slice.of(insert);
-            addSection(sections, data, to - from, slice.length, slice);
+            addSection(sections, data, to - from, sliceLen(insert), insert);
             pos = to;
         }
         addSection(sections, data, this.pos - pos, -1, null);
@@ -2979,11 +2982,11 @@ class SectionIter {
     get mods() {
         return this.data ? this.data[(this.i - 2) >> 1] : null;
     }
-    get slice() {
-        return this.data ? this.data[(this.i - 2) >> 1] : Slice.empty;
+    get tokens() {
+        return this.data ? this.data[(this.i - 2) >> 1] : noTokens;
     }
     slicePart(len) {
-        return this.slice.slice(this.off, len == null ? undefined : this.off + len);
+        return Slice.slice(this.tokens, this.off, len == null ? undefined : this.off + len);
     }
     forward(len) {
         if (len == this.len)
@@ -3022,7 +3025,7 @@ function addSection(sections, data, len, ins, value, forceJoin = false) {
         sections[last] += len;
         sections[last + 1] += ins;
         if (data)
-            data[data.length - 1] = data[data.length - 1].concat(value);
+            data[data.length - 1] = Slice.concat(data[data.length - 1], value);
     }
     else {
         sections.push(len, ins);
@@ -3034,11 +3037,11 @@ function finishCx(cx, schema) {
     return cx.tag.create(cx.children.length || cx.tag.type.canBeEmpty ? cx.children
         : [schema.createDefault(cx.tag.type)]);
 }
-function closeSlice(schema, slice, context, depth, closeEnd = false) {
+function closeSlice(schema, tokens, context, depth, closeEnd = false) {
     let top = [], stack = null;
     for (let i = depth - 1; i >= 0; i--)
         stack = new BuildContext(context[i], stack);
-    for (let token of slice.content) {
+    for (let token of tokens) {
         if (token.tokenType == Token.Type.Close) {
             if (stack) {
                 let node = finishCx(stack, schema);
@@ -3064,7 +3067,7 @@ function closeSlice(schema, slice, context, depth, closeEnd = false) {
         }
     if (stack)
         splatContext(top, stack);
-    return Slice.of(top);
+    return top;
 }
 function splatContext(top, cx) {
     if (cx.parent)
@@ -3076,8 +3079,8 @@ function splatContext(top, cx) {
 function isFitBarrier(plot) {
     return plot.isolating || plot.isInline;
 }
-function fitReplacement(doc, from, to, slice, context) {
-    if (!slice.length)
+function fitReplacement(doc, from, to, tokens, context) {
+    if (!tokens.length)
         return fitDeletion(doc, from, to);
     let preferredContext = -1;
     for (let i = 0; i < context.length; i++) {
@@ -3088,8 +3091,8 @@ function fitReplacement(doc, from, to, slice, context) {
             break;
     }
     let firstType = null, closeCount = 0;
-    for (let i = 0, opened = 0; i < slice.content.length; i++) {
-        let tok = slice.content[i];
+    for (let i = 0, opened = 0; i < tokens.length; i++) {
+        let tok = tokens[i];
         if (tok.tokenType == Token.Type.Close) {
             if (opened)
                 opened--;
@@ -3134,7 +3137,7 @@ function fitReplacement(doc, from, to, slice, context) {
                     let cost = (neutral ? 0 : 2) + (i < preferredContext ? context.length - i : i - preferredContext) + (toEnd ? 0 : 1e7);
                     if (foundCost > cost) {
                         found = { from: cxFrom.before, to: toEnd ? cxTo.after : to.pos,
-                            slice: i >= 0 ? closeSlice(doc.schema, slice, context, i + 1, toEnd) : slice };
+                            tokens: i >= 0 ? closeSlice(doc.schema, tokens, context, i + 1, toEnd) : tokens };
                         foundCost = cost;
                     }
                 }
@@ -3151,7 +3154,7 @@ function fitReplacement(doc, from, to, slice, context) {
                     continue;
                 if (doc.schema.canContain(cx.node.type, type)) {
                     let pos = before > -1 ? before : after;
-                    return { from: pos, to: pos, slice: i >= 0 ? closeSlice(doc.schema, slice, context, i + 1, true) : slice };
+                    return { from: pos, to: pos, tokens: i >= 0 ? closeSlice(doc.schema, tokens, context, i + 1, true) : tokens };
                 }
             }
             if (isFitBarrier(cx.node.type) || !cx.parent)
@@ -3166,11 +3169,11 @@ function fitReplacement(doc, from, to, slice, context) {
             continue;
         let depth = i < 0 ? preferredContext : i;
         if (doc.schema.canContain(from.parent.node.type, context[depth].type)) {
-            slice = closeSlice(doc.schema, slice, context, depth + 1, true);
+            tokens = closeSlice(doc.schema, tokens, context, depth + 1, true);
             break;
         }
     }
-    return { from: from.pos, to: to.pos, slice };
+    return { from: from.pos, to: to.pos, tokens };
 }
 function fitDeletion(doc, from, to) {
     let toDepth = to.depth;
@@ -3184,12 +3187,12 @@ function fitDeletion(doc, from, to) {
             end++;
         }
         let toAtEnd = toDepth == depth && cxTo.end == end;        if (cx.end < to.pos && cx.parent.end > to.pos && !toAtEnd)
-            return { from: cx.before, to: to.pos, slice: Slice.empty };
+            return { from: cx.before, to: to.pos, tokens: noTokens };
         if (!cx.node.inlineContent && toAtEnd && cx.parent.start == cxTo.parent.start &&
             !(from.parent.start == to.parent.start && from.parent.node.inlineContent))
-            covered = { from: cx.before, to: cxTo.after, slice: Slice.empty };
+            covered = { from: cx.before, to: cxTo.after, tokens: noTokens };
     }
-    return covered || { from: from.pos, to: to.pos, slice: Slice.empty };
+    return covered || { from: from.pos, to: to.pos, tokens: noTokens };
 }
 
 function parse(schema, doc, options = {}) {
@@ -3229,7 +3232,7 @@ function parse(schema, doc, options = {}) {
             }
         };
         emitTokens(top.children, true, true);
-        return { slice: Slice.of(tokens), context };
+        return Slice.of(tokens, context);
     }
     parse.slice = slice;
     (function (Rule) {
@@ -3675,12 +3678,12 @@ function serialize(doc, options = {}) {
     return Elt.Fragment.create(serializeChildren(doc.content, new SerializeContext(options)));
 }
 ;serialize = /*@__PURE__*/(function (serialize) {
-    function node(node, options) {
+    function node(node, options = {}) {
         return serializeChildren([node], new SerializeContext(options))[0];
     }
     serialize.node = node;
-    function slice(slice, options) {
-        return Elt.Fragment.create(serializeChildren(flattenSlice(slice.content, options.context || [], options.includeContext || 0, !!options.openAttr), new SerializeContext(options, options.openAttr)));
+    function slice(slice, options = {}) {
+        return Elt.Fragment.create(serializeChildren(flattenSlice(slice.content, slice.context, options.includeContext || 0, !!options.openAttr), new SerializeContext(options, options.openAttr)));
     }
     serialize.slice = slice;
 ;return serialize})(serialize);

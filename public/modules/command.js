@@ -111,7 +111,7 @@ function enterInCode(state) {
 function splitTextblock(state, splitListItem = true) {
     let { from, to } = state.sel.replacementRange, { schema } = state.doc;
     let before = from.textblockParent;
-    if (!before || !before.parent)
+    if (!before || !before.parent || before.node.type.isolating)
         return false;
     let tokens = [];
     for (let p = from.parent;; p = p.parent) {
@@ -196,7 +196,7 @@ function joinBackward(state) {
     if (!state.selection.isCursor)
         return false;
     let { head } = state.sel, block = head.textblockParent;
-    if (!block || !head.isAtStart(block))
+    if (!block || !head.isAtStart(block) || block.node.type.isolating)
         return false;
     let scan = block, target = scan.node;
     while (!scan.index) {
@@ -264,7 +264,7 @@ function joinForward(state) {
     if (!state.selection.isCursor)
         return false;
     let { head } = state.sel, block = head.textblockParent;
-    if (!block || !head.isAtEnd(block))
+    if (!block || !head.isAtEnd(block) || block.node.type.isolating)
         return false;
     let scan = block, target = scan.node;
     for (;;) {
@@ -831,7 +831,7 @@ const killBuffer = /*@__PURE__*/GardState.Field.define({
     }
 });
 function killText(state, from, to) {
-    let add = addToKillBuffer.of(state.doc.slice(from, to).content);
+    let add = addToKillBuffer.of(state.doc.slice(from, to));
     return state.field(killBuffer, false) ? [add] : [GardState.appendConfig.of(killBuffer), add];
 }
 const killToLineEnd = wg => {
@@ -1181,7 +1181,7 @@ function isForward(dir, state) {
 }
 function asTextSel(sel, forward) {
     if (sel instanceof GardSelection.Text)
-        return sel;
+        return sel.directional ? sel : forward ? GardSelection.range(sel.from, sel.to) : GardSelection.range(sel.to, sel.from);
     let { from, to } = sel.replacementRange;
     return forward ? GardSelection.range(from, to) : GardSelection.range(to, from);
 }
@@ -1246,13 +1246,13 @@ function pageHeight(wg) {
     return Math.max(10, Math.min(wg.scrollDOM.clientHeight - marginTop - marginBottom, (wg.dom.ownerDocument.defaultView || window).innerHeight) - 10);
 }
 const moveByPage = (wg, { dir, extend }) => {
-    let { state } = wg, { selection } = state, forward = dir == "down";
+    let { state } = wg, forward = dir == "down", selection = asTextSel(state.selection, forward);
     let moved = selection.empty || extend ? nextVertical(wg, selection, forward, pageHeight(wg), !extend)
         : forward ? GardSelection.cursor(selection.to, -1) : GardSelection.cursor(selection.from, 1);
     return moved ? setSelection(extend ? extendSel(selection, moved) : moved) : false;
 };
 const moveToLineSide = (wg, { dir, extend }) => {
-    let forward = isForward(dir, wg.state), { selection } = wg.state;
+    let forward = isForward(dir, wg.state), selection = asTextSel(wg.state.selection, forward);
     let pos = wg.moveToLineBoundary(selection, forward);
     return pos ? setSelection(extend ? extendSel(selection, pos) : pos)
         : extend || selection.empty ? false
@@ -1262,15 +1262,16 @@ const moveToTextblockSide = (wg, { dir, extend }) => {
     let { state } = wg, block = state.sel.head.textblockParent;
     if (!block)
         return false;
-    let pos = isForward(dir, wg.state) ? GardSelection.atEnd(state, block) : GardSelection.atStart(state, block);
-    return setSelection(extend ? extendSel(wg.state.selection, pos) : pos);
+    let forward = isForward(dir, wg.state);
+    let pos = forward ? GardSelection.atEnd(state, block) : GardSelection.atStart(state, block);
+    return setSelection(extend ? extendSel(asTextSel(wg.state.selection, forward), pos) : pos);
 };
 const moveToDocSide = (target, { side, extend }) => {
     let { state } = target;
     let pos = side == "start" ? GardSelection.atStart(state) : GardSelection.atEnd(state);
     if (state.selection.empty && pos.head == state.selection.head)
         return false;
-    return setSelection(extend ? extendSel(state.selection, pos) : pos);
+    return setSelection(extend ? extendSel(asTextSel(state.selection, side == "end"), pos) : pos);
 };
 const selectAll = ({ state }) => {
     return {

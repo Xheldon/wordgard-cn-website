@@ -106,5 +106,17 @@
   "Examples A collection of examples showing how to implement various use cases.": {
     "_translate": "<a href=\"../examples/\" class=\"blocklink\">\n      <h3>示例</h3>\n      <p>展示如何实现各种用例的示例集合。</p>\n    </a>",
     "_note": ""
+  },
+  "Changelog The library's version history.": {
+    "_translate": "<a href=\"changelog/\" class=\"blocklink\">\n      <h3>更新日志</h3>\n      <p>该库的版本历史。</p>\n    </a>",
+    "_note": ""
+  },
+  "Changelog": {
+    "_translate": "更新日志",
+    "_note": ""
+  },
+  "The library's version history.": {
+    "_translate": "该库的版本历史。",
+    "_note": ""
   }
 }

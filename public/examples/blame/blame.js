@@ -44,13 +44,13 @@ class BlameMap {
 
 //!deco
 
-import {RangeSet, Decoration} from "wordgard/editor"
+import {Decoration} from "wordgard/editor"
 
 function blameDeco(map          ) {
-  return RangeSet.create                  (add => {
+  return Decoration.Range.set(add => {
     for (let pos = 0, i = 0; i < map.end.length; i++) {
       let end = map.end[i], col = map.color[i]
-      if (col) add(pos, end, colorDeco(col))
+      if (col) add(colorDeco(col), pos, end)
       pos = end
     }
   })
@@ -76,7 +76,7 @@ const setColor = Transaction.Effect.define        ()
 
 class BlameState {
   blame          
-  deco                            
+  deco                      
   activeColor        
 
   constructor(blame          , active        ) {

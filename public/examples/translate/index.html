@@ -3,7 +3,7 @@
 
 <title>Translation Example</title>
 <link rel="stylesheet" href="./../../style/site.css">
-<link rel="icon" href="./../../style/favicon.svg"><script type="importmap">{"imports":{"wordgard/doc":"./../../modules/doc.js","wordgard/state":"./../../modules/state.js","wordgard/editor":"./../../modules/editor.js","wordgard/command":"./../../modules/command.js","wordgard/history":"./../../modules/history.js","wordgard/types":"./../../modules/types.js","wordgard/schema":"./../../modules/schema.js","wordgard/table":"./../../modules/table.js","wordgard/collab":"./../../modules/collab.js","wordgard/phrases":"./../../modules/phrases.js","style-mod":"./../../modules/style-mod.js","@marijn/find-cluster-break":"./../../modules/find-cluster-break.js","crelt":"./../../modules/crelt.js"}}</script><style>
+<link rel="icon" href="./../../style/favicon.svg"><script type="importmap">{"imports":{"wordgard/doc":"./../../modules/doc.js","wordgard/state":"./../../modules/state.js","wordgard/editor":"./../../modules/editor.js","wordgard/set":"./../../modules/set.js","wordgard/command":"./../../modules/command.js","wordgard/history":"./../../modules/history.js","wordgard/types":"./../../modules/types.js","wordgard/schema":"./../../modules/schema.js","wordgard/table":"./../../modules/table.js","wordgard/collab":"./../../modules/collab.js","wordgard/phrases":"./../../modules/phrases.js","wordgard/highlight-code":"./../../modules/highlight-code.js","style-mod":"./../../modules/style-mod.js","@marijn/find-cluster-break":"./../../modules/find-cluster-break.js","crelt":"./../../modules/crelt.js"}}</script><style>
   /* hover 显示原文 */
   p[data-x-en],
   li[data-x-en] {
@@ -107,6 +107,11 @@
 
 <span class="tok-keyword">export</span> <span class="tok-keyword">const</span> <span class="tok-variableName tok-definition">dutchPhrases</span> <span class="tok-operator">=</span> <span class="tok-variableName">phrases</span><span class="tok-operator">.</span><span class="tok-propertyName">translate</span><span class="tok-punctuation">(</span><span class="tok-punctuation">{</span>
   <span class="tok-propertyName tok-definition">dialog_close</span><span class="tok-punctuation">:</span> <span class="tok-string">"sluiten"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">group_block</span><span class="tok-punctuation">:</span> <span class="tok-string">"Blokniveau"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">group_inline</span><span class="tok-punctuation">:</span> <span class="tok-string">"Inline operaties"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">group_history</span><span class="tok-punctuation">:</span> <span class="tok-string">"Geschiedenis"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">key_bindings</span><span class="tok-punctuation">:</span> <span class="tok-string">"Sneltoetsen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">show_keys</span><span class="tok-punctuation">:</span> <span class="tok-string">"Sneltoetsen laten zien"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">overflow_more</span><span class="tok-punctuation">:</span> <span class="tok-string">"Meer"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">block_style</span><span class="tok-punctuation">:</span> <span class="tok-string">"Blok stijl"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">toggle_strong</span><span class="tok-punctuation">:</span> <span class="tok-string">"Sterke nadruk wisselen"</span><span class="tok-punctuation">,</span>
@@ -118,21 +123,28 @@
   <span class="tok-propertyName tok-definition">toggle_sub</span><span class="tok-punctuation">:</span> <span class="tok-string">"Subscript wisselen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">link_target</span><span class="tok-punctuation">:</span> <span class="tok-string">"Link doel"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">create_link</span><span class="tok-punctuation">:</span> <span class="tok-string">"Link maken"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">insert_break</span><span class="tok-punctuation">:</span> <span class="tok-string">"Regeleinde invoegen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">text_color</span><span class="tok-punctuation">:</span> <span class="tok-string">"Tekstkleur"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">background_color</span><span class="tok-punctuation">:</span> <span class="tok-string">"Achtergrondkleur"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">undo</span><span class="tok-punctuation">:</span> <span class="tok-string">"Ongedaan maken"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">redo</span><span class="tok-punctuation">:</span> <span class="tok-string">"Herdoen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">paragraph</span><span class="tok-punctuation">:</span> <span class="tok-string">"Paragraaf"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">code_block</span><span class="tok-punctuation">:</span> <span class="tok-string">"Code blok"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">code_block_language</span><span class="tok-punctuation">:</span> <span class="tok-string">"Code blok taal kiezen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">heading_1</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 1"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">heading_2</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 2"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">heading_3</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 3"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_4</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 4"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_5</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 5"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">heading_6</span><span class="tok-punctuation">:</span> <span class="tok-string">"Kop 6"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">toggle_bullet_list</span><span class="tok-punctuation">:</span> <span class="tok-string">"Lijst aan/uitschakelen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">toggle_ordered_list</span><span class="tok-punctuation">:</span> <span class="tok-string">"Genummerde lijst aan/uitschakelen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">toggle_quote</span><span class="tok-punctuation">:</span> <span class="tok-string">"Citaat aan/uitschakelen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">alignment</span><span class="tok-punctuation">:</span> <span class="tok-string">"Uitlijning"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">align_start</span><span class="tok-punctuation">:</span> <span class="tok-string">"Aan blokstart uitlijnen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">align_end</span><span class="tok-punctuation">:</span> <span class="tok-string">"Aan blokeinde uitlijnen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">align_left</span><span class="tok-punctuation">:</span> <span class="tok-string">"Links uitlijnen"</span><span class="tok-punctuation">,</span>
+  <span class="tok-propertyName tok-definition">align_right</span><span class="tok-punctuation">:</span> <span class="tok-string">"Rechts uitlijnen"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">align_center</span><span class="tok-punctuation">:</span> <span class="tok-string">"Centreren"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">text_dir</span><span class="tok-punctuation">:</span> <span class="tok-string">"Tekstrichting"</span><span class="tok-punctuation">,</span>
   <span class="tok-propertyName tok-definition">text_dir_ltr</span><span class="tok-punctuation">:</span> <span class="tok-string">"Links-naar-rechts tekst"</span><span class="tok-punctuation">,</span>

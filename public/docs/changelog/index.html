@@ -1,0 +1,254 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Wordgard Docs</title>
+<link rel="stylesheet" href="./../../style/site.css">
+<link rel="icon" href="./../../style/favicon.svg"><style>
+  /* hover 显示原文 */
+  p[data-x-en],
+  li[data-x-en] {
+    position: relative;
+  }
+  p[data-x-en]:hover::after,
+  li[data-x-en]:hover::after {
+    visibility: visible;
+    opacity: 1;
+  }
+  p[data-x-en]::after,
+  li[data-x-en]::after {
+    content: attr(data-x-en);
+    display: block;
+    font-size: 12px;
+    transition: all 0.2s 0.3s;
+    visibility: hidden;
+    opacity: 0;
+    background: #cccccc;
+    z-index: 99;
+    border-radius: 4px;
+    padding: 5px 10px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
+  /* 译者注释内容 */
+  div[type='comment'] {
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #eee;
+  }
+  div[type='comment']::before {
+    content: '译者注: ';
+    font-weight: 900;
+  }
+  header a.logo {
+    position: relative;
+  }
+  header a.logo::after {
+    content: '中文';
+    position: absolute;
+    left: calc(100% + 5px);
+    font-size: 12px;
+    width: 50px;
+    top: -5px;
+  }
+  #banner-info {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    padding: 0;
+    z-index: 999;
+  }
+  #add-info {
+    font-size: 14px;
+  }
+  blockquote {
+    border-left: 5px solid #ccc;
+    padding-left: 10px;
+    margin-left: 0;
+  }
+</style>
+<script src="https://www.googletagmanager.com/gtag/js?id=G-2VX7Y13EBT"></script><script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-2VX7Y13EBT')</script><script src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5486286026923411"></script></head><body><div id="banner-info">本文档为 Qwen3.5 + 人工翻译，hover 可以显示原文。翻译有问题？<a style="cursor: pointer;" href="https://github.com/Xheldon/wordgard-cn-website/blob/main/dict/docs/changelog/index.json" target="_blank">我来翻译！</a></div><header>
+  <nav>
+    <a class="logo" href="./../../"><img src="./../../img/head.jpg" alt="Wordgard"></a><div class="navlinks">
+  <a href="./../../docs/" class="active">文档</a>
+  <a href="./../../examples/">示例</a>
+  <a href="./../../try/">尝试</a>
+  <a href="https://discuss.wordgard.net/">讨论</a>
+  <a href="https://code.haverbeke.berlin/wordgard/">代码</a>
+<a href="https://www.xheldon.com" target="_blank">译者</a></div></nav>
+</header><article>
+
+<h1>更新日志</h1><h2 id="h-version-060-2026-10-17">版本 0.6.0（2026-10-17）</h2>
+<h3 id="h-breaking-changes">破坏性变更</h3>
+<p data-x-en="The interface to RangeSet and PointSet changed, and these are now exported from wordgard/set."><code>RangeSet</code> 和 <code>PointSet</code> 的接口已更改，现在它们从 wordgard/set 导出。</p>
+<p data-x-en="handlePaste handlers now get passed an InputEvent rather than a ClipboardEvent."><code>handlePaste</code> 处理程序现在接收的是 <code>InputEvent</code>，而不是 <code>ClipboardEvent</code>。</p>
+<p data-x-en="Dialogs are no longer shown as panels, but rather as floating elements on top of the editor.">对话框不再显示为面板，而是作为浮动元素显示在编辑器上方。</p>
+<p data-x-en="The close value returned by Dialog.show is now a function, not an effect."><code>Dialog.show</code> 返回的 <code>close</code> 值现在是一个函数，而不是一个效果。</p>
+<p data-x-en="Dialog.close no longer exist. Instead, look up your dialog via its key with Dialog.get, and call the close method on the result."><code>Dialog.close</code> 已不再存在。取而代之的是，请使用 <code>Dialog.get</code> 通过其键查找对话框，然后调用返回结果上的 <code>close</code> 方法。</p>
+<p data-x-en="Change sets now store plain token arrays rather than Slice objects. This is visible in iterChanges and the type's JSON representation.">变更集现在存储纯令牌数组，而不是 <code>Slice</code> 对象。这在 <code>iterChanges</code> 和类型的 JSON 表示中可见。</p>
+<p data-x-en="Plot.Doc.slice now returns a token array rather than a Slice object."><code>Plot.Doc.slice</code> 现在返回一个令牌数组，而不是 <code>Slice</code> 对象。</p>
+<p data-x-en="Several clipboard-related facets that were passed their context as a separate argument lost that argument and need to take it from the slice now.">多个曾将上下文作为独立参数传递的剪贴板相关组件现已丢失该参数，现在需要从切片中获取它。</p>
+<p data-x-en="parse.slice no longer returns a wrapping object with a slice and context, since the context is now included in the slice."><code>parse.slice</code> 不再返回包含切片和上下文的包装对象，因为上下文现已包含在切片中。</p>
+<p data-x-en="serialize.slice no longer takes the slice's context as an option, but instead takes it from the slice object."><code>serialize.slice</code> 不再将切片的上下文作为选项接收，而是从切片对象中获取。</p>
+<p data-x-en="The 'scope' feature of key bindings is no longer supported.">键位绑定的“作用域”功能已不再受支持。</p>
+<p data-x-en="Key binding specifications no longer allow aliases (like s-) for modifiers and modifier names are now case-sensitive.">键绑定规范不再允许为修饰符使用别名（如 <code>s-</code>），且修饰符名称现在区分大小写。</p>
+<p data-x-en="Decoration.Tag.shape.dynamic and .widget.dynamic are now called .derived."><code>Decoration.Tag.shape.dynamic</code> 和 <code>.widget.dynamic</code> 现在称为 <code>.derived</code>。</p>
+<p data-x-en="TextblockMap.visualSide no longer exists (positions at the start/end of a block are now always represented with the actual start/end position of the content)."><code>TextblockMap.visualSide</code> 已不再存在（块开头/结尾的位置现在始终用内容的实际开头/结尾位置表示）。</p>
+<p data-x-en="Facet.compute/computeN have been renamed to derive/deriveN."><code>Facet.compute</code>/<code>computeN</code> 已重命名为 <code>derive</code>/<code>deriveN</code>。</p>
+<h3 id="h-bug-fixes">错误修复</h3>
+<p data-x-en="Fix an issue that caused submenus to immediately close when the editor in wrapped in a shadow root.">修复了一个导致当编辑器被包裹在阴影根中时子菜单立即关闭的问题。</p>
+<p data-x-en="Make sure pending selection changes are used when interpreting input event ranges.">确保在解释输入事件范围时使用待处理的选区更改。</p>
+<p data-x-en="Avoid overflowing the stack when posAtCoords cannot find a position.">当 <code>posAtCoords</code> 无法找到位置时，避免栈溢出。</p>
+<p data-x-en="More eagerly use defining context nodes when fitting a replacement.">在适配替换项时，更积极地使用定义上下文节点。</p>
+<p data-x-en="Fix an issue where nodeFromDOM could return an outdated version of the node.">修复了一个问题，该问题会导致 <code>nodeFromDOM</code> 返回节点的过时版本。</p>
+<p data-x-en="Fix an issue where text inserted next to a composition would disrupt the composition.">修复了一个在组合旁边插入文本时会破坏组合的问题。</p>
+<p data-x-en="Make sure a composition that's disrupted by content changes is cleanly terminated.">确保因内容变更而中断的构图能够被干净地终止。</p>
+<p data-x-en="Handle Safari's outdated implementation of beforeinput events for composition.">处理 Safari 对组合输入 beforeinput 事件的过时实现。</p>
+<p data-x-en="Fix an issue where a custom selection type would get reset to a plain text selection if the browser tab lost and regained focus.">修复了一个问题：当浏览器标签页失去焦点后又重新获得焦点时，自定义选择类型会被重置为纯文本选择。</p>
+<p data-x-en="The type declarations for wordgard/doc no longer provide the wrong type for Pos.nextSibling/previousSibling.">wordgard/doc 的类型声明不再为 <code>Pos.nextSibling</code>/<code>previousSibling</code> 提供错误的类型。</p>
+<p data-x-en="Make sure splitTextblock won't try to split isolating blocks.">确保 <code>splitTextblock</code> 不会尝试拆分隔离块。</p>
+<p data-x-en="Fix an issue where pressing End in a table cell would take you to the next cell.">修复了在表格单元格中按下 End 键会跳转到下一个单元格的问题。</p>
+<p data-x-en="Make sure Delete/Backspace won't try to cross table cells or other isolating nodes.">确保删除键/退格键不会尝试跨越表格单元格或其他隔离节点。</p>
+<p data-x-en="Cell selections how have a toSlice method that produces a proper slice with their content, so that copying a cell selection does the right thing.">单元格选择具有一个 <code>toSlice</code> 方法，该方法会生成包含其内容的正确切片，从而确保复制单元格选择时能正确执行。</p>
+<p data-x-en="Fire an update with a geometryChanged flag when the height of the editor content changes. Makes sure the cursor stays in the right place.">当编辑器内容的高度发生变化时，发送一个带有 <code>geometryChanged</code> 标志的更新。确保光标保持在正确的位置。</p>
+<h3 id="h-new-features">新功能</h3>
+<p data-x-en="The decoratePlots function can be used to add decorations to the content of all plots of a given type."><code>decoratePlots</code> 函数可用于为指定类型的所有图表内容添加装饰。</p>
+<p data-x-en="The wordgard/highlight-code package provides basic code block syntax highlighting.">wordgard/highlight-code 包提供基本的代码块语法高亮功能。</p>
+<p data-x-en="Support paste events that affect content other than the selection.">支持影响选定内容以外内容的粘贴事件。</p>
+<p data-x-en="codeBlock now comes with some styles to make code blocks easier to recognize."><code>codeBlock</code> 现在包含了一些样式，使代码块更易于识别。</p>
+<p data-x-en="Selection classes now have a toSlice method that is called to convert the selected content to a slice.">选择类现在拥有一个 <code>toSlice</code> 方法，用于将选定的内容转换为切片。</p>
+<p data-x-en="Dialogs may now specify a tooltip option to be positioned near a document position.">对话框现在可以指定一个 <code>tooltip</code> 选项，以便将其定位在文档位置的附近。</p>
+<p data-x-en="Dialogs now support a closedBy option that makes them close themselves for specific types of transactions.">对话框现在支持一个 <code>closedBy</code> 选项，使其能够针对特定类型的交易自动关闭。</p>
+<p data-x-en="The new PositioningHint object can be used to provide dialogs (or other UI elements) a suggestion of where to appear.">新的 <code>PositioningHint</code> 对象可用于为对话框（或其他 UI 元素）提供出现位置的提示。</p>
+<p data-x-en="Slice objects can now hold a context array. Slice.get builds a slice with associated context."><code>Slice</code> 对象现在可以包含上下文数组。<code>Slice.get</code> 会构建一个带有相关上下文的切片。</p>
+<p data-x-en="The new keyBindingHelp extension can display the editor's active key bindings in a dialog.">新的 <code>keyBindingHelp</code> 扩展可以在对话框中显示编辑器当前活动的键盘绑定。</p>
+<p data-x-en="KeyBinding.lookupByDescription can now be used to look up the key assigned to a feature."><code>KeyBinding.lookupByDescription</code> 现在可用于查找分配给某项功能的按键。</p>
+<p data-x-en="The menu bar now displays key bindings, both in item's title attribute and in aria-keyshortcuts attributes.">菜单栏现在显示键盘快捷键，既在项目的 <code>title</code> 属性中，也在 <code>aria-keyshortcuts</code> 属性中。</p>
+<p data-x-en="Decoration.Mark.shape can now be used to change the way marks are rendered inside the editor."><code>Decoration.Mark.shape</code> 现在可用于更改标记在编辑器内的渲染方式。</p>
+<p data-x-en="Selections created by actions like double-clicking now don't have a direction until the first time they are extended.">通过双击等操作创建的选区现在在首次扩展之前没有方向。</p>
+<p data-x-en="The new GardState.Field.Derived class can be used to define derived values for a state in a way that allows you to read them via state.field(...).">新的 <code>GardState.Field.Derived</code> 类可用于定义状态的派生值，从而允许您通过 <code>state.field(...)</code> 读取它们。</p>
+<h2 id="h-version-052-2026-09-06">版本 0.5.2（2026-09-06）</h2>
+<h3 id="h-bug-fixes-1">错误修复</h3>
+<p data-x-en="Fix a bug that could cause PointSet.create to emit an unsorted set.">修复一个可能导致 <code>PointSet.create</code> 发出未排序集合的 bug。</p>
+<p data-x-en="Fix inconsistent handling of empty update ranges, make sure text insert in the wrong place in the DOM gets moved.">修复空更新范围处理不一致的问题，确保在 DOM 中错误位置插入的文本会被移动。</p>
+<p data-x-en="Fix an issue where if the editor is part of a form, clicking a menu button would submit the form.">修复了一个问题：如果编辑器是表单的一部分，点击菜单按钮会导致表单提交。</p>
+<p data-x-en="Fix an issue where missing table cells sitting before a rowspan cell sticking into the column from another column weren't fixed.">修复了一个问题：当缺失的表格单元格位于从另一列延伸过来的跨行单元格之前时，这些缺失的单元格未能得到修复。</p>
+<p data-x-en="Fix an issue that caused the Pos resolution cache to hold on to documents that should be garbage-collected.">修复了一个导致 <code>Pos</code> 解析缓存保留本应被垃圾回收的文档的问题。</p>
+<p data-x-en="Disallow non-text content in code blocks.">禁止在代码块中包含非文本内容。</p>
+<p data-x-en="The enter command will now behave more reasonable in code blocks."><code>enter</code> 命令现在在代码块中的行为将更加合理。</p>
+<p data-x-en="Fix a bug where posAtCoords would return the wrong position for empty lines created with line break nodes.">修复了一个 bug，该 bug 会导致 `<code>posAtCoords</code>` 在由换行节点创建的空白行上返回错误的位置。</p>
+<p data-x-en="Fix a bug in normal cursor position finding that caused an infinite loop.">修复了导致无限循环的普通光标位置查找错误。</p>
+<p data-x-en="Fix an issue where the undo history could get corrupted by transaction extenders (or corrections).">修复了一个由事务扩展器（或更正）导致撤销历史记录可能损坏的问题。</p>
+<p data-x-en="Fix an issue where input could end up in the wrong place next to widgets rendered as plain text.">修复了一个问题，该问题会导致输入出现在以纯文本渲染的组件旁边的错误位置。</p>
+<p data-x-en="Prevent native behavior for input events that would happen in ineditable parts of the DOM.">防止在 DOM 的不可编辑部分发生输入事件的默认行为。</p>
+<p data-x-en="Fix a bug that caused block-joining commands to create invalid change sets in some circumstances.">修复了一个在某些情况下导致块合并命令生成无效变更集的 bug。</p>
+<h3 id="h-new-features-1">新功能</h3>
+<p data-x-en="RangeSet/PointSet.merge now allow masking off part of the set."><code>RangeSet</code>/<code>PointSet.merge</code> 现在允许屏蔽集合的一部分。</p>
+<p data-x-en="The enterInCode command helper function implements special Enter behavior in whitespace-preserving textblocks."><code>enterInCode</code> 命令辅助函数在保留空白的文本块中实现了特殊的 Enter 行为。</p>
+<p data-x-en="Add support for macOS-style Ctrl-k and Ctrl-y keybindings through the new killToLineEnd and yankKilled commands.">通过新增的 <code>killToLineEnd</code> 和 <code>yankKilled</code> 命令，添加对 macOS 风格的 Ctrl-k 和 Ctrl-y 快捷键的支持。</p>
+<h2 id="h-version-051-2026-08-22">版本 0.5.1（2026-08-22）</h2>
+<h3 id="h-bug-fixes-2">错误修复</h3>
+<p data-x-en="Work around an issue where the browser moves the selection out of inline plots after the user inputs text.">解决浏览器在用户输入文本后将选择范围移出内联图表的问题。</p>
+<p data-x-en="Fix bad handling of change boundaries in RangeSet.map.">修复 <code>RangeSet.map</code> 中对变更边界处理不当的问题。</p>
+<p data-x-en="Fix a bug that caused the DOM to get corrupted when inserting content at the end of a plot rendered with multiple wrapper elements.">修复了一个导致在由多个包装元素渲染的图表末尾插入内容时 DOM 损坏的 bug。</p>
+<p data-x-en="Make sure browsers see an additional cursor position at inline plot boundaries, so that touch drag selection stops there.">确保浏览器在行内图表边界处显示额外的光标位置，以便触摸拖拽选择在此处停止。</p>
+<p data-x-en="Fix a bug in RangeSet and PointSet where they wouldn't properly map positions at the very end of the document.">修复了 `RangeSet` 和 `PointSet` 中的一个错误，该错误导致它们无法正确映射文档末尾的位置。</p>
+<h3 id="h-new-features-2">新功能</h3>
+<p data-x-en="Range sets now have a merge method.">Range 集合现在拥有 <code>merge</code> 方法。</p>
+<h2 id="h-version-050-2026-08-14">版本 0.5.0（2026-08-14）</h2>
+<h3 id="h-breaking-changes-1">破坏性变更</h3>
+<p data-x-en="deleteEmptyTextblock is now called deleteEmptyPlot and can delete empty inline plots."><code>deleteEmptyTextblock</code> 现已更名为 <code>deleteEmptyPlot</code>，并且可以删除空的行内图表。</p>
+<p data-x-en="Drop support for Plot.Spec.cursorInsideBounds (making it the default behavior).">停止支持 <code>Plot.Spec.cursorInsideBounds</code>（使其成为默认行为）。</p>
+<h3 id="h-bug-fixes-3">错误修复</h3>
+<p data-x-en="Fix backspacing out leaf nodes on Chrome Android.">修复在 Chrome Android 上回退删除叶节点的问题。</p>
+<p data-x-en="Fix an issue where change fitting would sometimes move insertions out of parent plots for no reason.">修复了一个问题，该问题会导致更改拟合操作有时无故将插入项移出父图表。</p>
+<p data-x-en="Fix a number of bugs in cursor position normalization.">修复光标位置规范化中的若干错误。</p>
+<p data-x-en="Snap input ranges reported by browser events to the selection if normalizing them yields a selection endpoint.">如果将浏览器事件报告的输入范围归一化后能得到一个选区端点，则将这些范围对齐到选区。</p>
+<p data-x-en="Make sure typing into an empty inline plot doesn't replace the whole plot.">确保在空的内联图表中输入时不会替换整个图表。</p>
+<p data-x-en="Fix a bug that caused domAtPos to fail to properly enter plots with extra wrappers around their content.">修复了一个导致 <code>domAtPos</code> 无法正确进入其内容带有额外包装器的图表的 bug。</p>
+<p data-x-en="Support selection by touch in positions that the native browser selection doesn't handle.">支持在原生浏览器选择功能无法处理的区域通过触摸进行选择。</p>
+<h3 id="h-new-features-3">新功能</h3>
+<p data-x-en="Cursor height, color, slant, and thickness now tries to follow the style of the content that would be inserted when typing at the cursor position.">光标的高度、颜色、倾斜度和粗细现在会尝试跟随在光标位置输入时将要插入的内容的样式。</p>
+<p data-x-en="Nodes now have direct isInline/isBlock getters.">节点现在拥有直接的 <code>isInline</code>/<code>isBlock</code> getter。</p>
+<h2 id="h-version-040-2026-08-10">版本 0.4.0（2026-08-10）</h2>
+<h3 id="h-breaking-changes-2">破坏性变更</h3>
+<p data-x-en="Drop support for Widget.Spec.handleEvent, which was unreliable, and provide propagateEvent instead.">停止支持不可靠的 <code>Widget.Spec.handleEvent</code>，并提供 <code>propagateEvent</code> 作为替代。</p>
+<h3 id="h-bug-fixes-4">错误修复</h3>
+<p data-x-en="Fix an issue in the handling of inline nodes with content.">修复处理包含内容的内联节点时的问题。</p>
+<p data-x-en="Fix a crash in parse.slice when running into multiple block elements that don't match any parse rule.">修复在遇到多个不匹配任何解析规则的块元素时，<code>parse.slice</code> 中发生的崩溃问题。</p>
+<p data-x-en="Make autocapitalization work better on iOS and Android by not handling Enter and Backspace on the key event level.">通过不在按键事件级别处理 Enter 和 Backspace 键，使 iOS 和 Android 上的自动大写功能表现更佳。</p>
+<p data-x-en="Fix an issue where comparing attributes would sometimes fail to pick up changes.">修复了一个比较属性时有时无法检测到更改的问题。</p>
+<p data-x-en="Make the link button work properly when the document was changed while the link dialog was open.">当链接对话框打开期间文档被修改时，确保链接按钮能正常工作。</p>
+<p data-x-en="Fix bug where TableMap refused to read tables with marks.">修复了 <code>TableMap</code> 拒绝读取带有标记的表格的 bug。</p>
+<p data-x-en="Fix an issue where range decoration updates sometimes don't affect the rendered document after a document change.">修复了一个问题，该问题导致在文档更改后，范围装饰更新有时无法影响渲染后的文档。</p>
+<p data-x-en="Fix an issue where point decorations affecting the node after the point would sometimes get dropped when replacing content before the node.">修复了一个问题：在替换节点之前的内容时，影响该节点之后点的点装饰有时会丢失。</p>
+<p data-x-en="Make sure tag widgets at end of or after a plot get updated when the plot's tag changes.">确保在图表末尾或之后出现的标签小部件在图表的标签更改时得到更新。</p>
+<p data-x-en="Fix a crash when a correction matched a text node that was merged to an adjacent node by the change.">修复了当更正匹配到因变更而合并到相邻节点的文本节点时导致的崩溃问题。</p>
+<p data-x-en="Mark widgets and atom nodes inside the editor as uneditable to avoid odd editing behavior.">将编辑器内的部件和原子节点标记为不可编辑，以避免出现奇怪的编辑行为。</p>
+<h3 id="h-new-features-4">新功能</h3>
+<p data-x-en="Widget.Spec.inFlow can now be used to indicate that a widget isn't part of the regular document flow."><code>Widget.Spec.inFlow</code> 现在可用于指示某个组件不属于常规文档流。</p>
+<p data-x-en="The new codeBlockLanguage extension bundle allows you to add code block language selection to your configuration.">新的 <code>codeBlockLanguage</code> 扩展包允许您在配置中添加代码块语言选择功能。</p>
+<p data-x-en="Widget render methods now receive the editor instance as second argument.">Widget 的 <code>render</code> 方法现在将编辑器实例作为第二个参数接收。</p>
+<p data-x-en="codeBlockLanguage now provides a key binding to select the current block's language."><code>codeBlockLanguage</code> 现在提供了一个键盘快捷键，用于选择当前代码块的编程语言。</p>
+<p data-x-en="Plot.iterate can now iterate backwards if given a start position above the end position."><code>Plot.iterate</code> 现在可以在起始位置高于结束位置时向后迭代。</p>
+<h2 id="h-version-031-2026-07-16">版本 0.3.1（2026-07-16）</h2>
+<h3 id="h-bug-fixes-5">错误修复</h3>
+<p data-x-en="Fix an issue where mouse selection on an uneditable instance would update the state selection but not the DOM selection.">修复了一个问题：在不可编辑的实例上进行鼠标选择时，会更新状态选择但不会更新 DOM 选择。</p>
+<p data-x-en="Avoid confusion about selection and deletion ranges when Android voice typing or a sloppy virtual keyboard fires a burst of input events.">避免在 Android 语音输入或虚拟键盘因操作不当而触发大量输入事件时，对选择范围和删除范围产生混淆。</p>
+<h3 id="h-new-features-5">新功能</h3>
+<p data-x-en="Plots now have a contentEq method to compare only their content.">Plots 现在拥有一个 <code>contentEq</code> 方法，仅用于比较其内容。</p>
+<h2 id="h-version-030-2026-07-14">版本 0.3.0（2026-07-14）</h2>
+<h3 id="h-breaking-changes-3">破坏性变更</h3>
+<p data-x-en="Checking for plot atomicity should now be done with state.isAtom.">现在应使用 <code>state.isAtom</code> 来检查情节的原子性。</p>
+<h3 id="h-bug-fixes-6">错误修复</h3>
+<p data-x-en="Fix an issue that broke the heading/paragraph block style key bindings.">修复了导致标题/段落块样式键盘快捷键失效的问题。</p>
+<p data-x-en="No longer crash when an update touches part of an atomic plot.">当更新触及原子图的一部分时，不再发生崩溃。</p>
+<p data-x-en="Fix a bug that could prevent range wrapper decorations from properly redrawing.">修复了一个可能导致范围包装器装饰无法正确重绘的 bug。</p>
+<p data-x-en="Fix an issue that caused widgets at the end of the document to not be updated properly.">修复了一个导致文档末尾的小部件无法正确更新的问题。</p>
+<p data-x-en="Fix a bug that broke updates when both point and range decorations changed.">修复了一个当点装饰和范围装饰同时更改时导致更新失败的错误。</p>
+<p data-x-en="Fix a crash in vertical cursor motion in an inline document.">修复内联文档中垂直光标移动导致的崩溃。</p>
+<p data-x-en="Make forward cursor motion at line wrapping points eagerly go to the next line instead of first moving after the line-wrapped space.">在行换行点处，使光标向前移动时立即跳转到下一行，而不是先移动到换行空格之后。</p>
+<p data-x-en="Properly disable a lot of commands and menu items when the editor is read-only.">当编辑器处于只读模式时，正确禁用大量命令和菜单项。</p>
+<h3 id="h-new-features-6">新功能</h3>
+<p data-x-en="Change sets now have extend and clip methods that can be used to grow or shrink their extent.">变更集现在拥有 <code>extend</code> 和 <code>clip</code> 方法，可用于扩大或缩小其范围。</p>
+<p data-x-en="Wordgard.transactionListener provides a way to listen in on transactions synchronously, as they are dispatched."><code>Wordgard.transactionListener</code> 提供了一种在事务分发时同步监听事务的方法。</p>
+<h2 id="h-version-020-2026-07-09">版本 0.2.0（2026-07-09）</h2>
+<h3 id="h-breaking-changes-4">破坏性变更</h3>
+<p data-x-en="Flip the order of the first two arguments to ChangeSet.transform so that it aligns with the static transform function.">交换 <code>ChangeSet.transform</code> 的前两个参数的顺序，使其与静态 <code>transform</code> 函数保持一致。</p>
+<p data-x-en="Corrections no longer get access to the editor state.">更正不再能访问编辑器状态。</p>
+<h3 id="h-new-features-7">新功能</h3>
+<p data-x-en="Correction.check can now be used to directly apply corrections for a given set of changes."><code>Correction.check</code> 现在可用于直接应用给定更改集的更正。</p>
+<p data-x-en="collab.transformUpdate can be used for server-side change transformation."><code>collab.transformUpdate</code> 可用于服务器端变更转换。</p>
+<p data-x-en="wordgard/collab now includes support for applying corrections to changes it transforms.">wordgard/collab 现在支持对其转换的更改应用更正。</p>
+<h2 id="h-version-012-2026-07-09">版本 0.1.2（2026-07-09）</h2>
+<h3 id="h-bug-fixes-7">错误修复</h3>
+<p data-x-en="Make it possible to override the vertical sticky position of panels with CSS.">允许通过 CSS 覆盖面板的垂直粘性定位。</p>
+<p data-x-en="Fix incorrect results returned by coordsAtPos on line wrap points in Safari.">修复 Safari 中在换行点处由 <code>coordsAtPos</code> 返回的错误结果。</p>
+<p data-x-en="Fix issue where cutting could produce a broken document.">修复剪切操作可能导致文档损坏的问题。</p>
+<p data-x-en="Fix ChangeSet.fromJSON, which was very broken.">修复严重损坏的 <code>ChangeSet.fromJSON</code>。</p>
+<h2 id="h-version-011-2026-07-05">版本 0.1.1（2026-07-05）</h2>
+<h3 id="h-bug-fixes-8">错误修复</h3>
+<p data-x-en="Clicking the link button when the link dialog is already open will now close it.">当链接对话框已打开时，点击链接按钮将关闭该对话框。</p>
+<p data-x-en="Work around d.ts bundler issue that caused the types of some fields in the Pos namespace to be incorrect in the output.">解决 d.ts 打包器问题，该问题导致输出中 <code>Pos</code> 命名空间内某些字段的类型不正确。</p>
+<p data-x-en="Fix a bug that caused the definition of the link namespace to be incorrectly tree-shaken.">修复了一个导致 `<code>link</code>` 命名空间定义被错误地树摇优化的问题。</p>
+<h3 id="h-new-features-8">新功能</h3>
+<p data-x-en="Add a Dialog.close function for closing a dialog by class.">添加一个 <code>Dialog.close</code> 函数，用于通过类名关闭对话框。</p>
+<h2 id="h-version-010-2026-07-02">版本 0.1.0（2026-07-02）</h2>
+<h3 id="h-breaking-changes-5">破坏性变更</h3>
+<p data-x-en="First numbered release.">首个编号版本。</p>
+<footer>
+  <div class="footer-content">
+    <a href="https://code.haverbeke.berlin/wordgard/website/">Website sources</a><br>
+    Art by <a href="https://kamilastankiewicz.com/">Kamila Stankiewicz</a><br>
+    Contains 0% AI
+  <br>翻译包含 100% AI</div>
+</footer>
+
+</article></body></html>

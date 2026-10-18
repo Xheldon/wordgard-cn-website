@@ -178,5 +178,9 @@
   "It uses Compartment.get to figure out whether the theme is active, and reconfigure to dispatch an effect that updates the editor configuration.": {
     "_translate": "它使用 <a href=\"../../docs/ref/#state.GardState.Compartment.get\"><code>Compartment.get</code></a> 来判断主题是否处于活动状态，并使用 <a href=\"../../docs/ref/#state.GardState.Compartment.reconfigure\"><code>reconfigure</code></a> 来分发一个更新编辑器配置的效果。",
     "_note": ""
+  },
+  "It is possible for facet sources to be dynamic, derived from some other aspect of the state. This allows them to also be useful for controlling things that don't stay the same over the editor's lifetime, such as open panels.": {
+    "_translate": "方面源可以是<a href=\"../../docs/ref/#state.GardState.Facet.derive\">动态</a>的，即从状态的其他方面派生而来。这使得它们也能用于控制那些在编辑器生命周期内不会保持不变的内容，例如打开的<a href=\"../../docs/ref/#editor.Panel.show\">面板</a>。",
+    "_note": ""
   }
 }

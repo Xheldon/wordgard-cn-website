@@ -53,7 +53,7 @@ function inFootnote(state           ) {
 
 import {Tooltip} from "wordgard/editor"
 
-const footnoteTooltip = Tooltip.show.compute(state => {
+const footnoteTooltip = Tooltip.show.derive(state => {
   let footnote = inFootnote(state)
   return footnote ? {
     pos: footnote.before,
