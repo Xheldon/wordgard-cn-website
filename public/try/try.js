@@ -12,7 +12,7 @@ function showNotification(ref             , message        ) {
   setTimeout(() => node.remove(), 750)
 }
 
-                                                              
+;                                                             
                        
                                                        
                       

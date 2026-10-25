@@ -570,5 +570,33 @@
   "First numbered release.": {
     "_translate": "首个编号版本。",
     "_note": ""
+  },
+  "Version 0.6.2 (2026-10-20)": {
+    "_translate": "版本 0.6.2（2026-10-20）",
+    "_note": ""
+  },
+  "Fix a regression breaking all key bindings involving the Cmd/Meta key.": {
+    "_translate": "修复一个破坏所有涉及 Cmd/Meta 键的键盘快捷键的回归问题。",
+    "_note": ""
+  },
+  "Fix a crash when updating the presentation of an atomically-rendered plot.": {
+    "_translate": "修复在更新原子渲染图表的呈现时发生的崩溃问题。",
+    "_note": ""
+  },
+  "Version 0.6.1 (2026-10-20)": {
+    "_translate": "版本 0.6.1（2026-10-20）",
+    "_note": ""
+  },
+  "Fix a bug that made PointSet.at return undefined when it shouldn't.": {
+    "_translate": "修复了一个导致 <code>PointSet.at</code> 在不应该返回 undefined 时返回 undefined 的 bug。",
+    "_note": ""
+  },
+  "Fix cursor positioning at the sides of bidirectional textblocks on Chrome.": {
+    "_translate": "修复 Chrome 上双向文本块两侧的游标定位问题。",
+    "_note": ""
+  },
+  "Fix a bug that would cause confused decoration handling when updating part of the document with multiple decoration sources.": {
+    "_translate": "修复了一个在更新具有多个装饰源的部分文档时会导致装饰处理混乱的 bug。",
+    "_note": ""
   }
 }

@@ -5904,10 +5904,10 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Create a cursor over a collection of point sets.">在点集集合上创建一个游标。</p>
 </div>
-<pre class="refcode">  <a href="#set.PointSet.at" class="def" id="set.PointSet.at">at</a>(<a href="#set.PointSet.at.pos" class="def" id="set.PointSet.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#set.PointSet.T" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
+<pre class="refcode">  <a href="#set.PointSet.at" class="def" id="set.PointSet.at">at</a>(<a href="#set.PointSet.at.pos" class="def" id="set.PointSet.at.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#set.PointSet.at.pred" class="def" id="set.PointSet.at.pred">pred</a>?: (<a href="#set.PointSet.at.pred.value" class="def" id="set.PointSet.at.pred.value">value</a>: <a href="#set.PointSet.T" class="ref">T</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>): <a href="#set.PointSet.T" class="ref">T</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回侧边值最低的那个。</p>
+<p data-x-en="Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned. If a predicate is given, only points that satisfy it are returned.">获取给定位置的值（如果存在）。如果该位置有多个值，则返回具有最低侧的值。如果提供了谓词，则仅返回满足该谓词的点。</p>
 </div>
 <pre class="refcode">  <a href="#set.PointSet.map" class="def" id="set.PointSet.map">map</a>(
     <a href="#set.PointSet.map.map" class="def" id="set.PointSet.map.map">map</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>,

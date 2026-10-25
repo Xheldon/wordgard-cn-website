@@ -16,7 +16,7 @@ function currentLatency() {
 
 class Pending {
   promise               
-                             
+  ;                          
   constructor() {
     this.promise = new Promise(resolve => this.resolve = resolve)
   }
@@ -75,12 +75,12 @@ class DemoChannel {
 
 //!clientmessage
 
-                    
+;                   
                                                             
 
 //!servermessage
 
-                    
+;                   
                  
                                                        
                   
@@ -89,14 +89,14 @@ class DemoChannel {
 
 //!channel
 
-                   
+;                  
                              
                                   
  
 
 //!storedupdate
 
-                     
+;                    
                
                     
                   
@@ -105,7 +105,7 @@ class DemoChannel {
 
 //!activeclient
 
-                                                  
+;                                                 
 
 function send(client              , message               ) {
   client.channel.send(JSON.stringify(message))

@@ -517,7 +517,6 @@ const globalDecoFacets = [tagShape, tagWidget, tagWrapper, tagAttribute, markSha
 function findChangedRanges(prevState, prevDeco, state, deco, sections) {
     let result = [];
     let globalChange = globalDecoFacets.some(facet => prevState.facet(facet) !== state.facet(facet));
-    let shapeChanges = [];
     for (let i = 0, posA = 0, posB = 0; i < sections.length;) {
         let len = sections[i++], ins = sections[i++];
         if (ins == -1 && globalChange) {
@@ -540,11 +539,6 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             compareDecoSet(prevDeco.points, deco.points, (a, b) => {
                 (a || PointSet.empty).compareRange(posA, b || PointSet.empty, posB, len, (pos, val) => {
                     add(pos, Math.min(pos + (val instanceof WidgetDecoration ? 0 : 1), endB));
-                    if (val instanceof ShapeDecoration && !globalChange) {
-                        let idx = findAbove(shapeChanges, 0, pos - 1);
-                        if (idx == shapeChanges.length || shapeChanges[idx] != pos)
-                            shapeChanges.splice(idx, 0, pos);
-                    }
                 });
             });
             let joined = joinRanges(ranges), pos = posB, end = pos + len, j = 0;
@@ -573,33 +567,7 @@ function findChangedRanges(prevState, prevDeco, state, deco, sections) {
             addSection(result, len, ins);
         }
     }
-    if (shapeChanges.length)
-        return addAtomicityChanges(result, prevState, shapeChanges);
     return result;
-}
-function addAtomicityChanges(changes, prev, nodes) {
-    let added = [];
-    let scan = prev.doc.resolve(0), sectionPos = 0, sectionI = 0, off = 0;
-    for (let posB of nodes) {
-        while (posB >= sectionPos) {
-            let len = changes[sectionI++], ins = changes[sectionI++];
-            if (ins < 0) {
-                sectionPos += len;
-            }
-            else {
-                sectionPos += ins;
-                off += len - ins;
-            }
-        }
-        let posA = posB - off;
-        if (scan.pos < posA)
-            scan = scan.advance(posA - scan.pos);
-        let node = scan.nodeAfter;
-        if (!node)
-            continue;
-        added.push(posA, posA + node.length);
-    }
-    return added.length ? addUpdated(changes, added) : changes;
 }
 class SpanIterator {
     ranges;
@@ -756,7 +724,7 @@ class DecoIterator {
         let pos = this.pos.advance(from - this.pos.pos), started = inclusiveStart;
         let atomParent;
         for (let p = pos.parent; p; p = p.parent)
-            if (this.state.isAtom(p.node.type))
+            if (!p.node.isDoc && (this.state.isAtom(p.node.type) || this.hasAtomShape(p.before)))
                 atomParent = p;
         let pendingDeco = [], pendingPos = -1;
         let pendingShape = null, pendingShapeSet = null;
@@ -891,6 +859,15 @@ class DecoIterator {
                 shape = Elt.create(tag.type.isBlock ? "div" : "span", add, [shape]);
         }
         return shape;
+    }
+    atomCache = new Map();
+    hasAtomShape(pos) {
+        let has = this.atomCache.get(pos);
+        if (has == null) {
+            has = this.pointSets.some(s => s.at(pos, d => d instanceof ShapeDecoration && !d.shape.hasContent));
+            this.atomCache.set(pos, has);
+        }
+        return has;
     }
 }
 function compareSetPrec(setA, setB, array) {
@@ -1563,8 +1540,7 @@ class DocTile extends CompositeTile {
                     builder.update(0, true);
             }
             else if (ins == -1) {
-                builder.keep(len, !startCovered, i == changes.length);
-                startCovered = false;
+                startCovered = builder.keep(len, !startCovered, i == changes.length);
             }
             else if (ins == -2) {
                 builder.update(len, !startCovered);
@@ -1971,7 +1947,7 @@ class TilePointer {
     }
     tileAfter() {
         let { tile, index } = this;
-        if (tile.isText)
+        if (tile.isAtom)
             return tile;
         return index < tile.children.length ? tile.children[index] : null;
     }
@@ -1997,25 +1973,26 @@ class TilePointer {
     }
     matchingWidget(widget, sideFlag, reused) {
         let { index, tile, parent } = this;
-        for (;;) {
-            if (!index) {
-                if (!parent || (tile instanceof EltTile ? tile.tag : !(tile instanceof TextTile)))
-                    break;
-                ({ index, tile, parent } = parent);
-            }
-            else {
-                if (tile instanceof TextTile)
-                    break;
-                let before = tile.children[--index];
-                if (!before.isPoint)
-                    break;
-                if (!reused.has(before) && before instanceof WidgetTile && before.widget.eq(widget) &&
-                    (before.flags & 96) == sideFlag && !(before.flags & 8192)) {
-                    reused.set(before, 1);
-                    return before;
+        if (!tile.isAtom)
+            for (;;) {
+                if (!index) {
+                    if (!parent || (tile instanceof EltTile ? tile.tag : !(tile instanceof TextTile)))
+                        break;
+                    ({ index, tile, parent } = parent);
+                }
+                else {
+                    if (tile instanceof TextTile)
+                        break;
+                    let before = tile.children[--index];
+                    if (!before.isPoint)
+                        break;
+                    if (!reused.has(before) && before instanceof WidgetTile && before.widget.eq(widget) &&
+                        (before.flags & 96) == sideFlag && !(before.flags & 8192)) {
+                        reused.set(before, 1);
+                        return before;
+                    }
                 }
             }
-        }
         return null;
     }
 }
@@ -2042,11 +2019,9 @@ class ContentUpdate {
                 if (span) {
                     this.new = span;
                 }
-                else {
-                    this.reused.set(tile, 2);
-                    let inner = EltTile.of(tile.elt, tile.tag, tile.flags, tile.boundary * 2, tile.dom);
-                    this.new.addChild(inner);
-                    this.new = inner;
+                else if (!tile.isNodeInner) {                    let copy = this.copyEltStructure(tile);
+                    this.new.addChild(copy);
+                    this.new = copy.contentTile;
                 }
             },
             leave: tile => {
@@ -2070,7 +2045,8 @@ class ContentUpdate {
                 }
             },
             skip: (tile, from, to) => {
-                if (!(tile instanceof TextTile)) {
+                if (tile.isNodeInner) ;
+                else if (!(tile instanceof TextTile)) {
                     if (!from && to == tile.length) {
                         this.reused.set(tile, 1);
                         this.new.addChild(tile);
@@ -2112,10 +2088,24 @@ class ContentUpdate {
         };
     }
     keep(len, includeStart, includeEnd) {
+        if (!!this.partialNode != (this.old.tile.isAtom && !this.old.tile.isText)) {
+            let dist = Math.min(len, this.partialNode
+                ? this.state.doc.nodeAt(this.posB - this.partialNode.length).length - this.partialNode.length
+                : this.old.tile.length - this.old.index);
+            this.replace(dist, dist, includeStart);
+            if (dist == len)
+                return true;
+            includeStart = false;
+            len -= dist;
+        }
+        this.keepCheckEnd(len, includeStart, includeEnd);
+        return includeEnd;
+    }
+    keepCheckEnd(len, includeStart, includeEnd) {
         let cut = [], end = this.posB + len;
         if (this.deco.endWidgets)
             for (let nw = this.new, { tile, index, parent } = this.old, pos = this.posB; pos < end;) {
-                if (tile instanceof TextTile) {
+                if (tile.isAtom) {
                     pos += tile.length - index;
                     ({ tile, index, parent } = parent);
                     index++;
@@ -2386,6 +2376,16 @@ class ContentUpdate {
             return tile;
         }
     }
+    copyEltStructure(tile) {
+        this.reused.set(tile, 2);
+        let copy = EltTile.of(tile.elt, tile.tag, tile.flags, tile.boundary * 2, tile.dom);
+        if (tile.isNodeOuter)
+            for (let child of tile.children)
+                if (child.isNodeInner) {
+                    copy.addChild((child.flags & 1024) ? this.copyEltStructure(child) : child);
+                }
+        return copy;
+    }
     ensureHackNode() {
         let tile = this.new;
         if (!tile.isPlotContent)
@@ -2572,6 +2572,8 @@ function coordsAtPos(wg, pos, assoc) {
         let span = map.order[pos == textblock.start ? 0 : map.order.length - 1];
         if (span.ltr != map.ltr)
             pos = textblock.start + (pos == textblock.start ? span.to : span.from);
+        else
+            assoc = -assoc;
     }
     let { offset, tile, pos: tilePos } = wg.docTile.resolve(pos, assoc);
     if (tile instanceof TextTile) {
@@ -3387,7 +3389,14 @@ class DOMObserver {
                 return null;
             }
             else if (tile.dom == record.target) {
-                return [tile.posBefore, tile.posAfter];
+                if (!tile.isNodeInner)
+                    return [tile.posBefore, tile.posAfter];
+                while (tile.parent && tile.isNodeInner)
+                    tile = tile.parent;
+                if (tile.isDoc)
+                    return null;
+                let nodePos = tile.posBefore;
+                return [nodePos, nodePos + 1];
             }
             else {
                 return childRange(tile, record);
@@ -3584,7 +3593,7 @@ function normalizeKeyName(name, platform) {
     if (ctrl)
         result = "Ctrl-" + result;
     if (meta)
-        result = (platform == "mac" ? "Meta-" : "Cmd-") + result;
+        result = (platform == "mac" ? "Cmd-" : "Meta-") + result;
     if (shift)
         result = "Shift-" + result;
     return result;
@@ -3903,7 +3912,7 @@ class InputState {
                 return;
             if (slice) {
                 wg.dispatch({
-                    changes: { from, to, insert: slice, fit: true },
+                    changes: { correct: { from, to, insert: slice, fit: true }, local: true },
                     selection: isSel ? (cx, changes) => GardSelection.near(cx, changes.mapPos(to, 1), -1) : undefined,
                     userEvent: "input.paste",
                     scrollIntoView: isSel
@@ -4439,10 +4448,10 @@ const baseHandlers = {
         let dropPos = wg.posAtCoords({ x: event.clientX, y: event.clientY }).pos;
         let { draggedContent } = wg.inputState;
         let del = draggedContent && dragMovesSelection(wg, event)
-            ? { from: draggedContent.from, to: draggedContent.to } : null;
-        if (wg.state.facet(dropHandler).some(f => f(wg, event, dropPos, del, slice)))
+            ? { correct: { from: draggedContent.from, to: draggedContent.to }, local: true } : null;
+        if (wg.state.facet(dropHandler).some(f => f(wg, event, dropPos, del ? del.correct : null, slice)))
             return true;
-        let ins = { from: dropPos, insert: slice, fit: true };
+        let ins = { correct: { from: dropPos, insert: slice, fit: true }, local: true };
         let changes = ChangeSet.create(wg.state.doc, del ? [del, ins] : ins);
         wg.focus();
         wg.dispatch({
@@ -6565,7 +6574,7 @@ function update(config, create, source, deco, tr) {
     tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
         let covered = false;
         doc.iterate(fromB, toB, (node, pos) => {
-            if (doc.schema.matchNode(node.type, config.type)) {
+            if (doc.schema.matchNode(node.type, config.type) && !recreate.some(r => r.from == pos)) {
                 recreate.push({
                     from: pos, to: pos + node.length,
                     add: add => source(node, pos + 1, add)

@@ -99,6 +99,7 @@ class HeapCursor {
                 heapSink(this.heap, this.heap.length - 1, this.cmp);
             }
         }
+        this.fill();
     }
     next() {
         if (this.heap.length) {
@@ -555,15 +556,16 @@ class PointSet {
                 cursors.push(set.cursor(from, side));
         return cursors.length == 0 ? PointSet.empty.cursor() : cursors.length == 1 ? cursors[0] : new HeapCursor(cmpCursor, cursors);
     }
-    at(pos) {
+    at(pos, pred) {
         for (let chunk of this.chunks) {
-            if (chunk.end > pos)
-                break;
             if (chunk.start > pos)
+                break;
+            if (chunk.end < pos)
                 continue;
-            let index = findAbove(chunk.pos, 0, pos - 1);
-            if (index < chunk.pos.length && chunk.pos[index] == pos)
-                return chunk.value[index];
+            for (let index = findAbove(chunk.pos, 0, pos - chunk.start - 1); index < chunk.pos.length && chunk.pos[index] + chunk.start == pos; index++) {
+                if (!pred || pred(chunk.value[index]))
+                    return chunk.value[index];
+            }
         }
         return undefined;
     }

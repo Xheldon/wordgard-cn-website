@@ -6106,5 +6106,9 @@
   "This package exports constants called C, CSS, Clojure, Cobol, CommonLisp, Cpp, Csharp, Dart, Elm, Erlang, FSharp, Go, HTML, Haskell, JSON, Java, JavaScript, Jinja2, Julia, Kotlin, LaTeX, Less, Lua, MSSQL, MySQL, OCaml, ObjectiveC, Perl, PostgreSQL, Python, R, Ruby, Rust, SML, SQL, SQLite, Sass, Scala, Scheme, Shell, Swift, TypeScript, WebAssembly, XML, and YAML containing Language objects for those languages.": {
     "_translate": "此包导出名为 <code>C</code>、<code>CSS</code>、<code>Clojure</code>、<code>Cobol</code>、<code>CommonLisp</code>、<code>Cpp</code>、<code>Csharp</code>、<code>Dart</code>、<code>Elm</code>、<code>Erlang</code>、<code>FSharp</code>、<code>Go</code>、<code>HTML</code>、<code>Haskell</code>、<code>JSON</code>、<code>Java</code>、<code>JavaScript</code>、<code>Jinja2</code>、<code>Julia</code>、<code>Kotlin</code>、<code>LaTeX</code>、<code>Less</code>、<code>Lua</code>、<code>MSSQL</code>、<code>MySQL</code>、<code>OCaml</code>、<code>ObjectiveC</code>、<code>Perl</code>、<code>PostgreSQL</code>、<code>Python</code>、<code>R</code>、<code>Ruby</code>、<code>Rust</code>、<code>SML</code>、<code>SQL</code>、<code>SQLite</code>、<code>Sass</code>、<code>Scala</code>、<code>Scheme</code>、<code>Shell</code>、<code>Swift</code>、<code>TypeScript</code>、<code>WebAssembly</code>、<code>XML</code> 和 <code>YAML</code> 的常量，其中包含针对这些语言的 <a href=\"#highlight-code.Language\"><code>Language</code></a> 对象。",
     "_note": ""
+  },
+  "Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned. If a predicate is given, only points that satisfy it are returned.": {
+    "_translate": "获取给定位置的值（如果存在）。如果该位置有多个值，则返回具有最低侧的值。如果提供了谓词，则仅返回满足该谓词的点。",
+    "_note": ""
   }
 }
