@@ -1207,6 +1207,8 @@ class Leaf extends BaseTag {
         return Leaf.Text.of(this.param.slice(Math.max(from, 0), Math.max(0, to)), this.marks);
     }
     static text(text, marks = Mark.none) {
+        if (!text)
+            throw new Error("Cannot create empty text nodes");
         return Leaf.Text.of(text, marks);
     }
     toString() {

@@ -4494,7 +4494,8 @@ const baseHandlers = {
         wg.inputState.pendingInputEvent = null;
         let change;
         if (compositionInputTypes.has(event.inputType) || event.inputType == "insertText") {
-            change = { from: pending.domRange.from, to: pending.domRange.to, insert: [Leaf.text(pending.data || "")] };
+            let text = pending.data || "";
+            change = { from: pending.domRange.from, to: pending.domRange.to, insert: text ? [Leaf.text(text)] : undefined };
         }
         else if (isDeletionInputEvent(event.inputType)) {
             change = { from: pending.domRange.from, to: pending.domRange.to };
@@ -7407,7 +7408,7 @@ function ensureAnchor(regexp) {
 }
 function applyString(text) {
     return (state, match) => ({
-        changes: { from: match[0].from.pos, to: match[0].to.pos, insert: [Leaf.text(text)] },
+        changes: { from: match[0].from.pos, to: match[0].to.pos, insert: text ? [Leaf.text(text)] : undefined },
         annotations: history.isolate.of(true)
     });
 }

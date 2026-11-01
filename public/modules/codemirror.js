@@ -1868,9 +1868,9 @@ if(x-S<=s&&(Z=g(a.pos-e,w))){let e=new Uint16Array(Z.size-Z.skip),i=a.pos-Z.size
 for(;a.pos>i;)s=m(Z.start,e,s)
 P=new Ro(e,x-Z.start,n),A=Z.start-t}else{let t=a.pos-k
 a.next()
-let e=[],i=[],n=v>=o?v:-1,r=0,l=x,h=y
-for(;a.pos>t;)n>=0&&a.id==n&&a.size>=0?(a.end<=l-s&&(d(e,i,S,r,a.end,l,n,h,$),r=e.length,l=a.end,h=c),a.next()):b>2500?f(S,t,e,i):O(S,t,e,i,n,b+1)
-if(n>=0&&r>0&&r<e.length&&d(e,i,S,r,S,l,n,h,$),e.reverse(),i.reverse(),n>-1&&r>0){let t=u(X,$)
+let e=[],i=[],l=v>=o?v:-1,h=0,g=x,m=y
+for(;a.pos>t;)l>=0&&a.id==l&&a.size>=0?(a.end<=g-s&&(d(e,i,S,h,a.end,g,l,m,$),h=e.length,g=a.end,m=c),a.next()):b>2500?f(S,t,e,i):(l>=0&&-1==a.size&&r[a.id].type==n.types[l]&&(h<e.length&&d(e,i,S,h,a.end,g,l,m,$),h=e.length+1,g=a.start,m=c),O(S,t,e,i,l,b+1))
+if(l>=0&&h>0&&h<e.length&&d(e,i,S,h,S,g,l,m,$),e.reverse(),i.reverse(),l>-1&&h>0){let t=u(X,$)
 P=Io(X,e,i,0,e.length,0,x-S,t,t)}else P=p(X,e,i,x-S,y-x,$)}i.push(P),Q.push(A)}function f(t,e,i,r){let o=[],l=0,h=-1
 for(;a.pos>e;){let{id:t,start:e,end:i,size:n}=a
 if(n>4)a.next()
@@ -2541,13 +2541,14 @@ for(;this.fragment&&this.safeTo<=t;)this.nextFragment()
 if(!this.fragment)return null
 for(;;){let e=this.trees.length-1
 if(e<0)return this.nextFragment(),null
+if(t<this.safeFrom)return null
 let i=this.trees[e],n=this.index[e]
 if(n==i.children.length){this.trees.pop(),this.start.pop(),this.index.pop()
 continue}let s=i.children[n],r=this.start[e]+i.positions[n]
 if(r>t)return this.nextStart=r,null
 if(s instanceof To){let i=r>this.lastRepeatPos&&s.type.id>=this.minRepeat
 if(r==t||i){let e,n=r+s.length
-if(r>=this.safeFrom&&n<=this.safeTo&&(!(e=s.prop(xo.lookAhead))||n+e<this.fragment.to)){if(i&&(this.lastRepeat=s,this.lastRepeatPos=r),r==t)return s}else if(r==t)return null}this.index[e]++,r+s.length>=Math.max(this.safeFrom,t)&&(this.trees.push(s),this.start.push(r),this.index.push(0))}else this.index[e]++,this.nextStart=r+s.length}}}class vc{constructor(t,e){this.stream=e,this.tokens=[],this.mainToken=null,this.actions=[],this.tokens=t.tokenizers.map(t=>new lc)}getActions(t){let e=0,i=null,{parser:n}=t.p,{tokenizers:s}=n,r=n.stateSlot(t.state,3),o=t.curContext?t.curContext.hash:0,a=0
+if(r>=this.safeFrom&&n<=this.safeTo&&(!(e=s.prop(xo.lookAhead))||n+e<this.fragment.to)&&(i&&(this.lastRepeat=s,this.lastRepeatPos=r),r==t))return s}this.index[e]++,r+s.length>=Math.max(this.safeFrom,t)&&(this.trees.push(s),this.start.push(r),this.index.push(0))}else this.index[e]++,this.nextStart=r+s.length}}}class vc{constructor(t,e){this.stream=e,this.tokens=[],this.mainToken=null,this.actions=[],this.tokens=t.tokenizers.map(t=>new lc)}getActions(t){let e=0,i=null,{parser:n}=t.p,{tokenizers:s}=n,r=n.stateSlot(t.state,3),o=t.curContext?t.curContext.hash:0,a=0
 for(let n=0;n<s.length;n++){if(!(1<<n&r))continue
 let l=s[n],h=this.tokens[n]
 if((!i||l.fallback)&&((l.contextual||h.start!=t.pos||h.mask!=r||h.context!=o)&&(this.updateCachedToken(h,l,t),h.mask=r,h.context=o),h.lookAhead>h.end+25&&(a=Math.max(h.lookAhead,a)),0!=h.value)){let n=e
