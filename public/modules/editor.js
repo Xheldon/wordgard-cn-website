@@ -202,6 +202,14 @@ class Widget {
         },
         editable: true
     });
+    Widget.blockImg = Widget.create({
+        render() {
+            let img = document.createElement("img");
+            img.className = "wg-blockBuffer";
+            return img;
+        },
+        editable: true
+    });
     Widget.br = Widget.create({
         render() { return document.createElement("br"); },
         editable: true
@@ -1284,12 +1292,6 @@ class Tile {
         let last = this.children.length - 1;
         return last < 0 ? null : this.children[last];
     }
-    get nodeParent() {
-        let tile = this;
-        while (!tile.tag)
-            tile = tile.parent;
-        return tile;
-    }
     ignoreEvent(event) { return false; }
     get ignoreMutations() { return false; }
     toString() { return this.dom.nodeName + (this.children.length ? `(${this.children})` : ""); }
@@ -1309,8 +1311,8 @@ class Tile {
         return tile;
     }
     markDirty() {
-        if (!(this.flags & 8192)) {
-            this.flags |= 8192;
+        if (!(this.flags & 16384)) {
+            this.flags |= 16384;
             this.parent?.markDirty();
         }
     }
@@ -1321,10 +1323,10 @@ class Tile {
     static get(node) { return node.wgTile; }
 }
 function checkSync(tile) {
-    if ((tile.flags & 256) && !(tile.flags & 8192))
+    if ((tile.flags & 256) && !(tile.flags & 16384))
         return false;
     tile.flags |= 256;
-    tile.flags &= -8193;
+    tile.flags &= -16385;
     return true;
 }
 class CompositeTile extends Tile {
@@ -1332,15 +1334,19 @@ class CompositeTile extends Tile {
     addChild(child) {
         if (this.flags & 256)
             throw new Error("Cannot add to a synced tile");
-        if ((this.flags & 4096) && !(child.flags & 2048)) {
+        if ((this.flags & 8192) && !(child.flags & 4096)) {
             let i = this.children.length;
-            while (i > 0 && (this.children[i - 1].flags & 2048))
+            while (i > 0 && (this.children[i - 1].flags & 4096))
                 i--;
             this.children.splice(i, 0, child);
         }
         else {
             this.children.push(child);
         }
+        child.parent = this;
+    }
+    putChild(child, index) {
+        this.children.splice(index, 0, child);
         child.parent = this;
     }
     sync() {
@@ -1633,7 +1639,7 @@ class DocTile extends CompositeTile {
                     parentBefore = before;
                     before = before.children[beforeI = before.children.length - 1];
                 }
-                if (before.isNodeInner && (before.flags & 2048) || (before.flags & 64)) {
+                if (before.isNodeInner && (before.flags & 4096) || (before.flags & 64)) {
                     parent = parentBefore;
                     i = beforeI;
                     continue adjust;
@@ -1645,7 +1651,7 @@ class DocTile extends CompositeTile {
                     parentAfter = after;
                     after = after.children[afterI = 0];
                 }
-                if (after.isNodeInner && !(after.flags & 2048) || (after.flags & 32)) {
+                if (after.isNodeInner && !(after.flags & 4096) || (after.flags & 32)) {
                     parent = parentAfter;
                     i = afterI + 1;
                     continue adjust;
@@ -1764,20 +1770,20 @@ class EltTile extends CompositeTile {
     get boundary() { return this._tag && !(this.flags & 512) ? 1 : 0; }
     get tag() { return this._tag; }
     get contentTile() {
-        if (!(this.flags & 1024))
+        if (!(this.flags & 2048))
             return null;
         for (let ch of this.children)
-            if (ch.isNodeInner && (ch.flags & 1024))
+            if (ch.isNodeInner && (ch.flags & 2048))
                 return ch.contentTile;
         return this;
     }
     static of(elt, tag, flags, length, dom) {
         if (elt.hasContent) {
-            flags |= 1024;
+            flags |= 2048;
             if (elt.children.length > 1) {
                 let zero = elt.children.indexOf(0);
                 if (zero > -1 && zero < elt.children.length - 1)
-                    flags |= 4096;
+                    flags |= 8192;
             }
         }
         return new EltTile(elt, tag, flags, length, dom || elt.outerDOM());
@@ -1789,8 +1795,13 @@ function setUneditable(dom) {
         span.appendChild(dom);
         dom = span;
     }
-    if (dom.contentEditable == "inherit" && !/^(br|hr|img|input|wbr)$/i.test(dom.nodeName))
-        dom.contentEditable = "false";
+    let cur = dom.contentEditable;
+    if (cur == "false")
+        return true;
+    if (cur != "inherit" || !/^(br|hr|img|input|wbr)$/i.test(dom.nodeName))
+        return false;
+    dom.contentEditable = "false";
+    return true;
 }
 class WidgetTile extends Tile {
     widget;
@@ -1949,7 +1960,12 @@ class TilePointer {
         let { tile, index } = this;
         if (tile.isAtom)
             return tile;
-        return index < tile.children.length ? tile.children[index] : null;
+        for (; index < tile.children.length; index++) {
+            let next = tile.children[index];
+            if (!(next instanceof WidgetTile && (next.widget == Widget.blockImg || next.widget == Widget.br)))
+                return next;
+        }
+        return null;
     }
     matchingWrapper(elt, spanning, reused) {
         let best, bestScore = 0;
@@ -1987,7 +2003,7 @@ class TilePointer {
                     if (!before.isPoint)
                         break;
                     if (!reused.has(before) && before instanceof WidgetTile && before.widget.eq(widget) &&
-                        (before.flags & 96) == sideFlag && !(before.flags & 8192)) {
+                        (before.flags & 96) == sideFlag && !(before.flags & 16384)) {
                         reused.set(before, 1);
                         return before;
                     }
@@ -2073,7 +2089,7 @@ class ContentUpdate {
                 else if (this.new.lastChild instanceof TextTile && !this.new.lastChild.isComposition) {
                     this.addText(tile.text.slice(from, to));
                 }
-                else if (!from && to == tile.text.length && !(tile.flags & 8192) && !this.reused.has(tile)) {
+                else if (!from && to == tile.text.length && !(tile.flags & 16384) && !this.reused.has(tile)) {
                     this.reused.set(tile, 1);
                     this.new.addChild(tile);
                 }
@@ -2242,7 +2258,7 @@ class ContentUpdate {
                     if (!(next instanceof TextTile) || this.reused.has(next)) {
                         this.addText(node.param);
                     }
-                    else if (next.text == node.param && !(next.flags & 8192)) {
+                    else if (next.text == node.param && !(next.flags & 16384)) {
                         this.reused.set(next, 1);
                         this.new.addChild(next);
                     }
@@ -2290,9 +2306,10 @@ class ContentUpdate {
                             : null;
                 if (!tile) {
                     let dom = widget.render(this.wg);
-                    if (!widget.type.editable)
-                        setUneditable(dom);
-                    tile = new WidgetTile(widget, null, 16 | sideFlag, dom);
+                    let flags = 16 | sideFlag;
+                    if (!widget.type.editable && setUneditable(dom))
+                        flags |= 1024;
+                    tile = new WidgetTile(widget, null, flags, dom);
                     if (widget.type.connect)
                         this.toConnect.push(tile);
                 }
@@ -2329,27 +2346,33 @@ class ContentUpdate {
     }
     buildNodeShape(tag, length, shape, reuse, inEditable = true, afterContent = 0) {
         if (shape instanceof Elt) {
+            let flags = (tag ? (shape.hasContent ? 0 : 512)
+                : 1 | (shape.hasContent ? 0 : 16)) | afterContent;
             if (inEditable && !shape.hasContent) {
-                if (Attributes.get(shape.attrs, "contenteditable") == null && !/^(br|hr|img|input|wbr)$/i.test(shape.tagName))
+                let contentEd = Attributes.get(shape.attrs, "contenteditable");
+                if (contentEd == null && !/^(br|hr|img|input|wbr)$/i.test(shape.tagName)) {
                     shape = Elt.create(shape.tagName, Attributes.merge(shape.attrs, ["contenteditable", "false"]), shape.children);
+                    flags |= 1024;
+                }
+                else if (contentEd == "false") {
+                    flags |= 1024;
+                }
                 inEditable = false;
             }
             let reusable, dom, strict = true;
             if (reusable = this.findReusableTile(shape, reuse, strict) || this.findReusableTile(shape, reuse, strict = false)) {
                 this.reused.set(reusable, 2);
                 dom = reusable.dom;
-                if (reusable.flags & 8192)
+                if (reusable.flags & 16384)
                     updateAttributes(dom, takeAttributes(reusable.dom), shape.attrs);
                 else if (!strict)
                     updateAttributes(dom, reusable.elt.attrs, shape.attrs);
             }
-            let flags = (tag ? (shape.hasContent ? 0 : 512)
-                : 1 | (shape.hasContent ? 0 : 16)) | afterContent;
             let tile = EltTile.of(shape, tag, flags, tag ? length : 0, dom);
             let afterContentInner = 0;
             for (let ch of shape.children) {
                 if (ch === 0) {
-                    afterContentInner = 2048;
+                    afterContentInner = 4096;
                     tile.flags |= 2;
                 }
                 else {
@@ -2358,8 +2381,7 @@ class ContentUpdate {
             }
             return tile;
         }
-        else {
-            let reusable, dom;
+        else {            let reusable, dom;
             if (reusable = this.findReusableTile(shape, reuse, false)) {
                 this.reused.set(reusable, 2);
                 dom = reusable.dom;
@@ -2367,9 +2389,9 @@ class ContentUpdate {
             else {
                 dom = shape.render(this.wg);
             }
-            if (inEditable && !shape.type.editable)
-                setUneditable(dom);
             let flags = (tag ? 512 : 16 | 1) | afterContent;
+            if (inEditable && !shape.type.editable && setUneditable(dom))
+                flags |= 1024;
             let tile = new WidgetTile(shape, tag, flags, dom, tag ? length : 0);
             if (shape.type.connect)
                 this.toConnect.push(tile);
@@ -2382,25 +2404,26 @@ class ContentUpdate {
         if (tile.isNodeOuter)
             for (let child of tile.children)
                 if (child.isNodeInner) {
-                    copy.addChild((child.flags & 1024) ? this.copyEltStructure(child) : child);
+                    copy.addChild((child.flags & 2048) ? this.copyEltStructure(child) : child);
                 }
         return copy;
     }
-    ensureHackNode() {
-        let tile = this.new;
-        if (!tile.isPlotContent)
-            return;
-        while (tile.isNodeInner)
-            tile = tile.parent;
-        let tag = tile.tag;
-        if (!tag || !tag.isPlot || !(tag.isTextblock || tag.type.isInline))
-            return;
+    ensureHackNodes() {
+        if (this.new.isPlotContent || this.new.isWrapper) {
+            let { tag } = this.new.nearestNode();
+            if (this.new.isPlotContent && tag.isPlot && (tag.isTextblock || tag.type.isInline))
+                this.ensureTrailingHackNode(this.new);
+            if (tag.isPlot && !tag.inlineContent)
+                this.ensureBlockSeparators(this.new);
+        }
+    }
+    ensureTrailingHackNode(target) {
         let hasHack = -1, needsHack = true;
-        for (let parent = this.new, i = parent.children.length;;) {
+        for (let parent = target, i = parent.children.length;;) {
             if (i > 0) {
                 let next = parent.children[--i];
                 if (next.isNodeInner || next instanceof WidgetTile && !next.widget.type.inFlow) ;
-                else if (next instanceof WidgetTile && next.widget == Widget.br && parent == this.new) {
+                else if (next instanceof WidgetTile && next.widget == Widget.br && parent == target) {
                     hasHack = i;
                 }
                 else if (next.dom.nodeName == "BR") {
@@ -2415,7 +2438,7 @@ class ContentUpdate {
                     break;
                 }
             }
-            else if (parent == this.new) {
+            else if (parent == target) {
                 break;
             }
             else {
@@ -2425,14 +2448,32 @@ class ContentUpdate {
         }
         if (hasHack > -1) {
             if (!needsHack)
-                this.new.children.splice(hasHack, 1);
+                target.children.splice(hasHack, 1);
         }
         else if (needsHack) {
-            this.new.addChild(new WidgetTile(Widget.br, null, 16 | 64, Widget.br.render(this.wg)));
+            target.addChild(new WidgetTile(Widget.br, null, 16 | 64, Widget.br.render(this.wg)));
+        }
+    }
+    ensureBlockSeparators(target) {
+        for (let i = 0, prev = null;; i++) {
+            let next = i == target.children.length ? null : target.children[i];
+            if (next && next.isNodeInner)
+                continue;
+            if (!next && !prev)
+                break;
+            if ((next || prev) &&
+                (!next || ((next.flags & 1024) && !(next.flags & 32))) &&
+                (!prev || ((prev.flags & 1024) && !(prev.flags & 64)))) {
+                let widget = new WidgetTile(Widget.blockImg, null, 16 | 64, Widget.blockImg.render(this.wg));
+                target.putChild(widget, i++);
+            }
+            if (!next)
+                break;
+            prev = next;
         }
     }
     up() {
-        this.ensureHackNode();
+        this.ensureHackNodes();
         this.new = this.new.parent;
     }
     leaveNode() {
@@ -2515,7 +2556,7 @@ class ContentUpdate {
     finish() {
         while (!(this.new instanceof DocTile))
             this.up();
-        this.ensureHackNode();
+        this.ensureHackNodes();
         return this.new;
     }
 }
@@ -2916,6 +2957,9 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
     ".wg-buffer": {
         verticalAlign: "bottom",
         height: "1em",
+    },
+    ".wg-blockBuffer": {
+        position: "absolute"
     },
     "wg-placeholder": {
         opacity: "0.6",
@@ -5209,7 +5253,7 @@ class Wordgard {
         }));
     }
     static label(label) {
-        return Wordgard.editorAttributes.of(typeof label == "string" ? { "aria-label": label }
+        return Wordgard.contentAttributes.of(typeof label == "string" ? { "aria-label": label }
             : (wg => ({ "aria-label": label(wg.state) })));
     }
     static clipboardOutputFilter = clipboardOutputFilter;

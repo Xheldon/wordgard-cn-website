@@ -3156,7 +3156,7 @@ addEventListener("load", function() {
 <pre class="refcode">  <a href="#state.Transaction.Spec.sequential" class="def" id="state.Transaction.Spec.sequential">sequential</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="Only meaningful for specs that are combined with another transaction spec (via or by being returned from an {@link Transaction.extender extender. Normally, when specs are combined, the positions in changes are taken to refer to the document positions in the initial document. When a spec has sequental set to true, its positions will be taken to refer to the document created by the changes in the spec before it.">仅对与另一个事务规范结合（通过 <a href="#state.Transaction.merge">或作为 {@link Transaction.extender 扩展器} 返回）的规范有意义。通常，当规范结合时，<code>changes</code> 中的位置被视为引用初始文档中的文档位置。当规范的 <code>sequental</code> 设置为 true 时，其位置将被视为引用由该规范之前的变更所创建的文档。</a></p>
+<p data-x-en="Only meaningful for specs that are combined with another transaction spec (via Transaction.merge or by being returned from an extender. Normally, when specs are combined, the positions in changes are taken to refer to the document positions in the initial document. When a spec has sequental set to true, its positions will be taken to refer to the document created by the changes in the spec before it.">仅对与另一个事务规范（通过 <a href="#state.Transaction.merge"><code>Transaction.merge</code></a> 或由 <a href="#state.Transaction.extender">扩展器</a> 返回）组合的规范有意义。通常，当规范组合时，<code>changes</code> 中的位置被视为引用初始文档中的文档位置。当规范的 <code>sequental</code> 设置为 true 时，其位置将被视为引用由该规范之前的变更所创建的文档。</p>
 </div>
 <pre class="refcode">}
 </pre>

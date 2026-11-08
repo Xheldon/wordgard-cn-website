@@ -1094,5 +1094,17 @@
   "When resolving your menu structure, you can either just take whatever items are available in the top group, or provide your own Menu.Template, which either specifies the entire structure explicitly or leaves some of the inner structure open to be constructed by resolving parent links.": {
     "_translate": "在<a href=\"../ref/#command.Menu.resolve\">解析</a>菜单结构时，您可以直接使用<a href=\"../ref/#command.Menu.Group.top\"><code>top</code></a>组中可用的所有项目，或者提供您自己的<a href=\"../ref/#command.Menu.Template\"><code>Menu.Template</code></a>，该模板可以显式指定整个结构，也可以将部分内部结构留空，以便通过解析父级链接来构建。",
     "_note": ""
+  },
+  "The things stored in a transaction are:": {
+    "_translate": "事务中存储的内容包括：",
+    "_note": ""
+  },
+  "A set of annotations, which are metadata that can be attached to a transaction. Will include the time at which the transaction was created, and often a user event tag.": {
+    "_translate": "一组<a href=\"../ref/#state.Transaction.annotation\">注解</a>，这些是可以附加到事务上的元数据。将包含事务创建时的<a href=\"../ref/#state.Transaction.time\">时间</a>，并且通常包含一个<a href=\"../ref/#state.Transaction.userEvent\">用户事件标签</a>。",
+    "_note": ""
+  },
+  "Such extension points are called facets, and are also featured heavily in the library's own interface. They are object that name the extension point, specify its type, allow code to provide input values, and make it possible to read the current value of the facet from a state.": {
+    "_translate": "此类扩展点被称为<a href=\"../ref/#state.GardState.Facet\">侧面（facets）</a>，并且在库自身的接口中也得到了广泛应用。它们是用于命名扩展点、指定其类型、允许代码<a href=\"../ref/#state.GardState.Facet.of\">提供</a>输入值，并使得能够从状态中<a href=\"../ref/#state.GardState.facet\">读取</a>该侧面当前值的对象。",
+    "_note": ""
   }
 }

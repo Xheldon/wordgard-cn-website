@@ -6110,5 +6110,9 @@
   "Get the value at the given position, if any. If there's multiple values at that position, the one with the lowest side is returned. If a predicate is given, only points that satisfy it are returned.": {
     "_translate": "获取给定位置的值（如果存在）。如果该位置有多个值，则返回具有最低侧的值。如果提供了谓词，则仅返回满足该谓词的点。",
     "_note": ""
+  },
+  "Only meaningful for specs that are combined with another transaction spec (via Transaction.merge or by being returned from an extender. Normally, when specs are combined, the positions in changes are taken to refer to the document positions in the initial document. When a spec has sequental set to true, its positions will be taken to refer to the document created by the changes in the spec before it.": {
+    "_translate": "仅对与另一个事务规范（通过 <a href=\"#state.Transaction.merge\"><code>Transaction.merge</code></a> 或由 <a href=\"#state.Transaction.extender\">扩展器</a> 返回）组合的规范有意义。通常，当规范组合时，<code>changes</code> 中的位置被视为引用初始文档中的文档位置。当规范的 <code>sequental</code> 设置为 true 时，其位置将被视为引用由该规范之前的变更所创建的文档。",
+    "_note": ""
   }
 }
