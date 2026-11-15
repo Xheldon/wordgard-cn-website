@@ -5,6 +5,7 @@ import { findClusterBreak } from '@marijn/find-cluster-break';
 import { Alignment, Direction, Emphasis, Strong, Underline } from 'wordgard/types';
 
 const commandHandler = /*@__PURE__*/GardState.Facet.define({
+    name: "commandHandler",
     combine(handlers) {
         let map = new Map();
         for (let [cmd, handler] of handlers) {
@@ -45,12 +46,27 @@ const Command = /*@__PURE__*/(function (Command) {
     Command.dispatch = dispatch;
 ;return Command})({});
 
-function liftEmptyBlock(state) {
+function liftEmptyBlock(state, splitListItem = true) {
     if (!state.selection.isCursor)
         return false;
     let sel = state.sel, block = sel.head.textblockParent;
     if (!block || !sel.head.isAtStart(block) || !sel.head.isAtEnd(block))
         return false;
+    if (splitListItem && block.parent?.parent && block.index && block.parent.parent.node.type.hasRole(Node.Role.List))
+        return {
+            changes: { from: block.before, insert: [Plot.End, block.parent.node.tag] },
+            scrollIntoView: true,
+            userEvent: "split.list"
+        };
+    return liftBlock(state, block);
+}
+function liftTextblock(state) {
+    if (!state.selection.isCursor)
+        return false;
+    let { head } = state.sel, block = head.textblockParent;
+    return !block || !head.isAtStart(block) ? false : liftBlock(state, block);
+}
+function liftBlock(state, block) {
     let start = block.before, end = block.after, before = [], after = [];
     for (let level = block.parent, index = block.index, atStart = true, atEnd = true, first = true; level; first = false, index = level.index, level = level.parent) {
         if (!first && state.schema.canContain(level.node.type, block.node.type))
@@ -60,7 +76,7 @@ function liftEmptyBlock(state) {
                     { from: block.after, to: end, insert: after }
                 ],
                 scrollIntoView: true,
-                userEvent: "unwrap.empty"
+                userEvent: "unwrap"
             };
         if (level.node.isInline || level.node.type.isolating)
             break;
@@ -792,8 +808,8 @@ const deleteUnit = ({ state }, dir) => {
     if (state.readOnly)
         return false;
     return deleteSelection(state) || (dir == "forward"
-        ? joinForward(state) || deleteForward(state) || deleteEmptyPlot(state, 1)
-        : joinListItems(state) || joinBackward(state) || deleteBackward(state) || deleteEmptyPlot(state, -1));
+        ? joinForward(state) || deleteEmptyPlot(state, 1) || deleteForward(state)
+        : joinListItems(state) || liftTextblock(state) || joinBackward(state) || deleteEmptyPlot(state, -1) || deleteBackward(state));
 };
 const deleteWord = ({ state }, dir) => {
     if (state.readOnly)
@@ -819,8 +835,9 @@ const deleteToLineEnd = (wg, dir) => {
         userEvent: "delete." + dir
     };
 };
-const addToKillBuffer = /*@__PURE__*/Transaction.Effect.define();
+const addToKillBuffer = /*@__PURE__*/Transaction.Effect.define({ name: "addToKillBuffer" });
 const killBuffer = /*@__PURE__*/GardState.Field.define({
+    name: "killBuffer",
     create() { return { content: [], active: false }; },
     update(value, tr) {
         let add = tr.effects.find(e => e.is(addToKillBuffer));
@@ -1303,9 +1320,10 @@ const Menu = /*@__PURE__*/(function (Menu) {
                 let src = Menu.Item.source.of(this);
                 this.extension = this.parent ? [src, this.parent] : src;
             }
+            toString() { return "Menu.Item"; }
         }
         Item.Base = Base;
-        Item.source = GardState.Facet.define();
+        Item.source = GardState.Facet.define({ name: "menuItem" });
     })(Item = Menu.Item || (Menu.Item = {}));
     class Button extends Item.Base {
         spec;
@@ -1380,6 +1398,7 @@ const Menu = /*@__PURE__*/(function (Menu) {
         template(...content) {
             return Template.new(this, content.length ? content : ["..."]);
         }
+        toString() { return "Menu.Group"; }
     }
     Menu.Group = Group;
     (function (Group) {
@@ -1541,4 +1560,4 @@ const Menu = /*@__PURE__*/(function (Menu) {
     Menu.resolve = resolve;
 ;return Menu})({});
 
-export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, enterInCode, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, killToLineEnd, liftEmptyBlock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange, yankKilled };
+export { Command, Menu, autoJoinBlocks, canAddMarkInRange, clearNonFitting, deleteBackward, deleteEmptyPlot, deleteForward, deleteLine, deleteSelection, deleteToLineEnd, deleteUnit, deleteWord, doUnwrapBlock, enter, enterInCode, findUnwrappable, findWrappable, insertLineBreak, insertText, joinBackward, joinBlocks, joinForward, joinListItems, killToLineEnd, liftEmptyBlock, liftTextblock, listIsActive, moveByLine, moveByPage, moveByUnit, moveByWord, moveToDocSide, moveToLineSide, moveToTextblockSide, redo, selectAll, selectedTextblocks, setAlignment, setDirection, setTextblockType, splitTextblock, toggleBlock, toggleEmphasis, toggleList, toggleMark, toggleStrong, toggleUnderline, transposeChars, undo, unwrapBlock, wrapBlock, wrapBlockRange, yankKilled };

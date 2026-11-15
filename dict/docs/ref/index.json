@@ -6114,5 +6114,181 @@
   "Only meaningful for specs that are combined with another transaction spec (via Transaction.merge or by being returned from an extender. Normally, when specs are combined, the positions in changes are taken to refer to the document positions in the initial document. When a spec has sequental set to true, its positions will be taken to refer to the document created by the changes in the spec before it.": {
     "_translate": "仅对与另一个事务规范（通过 <a href=\"#state.Transaction.merge\"><code>Transaction.merge</code></a> 或由 <a href=\"#state.Transaction.extender\">扩展器</a> 返回）组合的规范有意义。通常，当规范组合时，<code>changes</code> 中的位置被视为引用初始文档中的文档位置。当规范的 <code>sequental</code> 设置为 true 时，其位置将被视为引用由该规范之前的变更所创建的文档。",
     "_note": ""
+  },
+  "This group's debug name.": {
+    "_translate": "该组的调试名称。",
+    "_note": ""
+  },
+  "This role's name.": {
+    "_translate": "此角色的名称。",
+    "_note": ""
+  },
+  "Clip the set to only a sub-region. This can fail if there are replacements across the region's sides, in which case the method returns null": {
+    "_translate": "将集合裁剪为仅包含子区域。如果存在跨越区域边界的替换，此操作可能会失败，此时方法将返回 null。",
+    "_note": ""
+  },
+  "The field's debugging name, if given.": {
+    "_translate": "如果已提供，则为该字段的调试名称。",
+    "_note": ""
+  },
+  "An optional name to associate with this field for debugging purposes.": {
+    "_translate": "一个可选的名称，用于调试目的与此字段关联。",
+    "_note": ""
+  },
+  "This field's debugging name, if given.": {
+    "_translate": "如果已提供，此字段的调试名称。",
+    "_note": ""
+  },
+  "An optional debugging name for this field.": {
+    "_translate": "此字段的可选调试名称。",
+    "_note": ""
+  },
+  "Return the extent of the word around the given position, as a text selection, or null if there is no word there.": {
+    "_translate": "返回给定位置周围单词的范围，作为文本选择；如果该位置没有单词，则返回 null。",
+    "_note": ""
+  },
+  "And optional name, to recognize the facet when debugging.": {
+    "_translate": "以及可选的名称，用于在调试时识别该面。",
+    "_note": ""
+  },
+  "The compartment's debugging name, if given.": {
+    "_translate": "如果已提供，则为隔间的调试名称。",
+    "_note": ""
+  },
+  "The annotations on this transaction.": {
+    "_translate": "此交易的注释。",
+    "_note": ""
+  },
+  "This type's debug name.": {
+    "_translate": "此类型的调试名称。",
+    "_note": ""
+  },
+  "The debug name of this effect.": {
+    "_translate": "此效果的调试名称。",
+    "_note": ""
+  },
+  "An optional debug name to assign to this effect.": {
+    "_translate": "为此效果分配的可选调试名称。",
+    "_note": ""
+  },
+  "The facet's debug name.": {
+    "_translate": "该刻面的调试名称。",
+    "_note": ""
+  },
+  "Because the selectors are prefixed, rules that directly match the editor's wrapper element (to which the scope class will be added) need to be explicitly differentiated by adding an & to the selector for that element—for example &.wg-focused.": {
+    "_translate": "由于选择器带有前缀，直接匹配编辑器<a href=\"#editor.Wordgard.dom\">包装元素</a>（将向其添加作用域类）的规则需要通过为该元素的选择器添加<code>&amp;</code>来明确区分——例如<code>&amp;.wg-focused</code>。",
+    "_note": ""
+  },
+  "Perform a paste with the given content. This will run paste handlers and, if none handles the paste, fall back to the default handling.": {
+    "_translate": "使用给定内容执行粘贴操作。这将运行<a href=\"#editor.Wordgard.pasteHandler\">粘贴处理器</a>，如果没有任何处理器处理该粘贴，则回退到默认处理。",
+    "_note": ""
+  },
+  "Given a DOM element that may be a Wordgard editor, retrieve its editor instance.": {
+    "_translate": "给定一个可能是 Wordgard 编辑器的 DOM 元素，获取其编辑器实例。",
+    "_note": ""
+  },
+  "If the cursor is in an empty textblock that can be lifted out of a parent, return a transaction that does this. Unless splitListItem is set to false, if the block is part of a continued list item, this function will split the item above the block before it lifts it.": {
+    "_translate": "如果光标位于一个可以从父节点中提升出来的空文本块中，则返回执行此操作的事务。除非将 <code>splitListItem</code> 设置为 false，否则如果该块是延续列表项的一部分，此函数会在提升该块之前，先将其上方的列表项拆分。",
+    "_note": ""
+  },
+  "Lift the textblock that the cursor is at the start of out of its innermost parent, if possible.": {
+    "_translate": "如果可能，将光标所在文本块从其最内层父级中提升出来。",
+    "_note": ""
+  },
+  "Enable support for bullet lists. Includes the schema elements, the menu button, and the bulletList.createOnDash/bulletList.createOnAsterisk input rules.": {
+    "_translate": "启用对无序列表的支持。包括模式元素、<a href=\"#schema.bulletList.toggleButton\">菜单按钮</a>，以及 <a href=\"#schema.bulletList.createOnDash\"><code>bulletList.createOnDash</code></a>/<a href=\"#schema.bulletList.createOnAsterisk\"><code>bulletList.createOnAsterisk</code></a> 输入规则。",
+    "_note": ""
+  },
+  "Delete the selection, or the unit after or before the selection. If that unit is the start or end of a textblock, this will try to join that textblock to the next one. Otherwise, if the cursor is in an empty textblock, this will delete the textblock. Finally, if there is a character or leaf node in the given direction, that is deleted.": {
+    "_translate": "删除选区，或选区之后或之前的单元。如果该单元是文本块的开头或结尾，此操作将尝试将该文本块与下一个文本块合并。否则，如果光标位于空文本块中，此操作将删除该文本块。最后，如果给定方向上存在字符或叶节点，则将其删除。",
+    "_note": ""
+  },
+  "This rule wraps the current textblock in a bullet list when the user starts it by typing an optional space, an asterisk, and then a space.": {
+    "_translate": "当用户以可选空格、星号后跟空格开始输入时，此规则会将当前文本块包装为项目符号列表。",
+    "_note": ""
+  },
+  "This rule wraps the current textblock in a bullet list when the user starts it by typing an optional space, a dash, and then a space.": {
+    "_translate": "当用户以可选空格、连字符和空格开头时，此规则会将当前文本块包装为项目符号列表。",
+    "_note": ""
+  },
+  "A table map describes the structore of a given table.": {
+    "_translate": "表映射描述了给定表的结构。",
+    "_note": ""
+  },
+  "Get a table map for the given table node. Will reuse known structure of unchanged tables across document changes.": {
+    "_translate": "获取给定表格节点的表格映射。将在文档更改过程中重用未更改表格的已知结构。",
+    "_note": ""
+  },
+  "The number of columns in this table.": {
+    "_translate": "此表中的列数。",
+    "_note": ""
+  },
+  "The number of rows in the table.": {
+    "_translate": "表中的行数。",
+    "_note": ""
+  },
+  "The table plot.": {
+    "_translate": "表格图。",
+    "_note": ""
+  },
+  "The document position before the table.": {
+    "_translate": "表格之前的文档位置。",
+    "_note": ""
+  },
+  "Find the dimensions of the cell at the given position.": {
+    "_translate": "查找给定位置处的单元格尺寸。",
+    "_note": ""
+  },
+  "Find the end position of the given cell.": {
+    "_translate": "查找给定单元格的结束位置。",
+    "_note": ""
+  },
+  "Get the rectangle spanning the two given cells.": {
+    "_translate": "获取跨越两个给定单元格的矩形。",
+    "_note": ""
+  },
+  "Return the position of all cells that have their top start corner in the given rectangle.": {
+    "_translate": "返回所有左上角位于给定矩形内的单元格位置。",
+    "_note": ""
+  },
+  "Return the position of the cell that occupies the position at the given row and column (which must be in bounds for the table).": {
+    "_translate": "返回位于给定行和列（必须在表格范围内）的单元格的位置。",
+    "_note": ""
+  },
+  "The start position of the table's content.": {
+    "_translate": "表格内容的起始位置。",
+    "_note": ""
+  },
+  "Get the position where a cell would have to be inserted to appear at the given column and row.": {
+    "_translate": "获取单元格必须插入的位置，以便其出现在指定的列和行。",
+    "_note": ""
+  },
+  "Get the position at the start of the given row (which may be width to query the position after the last row).": {
+    "_translate": "获取给定行起始处的位置（该位置可以是 <code>width</code>，用于查询最后一行之后的位置）。",
+    "_note": ""
+  },
+  "Data type used for a rectangular area in a table.": {
+    "_translate": "用于表格中矩形区域的数据类型。",
+    "_note": ""
+  },
+  "Get the node for the cell at the given position.": {
+    "_translate": "获取给定位置处单元格的节点。",
+    "_note": ""
+  },
+  "Starting column of the rectangle.": {
+    "_translate": "矩形的起始列。",
+    "_note": ""
+  },
+  "Starting row.": {
+    "_translate": "开始行。",
+    "_note": ""
+  },
+  "The end column. Non-inclusive. Always higher than startCol.": {
+    "_translate": "结束列。不包含。始终大于<code>startCol</code>。",
+    "_note": ""
+  },
+  "The end row. Non-inclusive. Always higher than startRow.": {
+    "_translate": "结束行。不包含。始终大于 <code>startRow</code>。",
+    "_note": ""
   }
 }

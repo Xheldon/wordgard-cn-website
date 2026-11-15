@@ -93,7 +93,7 @@
         <a href="#history">wordgard/history</a></li><li>
         <a href="#types">wordgard/types</a><ul><li><a href="#h-block-structure">Block Structure</a></li><li><a href="#h-inline-structure">Inline Structure</a></li><li><a href="#h-images">Images</a></li><li><a href="#h-tables">Tables</a></li></ul></li><li>
         <a href="#schema">wordgard/schema</a><ul><li><a href="#h-block-structure">Block Structure</a></li><li><a href="#h-inline-structure">Inline Structure</a></li><li><a href="#h-images">Images</a></li><li><a href="#h-bundles">Bundles</a></li></ul></li><li>
-        <a href="#table">wordgard/table</a><ul><li><a href="#h-support">Support</a></li><li><a href="#h-cell-selection">Cell Selection</a></li><li><a href="#h-commands">Commands</a></li></ul></li><li>
+        <a href="#table">wordgard/table</a><ul><li><a href="#h-support">Support</a></li><li><a href="#h-cell-selection">Cell Selection</a></li><li><a href="#h-commands">Commands</a></li><li><a href="#h-map">Map</a></li></ul></li><li>
         <a href="#collab">wordgard/collab</a></li><li>
         <a href="#phrases">wordgard/phrases</a></li><li>
         <a href="#highlight-code">wordgard/highlight-code</a></li></ul>
@@ -442,7 +442,15 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Groups may have a parent group. Membership of a group implies membership of its parent groups.">组可以拥有父组。加入某个组即意味着同时加入其所有父组。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#doc.Node.Group.define" class="def" id="doc.Node.Group.define">define</a>(<a href="#doc.Node.Group.define.parent" class="def" id="doc.Node.Group.define.parent">parent</a>?: <a href="#doc.Node.Group" class="ref">Node.Group</a>): <a href="#doc.Node.Group" class="ref">Node.Group</a>
+<pre class="refcode">  <a href="#doc.Node.Group.name" class="def" id="doc.Node.Group.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="This group's debug name.">该组的调试名称。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#doc.Node.Group.define" class="def" id="doc.Node.Group.define">define</a>(<a href="#doc.Node.Group.define.spec" class="def" id="doc.Node.Group.define.spec">spec</a>: {
+    <a href="#doc.Node.Group.define.spec.parent" class="def" id="doc.Node.Group.define.spec.parent">parent</a>?: <a href="#doc.Node.Group" class="ref">Node.Group</a>,
+    <a href="#doc.Node.Group.define.spec.name" class="def" id="doc.Node.Group.define.spec.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+  } = {}): <a href="#doc.Node.Group" class="ref">Node.Group</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Define a custom node group.">定义自定义节点组。</p>
@@ -510,7 +518,12 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Roles are used to add some semantic information to node types. You can define your own, and use the hasRole method to check whether a given node has the role attached.">角色用于为节点类型添加一些语义信息。您可以定义自己的角色，并使用 <code>hasRole</code> 方法来检查给定节点是否附加了该角色。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#doc.Node.Role.define" class="def" id="doc.Node.Role.define">define</a>(): <a href="#doc.Node.Role" class="ref">Node.Role</a>
+<pre class="refcode">  <a href="#doc.Node.Role.name" class="def" id="doc.Node.Role.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="This role's name.">此角色的名称。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#doc.Node.Role.define" class="def" id="doc.Node.Role.define">define</a>(<a href="#doc.Node.Role.define.name" class="def" id="doc.Node.Role.define.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>): <a href="#doc.Node.Role" class="ref">Node.Role</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Define a new role.">定义一个新角色。</p>
@@ -1870,7 +1883,7 @@ addEventListener("load", function() {
 <pre class="refcode">  <a href="#doc.ChangeSet.clip" class="def" id="doc.ChangeSet.clip">clip</a>(<a href="#doc.ChangeSet.clip.from" class="def" id="doc.ChangeSet.clip.from">from</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#doc.ChangeSet.clip.to" class="def" id="doc.ChangeSet.clip.to">to</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#doc.ChangeSet" class="ref">ChangeSet</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="Clip the set to only a sub-region. This can fail, if there are replacements across the region's sides, in which case the method returns null">将集合裁剪为仅包含子区域。如果存在跨越区域边界的替换，此操作可能会失败，此时方法将返回 null。</p>
+<p data-x-en="Clip the set to only a sub-region. This can fail if there are replacements across the region's sides, in which case the method returns null">将集合裁剪为仅包含子区域。如果存在跨越区域边界的替换，此操作可能会失败，此时方法将返回 null。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#doc.ChangeSet.create" class="def" id="doc.ChangeSet.create">create</a>(<a href="#doc.ChangeSet.create.doc" class="def" id="doc.ChangeSet.create.doc">doc</a>: <a href="#doc.Plot.Doc" class="ref">Plot.Doc</a>, <a href="#doc.ChangeSet.create.spec" class="def" id="doc.ChangeSet.create.spec">spec</a>: <a href="#doc.ChangeSet.Spec" class="ref">ChangeSet.Spec</a>): <a href="#doc.ChangeSet" class="ref">ChangeSet</a>
 </pre>
@@ -2627,10 +2640,13 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Tells you whether a node type is an atom (a leaf or a plot with an atomic shape).">告诉您节点类型是否为原子（具有原子形状的叶节点或图）。</p>
 </div>
-<pre class="refcode">  <a href="#state.GardState.wordAt" class="def" id="state.GardState.wordAt">wordAt</a>(<a href="#state.GardState.wordAt.pos" class="def" id="state.GardState.wordAt.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#state.GardState.wordAt.bias" class="def" id="state.GardState.wordAt.bias">bias</a>: <span class="literal">1</span> | <span class="literal">-1</span> = 1): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a>
+<pre class="refcode">  <a href="#state.GardState.wordAt" class="def" id="state.GardState.wordAt">wordAt</a>(
+    <a href="#state.GardState.wordAt.pos" class="def" id="state.GardState.wordAt.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#state.GardState.wordAt.bias" class="def" id="state.GardState.wordAt.bias">bias</a>: <span class="literal">1</span> | <span class="literal">-1</span> = 1
+  ): <a href="#state.GardSelection.Text" class="ref">GardSelection.Text</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
 </pre>
 <div class="doc indent2">
-<p data-x-en="Return the extent of the word around the given position, as a text selection.">返回给定位置周围单词的范围，作为文本选择。</p>
+<p data-x-en="Return the extent of the word around the given position, as a text selection, or null if there is no word there.">返回给定位置周围单词的范围，作为文本选择；如果该位置没有单词，则返回 null。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardState.reconfigure" class="def" id="state.GardState.reconfigure">reconfigure</a>: <a href="#state.Transaction.Effect.Type" class="ref">Transaction.Effect.Type</a>&lt;
     <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
@@ -2694,6 +2710,11 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="Define a state field.">定义一个状态字段。</p>
 </div>
+<pre class="refcode">  <a href="#state.GardState.Field.name" class="def" id="state.GardState.Field.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The field's debugging name, if given.">如果已提供，则为该字段的调试名称。</p>
+</div>
 <pre class="refcode">  <a href="#state.GardState.Field.extension" class="def" id="state.GardState.Field.extension">extension</a>: <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>
 </pre>
 <div class="doc indent2">
@@ -2712,6 +2733,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="The options passed when defining a state field.">定义状态字段时传递的选项。</p>
+</div>
+<pre class="refcode">  <a href="#state.GardState.Field.Spec.name" class="def" id="state.GardState.Field.Spec.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="An optional name to associate with this field for debugging purposes.">一个可选的名称，用于调试目的与此字段关联。</p>
 </div>
 <pre class="refcode">  <a href="#state.GardState.Field.Spec.create" class="def" id="state.GardState.Field.Spec.create">create</a>: (<a href="#state.GardState.Field.Spec.create.state" class="def" id="state.GardState.Field.Spec.create.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>) =&gt; <a href="#state.GardState.Field.Spec.Value" class="ref">Value</a>
 </pre>
@@ -2754,10 +2780,20 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Define a field-like state slot that is computed from other slots in the state. Automatically tracks dependencies and only recomputes when one of the inputs accessed by the given function changes. Use field to read the value of such a field.">定义一个从状态中的其他槽位计算得出的类字段状态槽。它会自动跟踪依赖项，并且仅当给定函数访问的某个输入发生变化时才重新计算。使用 <a href="#state.GardState.field"><code>field</code></a> 来读取此类字段的值。</p>
 </div>
+<pre class="refcode">  <a href="#state.GardState.Field.Derived.name" class="def" id="state.GardState.Field.Derived.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="This field's debugging name, if given.">如果已提供，此字段的调试名称。</p>
+</div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardState.Field.Derived.define" class="def" id="state.GardState.Field.Derived.define">define</a>&lt;<a href="#state.GardState.Field.Derived.define.Value" class="def" id="state.GardState.Field.Derived.define.Value">Value</a>&gt;(
     <a href="#state.GardState.Field.Derived.define.compute" class="def" id="state.GardState.Field.Derived.define.compute">compute</a>: (<a href="#state.GardState.Field.Derived.define.compute.state" class="def" id="state.GardState.Field.Derived.define.compute.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>) =&gt; <a href="#state.GardState.Field.Derived.define.Value" class="ref">Value</a>,
     <a href="#state.GardState.Field.Derived.define.spec" class="def" id="state.GardState.Field.Derived.define.spec">spec</a>: {
 </pre>
+<pre class="refcode">      <a href="#state.GardState.Field.Derived.define.spec.name" class="def" id="state.GardState.Field.Derived.define.spec.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+</pre>
+<div class="doc indent4">
+<p data-x-en="An optional debugging name for this field.">此字段的可选调试名称。</p>
+</div>
 <pre class="refcode">      <a href="#state.GardState.Field.Derived.define.spec.compare" class="def" id="state.GardState.Field.Derived.define.spec.compare">compare</a>?: (<a href="#state.GardState.Field.Derived.define.spec.compare.a" class="def" id="state.GardState.Field.Derived.define.spec.compare.a">a</a>: <a href="#state.GardState.Field.Derived.define.Value" class="ref">Value</a>, <a href="#state.GardState.Field.Derived.define.spec.compare.b" class="def" id="state.GardState.Field.Derived.define.spec.compare.b">b</a>: <a href="#state.GardState.Field.Derived.define.Value" class="ref">Value</a>) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
 <div class="doc indent4">
@@ -2798,6 +2834,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="True when this is a static facet.">当这是一个静态面时，此值为真。</p>
+</div>
+<pre class="refcode">  <a href="#state.GardState.Facet.name" class="def" id="state.GardState.Facet.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The facet's debug name.">该刻面的调试名称。</p>
 </div>
 <pre class="refcode">  <a href="#state.GardState.Facet.reader" class="def" id="state.GardState.Facet.reader">reader</a>: <a href="#state.GardState.Facet.Reader" class="ref">GardState.Facet.Reader</a>&lt;<a href="#state.GardState.Facet.Output" class="ref">Output</a>&gt;
 </pre>
@@ -2853,6 +2894,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Options passed when defining a facet.">定义<a href="#state.GardState.Facet.define">facet</a>时传递的选项。</p>
+</div>
+<pre class="refcode">  <a href="#state.GardState.Facet.Spec.name" class="def" id="state.GardState.Facet.Spec.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="And optional name, to recognize the facet when debugging.">以及可选的名称，用于在调试时识别该面。</p>
 </div>
 <pre class="refcode">  <a href="#state.GardState.Facet.Spec.combine" class="def" id="state.GardState.Facet.Spec.combine">combine</a>?: (<a href="#state.GardState.Facet.Spec.combine.value" class="def" id="state.GardState.Facet.Spec.combine.value">value</a>: <span class="keyword">readonly</span> <a href="#state.GardState.Facet.Spec.Input" class="ref">Input</a>[]) =&gt; <a href="#state.GardState.Facet.Spec.Output" class="ref">Output</a>
 </pre>
@@ -2982,7 +3028,12 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Extension compartments can be used to make a configuration dynamic. By wrapping part of your configuration in a compartment, you can later replace that part through a transaction.">扩展隔间可用于使配置动态化。通过<a href="#state.GardState.Compartment.of">封装</a>配置的一部分到隔间中，您随后可以通过事务<a href="#state.GardState.Compartment.reconfigure">替换</a>该部分。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardState.Compartment.define" class="def" id="state.GardState.Compartment.define">define</a>(): <a href="#state.GardState.Compartment" class="ref">GardState.Compartment</a>
+<pre class="refcode">  <a href="#state.GardState.Compartment.name" class="def" id="state.GardState.Compartment.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The compartment's debugging name, if given.">如果已提供，则为隔间的调试名称。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#state.GardState.Compartment.define" class="def" id="state.GardState.Compartment.define">define</a>(<a href="#state.GardState.Compartment.define.name" class="def" id="state.GardState.Compartment.define.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>): <a href="#state.GardState.Compartment" class="ref">GardState.Compartment</a>
 </pre>
 <div class="doc indent2">
 <p data-x-en="Define a new compartment.">定义一个新隔室。</p>
@@ -3066,6 +3117,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="The effects contained in this transaction.">本交易所包含的影响。</p>
+</div>
+<pre class="refcode">  <a href="#state.Transaction.annotations" class="def" id="state.Transaction.annotations">annotations</a>: <span class="keyword">readonly</span> <a href="#state.Transaction.Annotation" class="ref">Transaction.Annotation</a>&lt;<a class="prim" href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#any">any</a>&gt;[]
+</pre>
+<div class="doc indent2">
+<p data-x-en="The annotations on this transaction.">此交易的注释。</p>
 </div>
 <pre class="refcode">  <a href="#state.Transaction.scrollIntoView" class="def" id="state.Transaction.scrollIntoView">scrollIntoView</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>
 </pre>
@@ -3209,7 +3265,7 @@ addEventListener("load", function() {
 <div class="doc indent2">
 <p data-x-en="The value of this annotation.">此注解的值。</p>
 </div>
-<pre class="refcode">  <span class="keyword">static</span> <a href="#state.Transaction.Annotation.define" class="def" id="state.Transaction.Annotation.define">define</a>&lt;<a href="#state.Transaction.Annotation.define.T" class="def" id="state.Transaction.Annotation.define.T">T</a>&gt;(): <a href="#state.Transaction.Annotation.Type" class="ref">Transaction.Annotation.Type</a>&lt;<a href="#state.Transaction.Annotation.define.T" class="ref">T</a>&gt;
+<pre class="refcode">  <span class="keyword">static</span> <a href="#state.Transaction.Annotation.define" class="def" id="state.Transaction.Annotation.define">define</a>&lt;<a href="#state.Transaction.Annotation.define.T" class="def" id="state.Transaction.Annotation.define.T">T</a>&gt;(<a href="#state.Transaction.Annotation.define.name" class="def" id="state.Transaction.Annotation.define.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>): <a href="#state.Transaction.Annotation.Type" class="ref">Transaction.Annotation.Type</a>&lt;<a href="#state.Transaction.Annotation.define.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="Define a new type of annotation.">定义一种新的注释类型。</p>
@@ -3223,6 +3279,11 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Marker that identifies a type of annotation.">用于标识<a href="#state.Transaction.Annotation">注解</a>类型的标记。</p>
 </div>
+<pre class="refcode">  <a href="#state.Transaction.Annotation.Type.name" class="def" id="state.Transaction.Annotation.Type.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="This type's debug name.">此类型的调试名称。</p>
+</div>
 <pre class="refcode">  <a href="#state.Transaction.Annotation.Type.of" class="def" id="state.Transaction.Annotation.Type.of">of</a>(<a href="#state.Transaction.Annotation.Type.of.value" class="def" id="state.Transaction.Annotation.Type.of.value">value</a>: <a href="#state.Transaction.Annotation.Type.T" class="ref">T</a>): <a href="#state.Transaction.Annotation" class="ref">Transaction.Annotation</a>&lt;<a href="#state.Transaction.Annotation.Type.T" class="ref">T</a>&gt;
 </pre>
 <div class="doc indent2">
@@ -3231,8 +3292,6 @@ addEventListener("load", function() {
 <pre class="refcode">}
 </pre>
 </section>
-<pre class="refcode"><a href="#state.Transaction.foo" class="def" id="state.Transaction.foo">Transaction.foo</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
-</pre>
 <pre class="refcode"><a href="#state.Transaction.time" class="def" id="state.Transaction.time">Transaction.time</a>: <a href="#state.Transaction.Annotation.Type" class="ref">Transaction.Annotation.Type</a>&lt;<a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>&gt;
 </pre>
 <div class="doc indent1">
@@ -3336,6 +3395,11 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="A type of state effect. Defined with Transaction.Effect.define.">一种状态效果类型。通过 <a href="#state.Transaction.Effect.define"><code>Transaction.Effect.define</code></a> 定义。</p>
 </div>
+<pre class="refcode">  <a href="#state.Transaction.Effect.Type.name" class="def" id="state.Transaction.Effect.Type.name">name</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The debug name of this effect.">此效果的调试名称。</p>
+</div>
 <pre class="refcode">  <a href="#state.Transaction.Effect.Type.of" class="def" id="state.Transaction.Effect.Type.of">of</a>(<a href="#state.Transaction.Effect.Type.of.value" class="def" id="state.Transaction.Effect.Type.of.value">value</a>: <a href="#state.Transaction.Effect.Type.Value" class="ref">Value</a>): <a href="#state.Transaction.Effect" class="ref">Transaction.Effect</a>&lt;<a href="#state.Transaction.Effect.Type.Value" class="ref">Value</a>&gt;
 </pre>
 <div class="doc indent2">
@@ -3349,6 +3413,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent1">
 <p data-x-en="Options passed when defining an effect.">定义效果时传递的选项。</p>
+</div>
+<pre class="refcode">  <a href="#state.Transaction.Effect.Spec.name" class="def" id="state.Transaction.Effect.Spec.name">name</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="An optional debug name to assign to this effect.">为此效果分配的可选调试名称。</p>
 </div>
 <pre class="refcode">  <a href="#state.Transaction.Effect.Spec.map" class="def" id="state.Transaction.Effect.Spec.map">map</a>?: (<a href="#state.Transaction.Effect.Spec.map.value" class="def" id="state.Transaction.Effect.Spec.map.value">value</a>: <a href="#state.Transaction.Effect.Spec.Value" class="ref">Value</a>, <a href="#state.Transaction.Effect.Spec.map.mapping" class="def" id="state.Transaction.Effect.Spec.map.mapping">mapping</a>: <a href="#doc.ChangeSet" class="ref">ChangeSet</a>) =&gt; <a href="#state.Transaction.Effect.Spec.Value" class="ref">Value</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined">undefined</a>
 </pre>
@@ -4135,12 +4204,19 @@ addEventListener("load", function() {
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.pasteHandler" class="def" id="editor.Wordgard.pasteHandler">pasteHandler</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
     <a href="#editor.Wordgard.pasteHandler.wg" class="def" id="editor.Wordgard.pasteHandler.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>,
-    <a href="#editor.Wordgard.pasteHandler.event" class="def" id="editor.Wordgard.pasteHandler.event">event</a>: <span class="ref">InputEvent</span>,
-    <a href="#editor.Wordgard.pasteHandler.slice" class="def" id="editor.Wordgard.pasteHandler.slice">slice</a>: <a href="#doc.Slice" class="ref">Slice</a>
+    <a href="#editor.Wordgard.pasteHandler.event" class="def" id="editor.Wordgard.pasteHandler.event">event</a>: <a class="ref" href="https://developer.mozilla.org/en-US/docs/Web/API/ClipboardEvent">ClipboardEvent</a>,
+    <a href="#editor.Wordgard.pasteHandler.slice" class="def" id="editor.Wordgard.pasteHandler.slice">slice</a>: <a href="#doc.Slice" class="ref">Slice</a>,
+    <a href="#editor.Wordgard.pasteHandler.html" class="def" id="editor.Wordgard.pasteHandler.html">html</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>,
+    <a href="#editor.Wordgard.pasteHandler.text" class="def" id="editor.Wordgard.pasteHandler.text">text</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>
   ) =&gt; <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a>&gt;
 </pre>
 <div class="doc indent2">
 <p data-x-en="Facet that allows you to register handlers to override paste behavior.">允许您注册处理程序以覆盖粘贴行为的 Facet。</p>
+</div>
+<pre class="refcode">  <a href="#editor.Wordgard.paste" class="def" id="editor.Wordgard.paste">paste</a>(<a href="#editor.Wordgard.paste.html" class="def" id="editor.Wordgard.paste.html">html</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>, <a href="#editor.Wordgard.paste.text" class="def" id="editor.Wordgard.paste.text">text</a>?: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">string</a>)
+</pre>
+<div class="doc indent2">
+<p data-x-en="Perform a paste with the given content. This will run paste handlers and, if none handles the paste, fall back to the default handling.">使用给定内容执行粘贴操作。这将运行<a href="#editor.Wordgard.pasteHandler">粘贴处理器</a>，如果没有任何处理器处理该粘贴，则回退到默认处理。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.dropHandler" class="def" id="editor.Wordgard.dropHandler">dropHandler</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;(
     <a href="#editor.Wordgard.dropHandler.wg" class="def" id="editor.Wordgard.dropHandler.wg">wg</a>: <a href="#editor.Wordgard" class="ref">Wordgard</a>,
@@ -4250,7 +4326,7 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Create a theme extension. The first argument can be a style-mod style spec providing the styles for the theme. These will be prefixed with a generated scope class.">创建一个主题扩展。第一个参数可以是一个提供主题样式的<a href="https://github.com/marijnh/style-mod#documentation"><code>style-mod</code></a>样式规范。这些样式将以前缀生成的作用域类名。</p>
-<p data-x-en="Because the selectors are prefixed, rules that directly match the editor's wrapper element (to which the scope class will be added) need to be explicitly differentiated by adding an &amp; to the selector for that element—for example &amp;:has(wg-content:focus).">由于选择器带有前缀，直接匹配编辑器<a href="#editor.Wordgard.dom">包装元素</a>（将向其添加作用域类）的规则需要通过为该元素的选择器添加<code>&amp;</code>来明确区分——例如<code>&amp;:has(wg-content:focus)</code>。</p>
+<p data-x-en="Because the selectors are prefixed, rules that directly match the editor's wrapper element (to which the scope class will be added) need to be explicitly differentiated by adding an &amp; to the selector for that element—for example &amp;.wg-focused.">由于选择器带有前缀，直接匹配编辑器<a href="#editor.Wordgard.dom">包装元素</a>（将向其添加作用域类）的规则需要通过为该元素的选择器添加<code>&amp;</code>来明确区分——例如<code>&amp;.wg-focused</code>。</p>
 </div>
 <pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.colorScheme" class="def" id="editor.Wordgard.colorScheme">colorScheme</a>: <a href="#state.GardState.Facet" class="ref">GardState.Facet</a>&lt;
     <span class="literal">"dark"</span> | <span class="literal">"light"</span> | <span class="literal">"auto"</span>,
@@ -4306,6 +4382,11 @@ addEventListener("load", function() {
 </pre>
 <div class="doc indent2">
 <p data-x-en="Facet that allows extensions to indicate that some amount of space around the sides of the scrolling element should be considered blocked from view when scrolling something into view. This is only used by plugins that introduce elements that cover part of the editor (for example a gutter).">一个 Facet，允许扩展指示在将某个元素滚动至可视区域时，滚动元素两侧的一定范围应被视为被遮挡。此功能仅由那些引入覆盖编辑器部分区域（例如边距栏）的元素的插件使用。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#editor.Wordgard.findFromDOM" class="def" id="editor.Wordgard.findFromDOM">findFromDOM</a>(<a href="#editor.Wordgard.findFromDOM.elt" class="def" id="editor.Wordgard.findFromDOM.elt">elt</a>: <a class="ref" href="https://developer.mozilla.org/en/docs/DOM/Element">Element</a>): <a href="#editor.Wordgard" class="ref">Wordgard</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Given a DOM element that may be a Wordgard editor, retrieve its editor instance.">给定一个可能是 Wordgard 编辑器的 DOM 元素，获取其编辑器实例。</p>
 </div>
 <pre class="refcode">}
 </pre>
@@ -6557,7 +6638,7 @@ addEventListener("load", function() {
 <pre class="refcode"><a href="#command.deleteUnit" class="def" id="command.deleteUnit">deleteUnit</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>&lt;<span class="literal">"forward"</span> | <span class="literal">"backward"</span>&gt;
 </pre>
 <div class="doc indent1">
-<p data-x-en="Delete the selection, or the unit after or before the selection. If that unit is the start or end of a textblock, this will try to join that textblock to the next one. Otherwise, if it is a character or leaf node, that is deleted. If none of that is possible and the cursor is in an empty textblock, this will delete the textblock.">删除选区，或选区之后或之前的单元。如果该单元是文本块的开头或结尾，系统将尝试将该文本块与下一个文本块合并。否则，如果它是字符或叶节点，则将其删除。如果上述操作均不可行且光标位于空文本块中，系统将删除该文本块。</p>
+<p data-x-en="Delete the selection, or the unit after or before the selection. If that unit is the start or end of a textblock, this will try to join that textblock to the next one. Otherwise, if the cursor is in an empty textblock, this will delete the textblock. Finally, if there is a character or leaf node in the given direction, that is deleted.">删除选区，或选区之后或之前的单元。如果该单元是文本块的开头或结尾，此操作将尝试将该文本块与下一个文本块合并。否则，如果光标位于空文本块中，此操作将删除该文本块。最后，如果给定方向上存在字符或叶节点，则将其删除。</p>
 <p data-x-en="When deleting backward at the start of a list item that has a sibling before it, this command will try to join those list items.">当在具有前一个兄弟元素的列表项开头向后删除时，此命令将尝试合并这些列表项。</p>
 </div>
 <pre class="refcode"><a href="#command.deleteWord" class="def" id="command.deleteWord">deleteWord</a>: <a href="#command.Command.Pure" class="ref">Command.Pure</a>&lt;<span class="literal">"forward"</span> | <span class="literal">"backward"</span>&gt;
@@ -6662,10 +6743,18 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="Returns true when all selected textblocks are wrapped in a list of the given type.">当所有选中的文本块都被包含在指定类型的列表中时，返回 true。</p>
 </div>
-<pre class="refcode"><a href="#command.liftEmptyBlock" class="def" id="command.liftEmptyBlock">liftEmptyBlock</a>(<a href="#command.liftEmptyBlock.state" class="def" id="command.liftEmptyBlock.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
+<pre class="refcode"><a href="#command.liftEmptyBlock" class="def" id="command.liftEmptyBlock">liftEmptyBlock</a>(
+  <a href="#command.liftEmptyBlock.state" class="def" id="command.liftEmptyBlock.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>,
+  <a href="#command.liftEmptyBlock.splitListItem" class="def" id="command.liftEmptyBlock.splitListItem">splitListItem</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">boolean</a> = true
+): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="If the cursor is in an empty textblock that can be lifted out of a parent, return a transaction that does this.">如果光标位于一个可以从父节点中提升出来的空文本块中，则返回执行此操作的事务。</p>
+<p data-x-en="If the cursor is in an empty textblock that can be lifted out of a parent, return a transaction that does this. Unless splitListItem is set to false, if the block is part of a continued list item, this function will split the item above the block before it lifts it.">如果光标位于一个可以从父节点中提升出来的空文本块中，则返回执行此操作的事务。除非将 <code>splitListItem</code> 设置为 false，否则如果该块是延续列表项的一部分，此函数会在提升该块之前，先将其上方的列表项拆分。</p>
+</div>
+<pre class="refcode"><a href="#command.liftTextblock" class="def" id="command.liftTextblock">liftTextblock</a>(<a href="#command.liftTextblock.state" class="def" id="command.liftTextblock.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>): <span class="literal">false</span> | <a href="#state.Transaction.Spec" class="ref">Transaction.Spec</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="Lift the textblock that the cursor is at the start of out of its innermost parent, if possible.">如果可能，将光标所在文本块从其最内层父级中提升出来。</p>
 </div>
 <pre class="refcode"><a href="#command.splitTextblock" class="def" id="command.splitTextblock">splitTextblock</a>(
   <a href="#command.splitTextblock.state" class="def" id="command.splitTextblock.state">state</a>: <a href="#state.GardState" class="ref">GardState</a>,
@@ -7247,12 +7336,17 @@ addEventListener("load", function() {
 <pre class="refcode">} = {}): <a href="#state.GardState.Extension" class="ref">GardState.Extension</a>[]
 </pre>
 <div class="doc indent1">
-<p data-x-en="Enable support for bullet lists. Includes the schema elements, the menu button, and the input rule.">启用对无序列表的支持。包括模式元素、<a href="#schema.bulletList.toggleButton">菜单按钮</a>以及<a href="#schema.bulletList.createOnDash">输入规则</a>。</p>
+<p data-x-en="Enable support for bullet lists. Includes the schema elements, the menu button, and the bulletList.createOnDash/bulletList.createOnAsterisk input rules.">启用对无序列表的支持。包括模式元素、<a href="#schema.bulletList.toggleButton">菜单按钮</a>，以及 <a href="#schema.bulletList.createOnDash"><code>bulletList.createOnDash</code></a>/<a href="#schema.bulletList.createOnAsterisk"><code>bulletList.createOnAsterisk</code></a> 输入规则。</p>
 </div>
 <pre class="refcode"><a href="#schema.bulletList.createOnDash" class="def" id="schema.bulletList.createOnDash">bulletList.createOnDash</a>: <a href="#editor.InputRule" class="ref">InputRule</a>
 </pre>
 <div class="doc indent1">
-<p data-x-en="This rule wraps the current textblock in a bullet list when the user starts it by typing an optional space, a dash, and then another space.">当用户以可选空格、一个连字符和另一个空格开始输入时，此规则会将当前文本块包装为项目符号列表。</p>
+<p data-x-en="This rule wraps the current textblock in a bullet list when the user starts it by typing an optional space, a dash, and then a space.">当用户以可选空格、连字符和空格开头时，此规则会将当前文本块包装为项目符号列表。</p>
+</div>
+<pre class="refcode"><a href="#schema.bulletList.createOnAsterisk" class="def" id="schema.bulletList.createOnAsterisk">bulletList.createOnAsterisk</a>: <a href="#editor.InputRule" class="ref">InputRule</a>
+</pre>
+<div class="doc indent1">
+<p data-x-en="This rule wraps the current textblock in a bullet list when the user starts it by typing an optional space, an asterisk, and then a space.">当用户以可选空格、星号后跟空格开始输入时，此规则会将当前文本块包装为项目符号列表。</p>
 </div>
 <pre class="refcode"><a href="#schema.bulletList.toggleButton" class="def" id="schema.bulletList.toggleButton">bulletList.toggleButton</a>: <a href="#command.Menu.Button" class="ref">Menu.Button</a>
 </pre>
@@ -7864,6 +7958,124 @@ addEventListener("load", function() {
 <div class="doc indent1">
 <p data-x-en="When the selection is in or on a merged cell, split it again. Any content is left in the first split-off cell.">当所选区域位于合并单元格内或之上时，再次拆分该单元格。所有内容将保留在拆分后的第一个单元格中。</p>
 </div>
+<div class="doc">
+<h3 id="h-map">Map</h3>
+</div>
+<section class="class">
+<pre class="refcode"><span class="keyword">class</span> <a href="#table.TableMap" class="def heading" id="table.TableMap">TableMap</a> {
+</pre>
+<div class="doc indent1">
+<p data-x-en="A table map describes the structore of a given table.">表映射描述了给定表的结构。</p>
+</div>
+<pre class="refcode">  <span class="keyword">static</span> <a href="#table.TableMap.get" class="def" id="table.TableMap.get">get</a>(<a href="#table.TableMap.get.table" class="def" id="table.TableMap.get.table">table</a>: <a href="#doc.Plot" class="ref">Plot</a>, <a href="#table.TableMap.get.start" class="def" id="table.TableMap.get.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#table.TableMap" class="ref">TableMap</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get a table map for the given table node. Will reuse known structure of unchanged tables across document changes.">获取给定表格节点的表格映射。将在文档更改过程中重用未更改表格的已知结构。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.start" class="def" id="table.TableMap.start">start</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The start position of the table's content.">表格内容的起始位置。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.width" class="def" id="table.TableMap.width">width</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The number of columns in this table.">此表中的列数。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.height" class="def" id="table.TableMap.height">height</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The number of rows in the table.">表中的行数。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.table" class="def" id="table.TableMap.table">table</a>: <a href="#doc.Plot" class="ref">Plot</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The table plot.">表格图。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.tablePos" class="def" id="table.TableMap.tablePos">tablePos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The document position before the table.">表格之前的文档位置。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.cellRect" class="def" id="table.TableMap.cellRect">cellRect</a>(<a href="#table.TableMap.cellRect.pos" class="def" id="table.TableMap.cellRect.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#table.TableMap.Rect" class="ref">TableMap.Rect</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Find the dimensions of the cell at the given position.">查找给定位置处的单元格尺寸。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.cellEnd" class="def" id="table.TableMap.cellEnd">cellEnd</a>(<a href="#table.TableMap.cellEnd.pos" class="def" id="table.TableMap.cellEnd.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Find the end position of the given cell.">查找给定单元格的结束位置。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.rectBetween" class="def" id="table.TableMap.rectBetween">rectBetween</a>(<a href="#table.TableMap.rectBetween.a" class="def" id="table.TableMap.rectBetween.a">a</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#table.TableMap.rectBetween.b" class="def" id="table.TableMap.rectBetween.b">b</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#table.TableMap.Rect" class="ref">TableMap.Rect</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get the rectangle spanning the two given cells.">获取跨越两个给定单元格的矩形。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.cellsInRect" class="def" id="table.TableMap.cellsInRect">cellsInRect</a>(<a href="#table.TableMap.cellsInRect.rect" class="def" id="table.TableMap.cellsInRect.rect">rect</a>: <a href="#table.TableMap.Rect" class="ref">TableMap.Rect</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>[]
+</pre>
+<div class="doc indent2">
+<p data-x-en="Return the position of all cells that have their top start corner in the given rectangle.">返回所有左上角位于给定矩形内的单元格位置。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.cellAt" class="def" id="table.TableMap.cellAt">cellAt</a>(<a href="#table.TableMap.cellAt.col" class="def" id="table.TableMap.cellAt.col">col</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#table.TableMap.cellAt.row" class="def" id="table.TableMap.cellAt.row">row</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a> | <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null">null</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Return the position of the cell that occupies the position at the given row and column (which must be in bounds for the table).">返回位于给定行和列（必须在表格范围内）的单元格的位置。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.rowPos" class="def" id="table.TableMap.rowPos">rowPos</a>(<a href="#table.TableMap.rowPos.row" class="def" id="table.TableMap.rowPos.row">row</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get the position at the start of the given row (which may be width to query the position after the last row).">获取给定行起始处的位置（该位置可以是 <code>width</code>，用于查询最后一行之后的位置）。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.cellInsertionPos" class="def" id="table.TableMap.cellInsertionPos">cellInsertionPos</a>(<a href="#table.TableMap.cellInsertionPos.col" class="def" id="table.TableMap.cellInsertionPos.col">col</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>, <a href="#table.TableMap.cellInsertionPos.row" class="def" id="table.TableMap.cellInsertionPos.row">row</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get the position where a cell would have to be inserted to appear at the given column and row.">获取单元格必须插入的位置，以便其出现在指定的列和行。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.getCell" class="def" id="table.TableMap.getCell">getCell</a>(<a href="#table.TableMap.getCell.pos" class="def" id="table.TableMap.getCell.pos">pos</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>): <a href="#doc.Plot" class="ref">Plot</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Get the node for the cell at the given position.">获取给定位置处单元格的节点。</p>
+</div>
+<pre class="refcode">}
+</pre>
+</section>
+<section class="class">
+<pre class="refcode"><span class="keyword">class</span> <a href="#table.TableMap.Rect" class="def heading" id="table.TableMap.Rect">TableMap.Rect</a> {
+</pre>
+<div class="doc indent1">
+<p data-x-en="Data type used for a rectangular area in a table.">用于表格中矩形区域的数据类型。</p>
+</div>
+<pre class="refcode">  <span class="keyword">new</span> <a href="#table.TableMap.Rect.constructor" class="def" id="table.TableMap.Rect.constructor">Rect</a>(
+    <a href="#table.TableMap.Rect.constructor.startCol" class="def" id="table.TableMap.Rect.constructor.startCol">startCol</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#table.TableMap.Rect.constructor.startRow" class="def" id="table.TableMap.Rect.constructor.startRow">startRow</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#table.TableMap.Rect.constructor.endCol" class="def" id="table.TableMap.Rect.constructor.endCol">endCol</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>,
+    <a href="#table.TableMap.Rect.constructor.endRow" class="def" id="table.TableMap.Rect.constructor.endRow">endRow</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+  )
+</pre>
+<pre class="refcode">  <a href="#table.TableMap.Rect.startCol" class="def" id="table.TableMap.Rect.startCol">startCol</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Starting column of the rectangle.">矩形的起始列。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.Rect.startRow" class="def" id="table.TableMap.Rect.startRow">startRow</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="Starting row.">开始行。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.Rect.endCol" class="def" id="table.TableMap.Rect.endCol">endCol</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The end column. Non-inclusive. Always higher than startCol.">结束列。不包含。始终大于<code>startCol</code>。</p>
+</div>
+<pre class="refcode">  <a href="#table.TableMap.Rect.endRow" class="def" id="table.TableMap.Rect.endRow">endRow</a>: <a class="prim" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">number</a>
+</pre>
+<div class="doc indent2">
+<p data-x-en="The end row. Non-inclusive. Always higher than startRow.">结束行。不包含。始终大于 <code>startRow</code>。</p>
+</div>
+<pre class="refcode">}
+</pre>
+</section>
 </section><hr class="floral">
   <section class="modsection">
     <h2><a class="def" href="#collab" id="collab">wordgard/collab</a></h2><div class="doc">

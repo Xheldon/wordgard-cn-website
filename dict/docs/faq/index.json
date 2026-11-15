@@ -94,5 +94,9 @@
   "Problems introduced by other platforms, browser wrappers (webviews, Electron, and similar) or obscure peripherals (input hardware, dodgy virtual keyboards) will be looked at on a case-by-case basis. If not too difficult to solve (and test), they will be addressed, but if not, they may be considered out of scope.": {
     "_translate": "由其他平台、浏览器封装器（如 WebViews、Electron 等）或冷门外设（输入硬件、不可靠的虚拟键盘）引发的问题，将视具体情况而定。如果解决和测试难度不大，我们将予以处理；否则，这些问题可能被视为超出范围。",
     "_note": ""
+  },
+  "This is my garden. You are welcome to report bugs, suggest improvements, or rage at my horrible design taste. But if you want to have functionality that I don't feel like building and maintaining, you're going to have to do that in a module of your own.": {
+    "_translate": "这是我的花园。欢迎您报告错误、提出改进建议，或对我糟糕的设计品味表示愤怒。但如果您希望拥有我不愿构建和维护的功能，那就请您在自己的模块中实现它。",
+    "_note": ""
   }
 }

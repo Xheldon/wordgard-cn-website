@@ -37,6 +37,7 @@ class CollabState {
     }
 }
 const collabConfig = /*@__PURE__*/GardState.Facet.define({
+    name: "collabConfig",
     combine(configs) {
         let combined = GardState.Facet.combineConfig(configs, {
             startVersion: 0,
@@ -52,12 +53,14 @@ const collabConfig = /*@__PURE__*/GardState.Facet.define({
     }
 });
 const collabReceive = /*@__PURE__*/Transaction.Effect.define({
+    name: "collabReceive",
     map(state, changes) {
         return changes.empty ? state
             : new CollabState(state.version, state.syncedDoc, state.nextUpdate, addUpdate(state.openUpdate, changes));
     }
 });
 const collabField = /*@__PURE__*/GardState.Field.define({
+    name: "collab",
     create(state) {
         return new CollabState(state.facet(collabConfig).startVersion, state.doc, null, null);
     },

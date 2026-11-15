@@ -5,18 +5,6 @@ import { Node, Slice, ValidationError, Token, ChangeSet } from 'wordgard/doc';
 import { Command, moveByUnit, moveByWord, moveByLine, moveToLineSide, Menu } from 'wordgard/command';
 import { tablePhrases } from 'wordgard/phrases';
 
-class Rect {
-    startCol;
-    startRow;
-    endCol;
-    endRow;
-    constructor(startCol, startRow, endCol,    endRow) {
-        this.startCol = startCol;
-        this.startRow = startRow;
-        this.endCol = endCol;
-        this.endRow = endRow;
-    }
-}
 class MapData {
     table;
     width;
@@ -37,7 +25,15 @@ let cache = /*@__PURE__*/(() => new WeakMap())();
 class TableMap {
     start;
     data;
-    constructor(start, data) {
+    static get(table, start) {
+        let data = cache.get(table);
+        if (!data)
+            cache.set(table, data = computeMap(table));
+        return new TableMap(start, data);
+    }
+    constructor(
+    start, 
+    data) {
         this.start = start;
         this.data = data;
     }
@@ -55,7 +51,7 @@ class TableMap {
                     endCol++;
                 for (let j = 1; endRow < height && map[i + (width * j)] == localPos; j++)
                     endRow++;
-                return new Rect(startCol, startRow, endCol, endRow);
+                return new TableMap.Rect(startCol, startRow, endCol, endRow);
             }
         throw new RangeError(`No cell with offset ${pos} found`);
     }
@@ -87,7 +83,7 @@ class TableMap {
     rectBetween(a, b) {
         let { startCol: startColA, endCol: endColA, startRow: startRowA, endRow: endRowA } = this.cellRect(a);
         let { startCol: startColB, endCol: endColB, startRow: startRowB, endRow: endRowB } = this.cellRect(b);
-        return new Rect(Math.min(startColA, startColB), Math.min(startRowA, startRowB), Math.max(endColA, endColB), Math.max(endRowA, endRowB));
+        return new TableMap.Rect(Math.min(startColA, startColB), Math.min(startRowA, startRowB), Math.max(endColA, endColB), Math.max(endRowA, endRowB));
     }
     cellsInRect(rect) {
         let result = [], { map, width } = this.data;
@@ -131,7 +127,7 @@ class TableMap {
     cellsOverlapRectangle(rect) {
         let { width, height, map } = this.data;
         let indexTop = rect.startRow * width + rect.startCol, indexBefore = indexTop;
-        let indexBottom = (rect.endRow - 1) * width + rect.endCol, indexAfter = indexTop + (rect.endCol - rect.startCol - 1);
+        let indexBottom = (rect.endRow - 1) * width + rect.startCol, indexAfter = indexTop + (rect.endCol - rect.startCol - 1);
         for (let i = rect.startRow; i < rect.endRow; i++) {
             if (rect.startCol > 0 && sameCell(map[indexBefore], map[indexBefore - 1]) ||
                 rect.endCol < width && sameCell(map[indexAfter], map[indexAfter + 1]))
@@ -148,13 +144,26 @@ class TableMap {
         }
         return false;
     }
-    static get(table, start) {
-        let data = cache.get(table);
-        if (!data)
-            cache.set(table, data = computeMap(table));
-        return new TableMap(start, data);
-    }
 }
+;TableMap = /*@__PURE__*/(function (TableMap) {
+    class Rect {
+        startCol;
+        startRow;
+        endCol;
+        endRow;
+        constructor(
+        startCol, 
+        startRow, 
+        endCol, 
+        endRow) {
+            this.startCol = startCol;
+            this.startRow = startRow;
+            this.endCol = endCol;
+            this.endRow = endRow;
+        }
+    }
+    TableMap.Rect = Rect;
+;return TableMap})(TableMap);
 function sameCell(a, b) {
     return a != 0 && a == b;
 }
@@ -227,6 +236,7 @@ function growMap(map, width, height, count) {
 }
 
 const cellSelectionDeco = /*@__PURE__*/GardState.Field.define({
+    name: "cellSelectionDeco",
     create: getCellDeco,
     update: (deco, tr) => {
         return tr.docChanged || tr.selection ? getCellDeco(tr.state) : deco;
@@ -1318,4 +1328,4 @@ function tables(config = {}) {
     tables.dropHandler = tableDropHandler;
 ;return tables})(tables);
 
-export { CellSelection, addColumn, addRow, deleteColumn, deleteRow, handleTablePaste, mergeCells, splitCell, tableMenu, tables, toggleHeaderCell };
+export { CellSelection, TableMap, addColumn, addRow, deleteColumn, deleteRow, handleTablePaste, mergeCells, splitCell, tableMenu, tables, toggleHeaderCell };

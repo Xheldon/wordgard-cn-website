@@ -249,10 +249,11 @@ function horizontalRule() {
 function bulletList(config = {}) {
     return [GardState.schemaElement.of(BulletList),
         GardState.schemaElement.of(config.blockItems == false ? InlineListItem : ListItem),
-        bulletList.toggleButton, bulletList.createOnDash];
+        bulletList.toggleButton, bulletList.createOnDash, bulletList.createOnAsterisk];
 }
 ;bulletList = /*@__PURE__*/(function (bulletList) {
     bulletList.createOnDash = InputRule.wrapping(/^ ?- $/, BulletList, true);
+    bulletList.createOnAsterisk = InputRule.wrapping(/^ ?\* $/, BulletList, true);
     bulletList.toggleButton = Menu.Button.define({
         run: Command.bind(toggleList, BulletList),
         active: listIsActive(BulletList),
@@ -365,6 +366,7 @@ const languageStyles = /*@__PURE__*/Wordgard.styles({
     }
 });
 const languageOptions = /*@__PURE__*/GardState.Facet.define({
+    name: "languageOptions",
     combine: input => {
         let options = [];
         for (let arr of input)
@@ -402,7 +404,8 @@ const languageWidget = /*@__PURE__*/Widget.define({
                     changes: value ? { from: pos - 1, add: CodeBlockLanguage.of(value) } :
                         { from: pos - 1, remove: CodeBlockLanguage.isInSet(block.tag.marks) }
                 });
-                wg.focus();
+                if (wg.root.activeElement == sel)
+                    wg.focus();
             }
         };
         return sel;
@@ -582,7 +585,7 @@ function subscript() {
     });
 ;return subscript})(subscript);
 
-const imageUploader = /*@__PURE__*/GardState.Facet.define();
+const imageUploader = /*@__PURE__*/GardState.Facet.define({ name: "imageUploader" });
 const imageTypes = [Image, Figure, CaptionedFigure];
 function activeImage(sel) {
     if (sel.selection instanceof GardSelection.Node && imageTypes.includes(sel.selection.node.type))
@@ -808,7 +811,7 @@ function figure(conf = {}) {
 function imageResizing() {
     return [GardState.schemaElement.of(ImageSize), imageResizing.keyBindings, imageResizing.dragHandle];
 }
-const resizeTheme = /*@__PURE__*/Wordgard.theme({
+const resizeStyle = /*@__PURE__*/Wordgard.styles({
     ".wg-resize-hover": {
         display: "inline-block",
         lineHeight: "0.1",
@@ -825,6 +828,7 @@ const resizeTheme = /*@__PURE__*/Wordgard.theme({
     }
 });
 const setResizing = /*@__PURE__*/Transaction.Effect.define({
+    name: "setImageResize",
     map: (value, mapping) => {
         let newPos = mapping.mapPos(value.target, 1, "after");
         return newPos == null ? undefined : { target: newPos, resizing: value.resizing };
@@ -836,6 +840,7 @@ const handleElt = /*@__PURE__*/(() => Elt.mk("svg:svg", { class: "wg-resize-hand
 ]))();
 const resizeWrapper = /*@__PURE__*/(() => Decoration.Point.wrapper(Elt.mk("span", { class: "wg-resize-hover" }, [handleElt, 0]), { target: "img" }))();
 const resizeState = /*@__PURE__*/GardState.Field.define({
+    name: "imageResize",
     create: () => ({ target: -1, resizing: -1, deco: Decoration.Point.none }),
     update: (value, tr) => {
         for (let e of tr.effects) {
@@ -936,7 +941,7 @@ const resizeHandlers = /*@__PURE__*/(() => [
         GardState.prec.high(resizeHandlers),
         resizeState,
         Decoration.Point.source.of(s => s.field(resizeState).deco),
-        resizeTheme
+        resizeStyle
     ];
 ;return imageResizing})(imageResizing);
 ;image = /*@__PURE__*/(function (image) {
@@ -1077,6 +1082,7 @@ class ColorPicker {
             }
             else if (e.key == " " || e.key == "Enter") {
                 this.finish(this.options[this.selPos].getAttribute("data-value"));
+                this.wg.focus();
             }
             else {
                 return;
@@ -1188,9 +1194,11 @@ class ColorPicker {
         ];
     }
     ColorPicker.width = GardState.Facet.define({
+        name: "colorPickerWidth",
         combine: values => values.length ? values[0] : 10
     });
     ColorPicker.options = GardState.Facet.define({
+        name: "colorPickerOptions",
         combine: values => values.length ? values[0] : defaultColors()
     });
     ColorPicker.theme = Wordgard.styles({
@@ -1222,7 +1230,6 @@ const colorPicker = /*@__PURE__*/Menu.CustomControl.define({
         return ColorPicker.create(wg, color => {
             done();
             setColor(wg, Color, color);
-            wg.focus();
         });
     }
 });
@@ -1250,7 +1257,6 @@ const backgroundPicker = /*@__PURE__*/Menu.CustomControl.define({
         return ColorPicker.create(wg, color => {
             done();
             setColor(wg, BackgroundColor, color);
-            wg.focus();
         });
     }
 });
@@ -1290,6 +1296,7 @@ function toggleLink(wg) {
         wg.dispatch({ changes: remove, userEvent: "mark.remove" });
     }
     else {
+        let oldFocus = wg.root.activeElement;
         Dialog.show(wg, {
             key: toggleLink,
             label: phrases.get(wg.state, "link_target"),
@@ -1300,7 +1307,10 @@ function toggleLink(wg) {
             closedBy: tr => !!tr.selection,
             tooltip: { pos: wg.state.selection.from }
         }).result.then(form => {
-            wg.focus();
+            if (oldFocus && wg.dom.ownerDocument.contains(oldFocus))
+                oldFocus.focus();
+            else
+                wg.focus();
             let url = form && form.elements.namedItem("url")?.value;
             if (url)
                 wg.dispatch({
@@ -1329,8 +1339,9 @@ function computeLinkTooltip(state) {
         create: () => renderLinkTooltip(link.value)
     };
 }
-const closeLinkTooltip = /*@__PURE__*/Transaction.Effect.define();
+const closeLinkTooltip = /*@__PURE__*/Transaction.Effect.define({ name: "closeLinkTooltip" });
 const linkTooltipField = /*@__PURE__*/GardState.Field.define({
+    name: "linkTooltip",
     create: computeLinkTooltip,
     update(value, tr) {
         if (tr.effects.some(e => e.is(closeLinkTooltip)))
@@ -1412,12 +1423,9 @@ function link() {
         })),
         linkTooltipTheme
     ];
-    link_1.pasteOver = Wordgard.pasteHandler.of((wg, event) => {
-        let { selection } = wg.state, data = event.dataTransfer;
-        if (!data || selection.empty)
-            return false;
-        let text = data.getData("text/plain") || data.getData("Text") || data.getData("text/uri-list");
-        if (!text || !/^(https?|mailto|xmpp|data):[^ ]+$/.test(text))
+    link_1.pasteOver = Wordgard.pasteHandler.of((wg, event, slice, html, text) => {
+        let { selection } = wg.state;
+        if (selection.empty || !/^(https?|mailto|xmpp|data):[^ ]+$/.test(text))
             return false;
         let link = Link.of(text);
         let changes = ChangeSet.create(wg.state.doc, { from: selection.from, to: selection.to, add: link });

@@ -4,6 +4,7 @@ import { Command, undo as undo$1, redo as redo$1, Menu } from 'wordgard/command'
 import { phrases } from 'wordgard/phrases';
 
 const fromHistory = /*@__PURE__*/Transaction.Effect.define({
+    name: "fromHistory",
     map(value, change) {
         return {
             side: value.side,
@@ -13,6 +14,7 @@ const fromHistory = /*@__PURE__*/Transaction.Effect.define({
     }
 });
 const historyConfig = /*@__PURE__*/GardState.Facet.define({
+    name: "historyConfig",
     combine(configs) {
         return GardState.Facet.combineConfig(configs, {
             minDepth: 100,
@@ -26,6 +28,7 @@ const historyConfig = /*@__PURE__*/GardState.Facet.define({
     }
 });
 const historyField_ = /*@__PURE__*/GardState.Field.define({
+    name: "history",
     create() {
         return new HistoryState(null, null);
     },
@@ -88,8 +91,10 @@ function history(config = {}) {
 }
 ;history = /*@__PURE__*/(function (history) {
     history.field = historyField_;
-    history.isolate = Transaction.Annotation.define();
-    history.invertedEffects = GardState.Facet.define();
+    history.isolate = Transaction.Annotation.define("historyIsolate");
+    history.invertedEffects = GardState.Facet.define({
+        name: "invertedEffects"
+    });
 ;return history})(history);
 const undo = ({ state }) => {
     let historyState = state.field(historyField_, false);

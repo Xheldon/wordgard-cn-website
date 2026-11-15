@@ -598,5 +598,137 @@
   "Fix a bug that would cause confused decoration handling when updating part of the document with multiple decoration sources.": {
     "_translate": "修复了一个在更新具有多个装饰源的部分文档时会导致装饰处理混乱的 bug。",
     "_note": ""
+  },
+  "Version 0.7.0 (2026-11-11)": {
+    "_translate": "版本 0.7.0（2026-11-11）",
+    "_note": ""
+  },
+  "Node.Group.define now takes a spec object (including an optional debug name) rather than just a parent group.": {
+    "_translate": "<code>Node.Group.define</code> 现在接受一个规范对象（包括可选的调试名称），而不仅仅是一个父组。",
+    "_note": ""
+  },
+  "GardState.wordAt can now return null when there is no word at the given position.": {
+    "_translate": "<code>GardState.wordAt</code> 现在可以在给定位置没有单词时返回 null。",
+    "_note": ""
+  },
+  "The event argument passed to pasteHandlers may now be null.": {
+    "_translate": "传递给 <code>pasteHandler</code> 的 <code>event</code> 参数现在可能为 null。",
+    "_note": ""
+  },
+  "Fix an issue where structure added at the side of a node but outside of its content element would be moved into the content element when the node's content was changed.": {
+    "_translate": "修复了一个问题：当节点的内容元素之外、节点侧边添加的结构在节点内容更改时会被移入内容元素。",
+    "_note": ""
+  },
+  "Don't crash if a content update changes that atomicity of a partially-replaced plot.": {
+    "_translate": "如果内容更新改变了部分替换图层的原子性，请勿崩溃。",
+    "_note": ""
+  },
+  "Fix an issue where pasting or dropping content could change the depth of the content after the change.": {
+    "_translate": "修复了一个粘贴或拖放内容可能导致更改后内容深度发生变化的问题。",
+    "_note": ""
+  },
+  "Make sure insertText doesn't create empty text nodes.": {
+    "_translate": "确保 <code>insertText</code> 不会创建空文本节点。",
+    "_note": ""
+  },
+  "Fix an issue in Wordgard.label that caused it to apply the label to the wrapper, not the editable element.": {
+    "_translate": "修复了 <code>Wordgard.label</code> 中的一个问题，该问题导致标签被应用到包装器而非可编辑元素上。",
+    "_note": ""
+  },
+  "Fix a crash in decoratePlots that occurred when multiple separate changes affected a decorated plot in a single transaction.": {
+    "_translate": "修复了 `decoratePlots` 中的一个崩溃问题，该问题发生在单个事务中多个独立更改影响装饰图时。",
+    "_note": ""
+  },
+  "Make Delete/Backspace in an empty plot delete the plot before it tries to delete the leaf before or after it.": {
+    "_translate": "在空图表中按下删除键或退格键时，应先删除该图表，然后再尝试删除其前或后的叶子节点。",
+    "_note": ""
+  },
+  "Improve the performance of ChangeSet.create when given a long sequence of changes in inverse (end-to-start of document) order.": {
+    "_translate": "当给定按逆序（从文档末尾到开头）排列的长变更序列时，提高 <code>ChangeSet.create</code> 的性能。",
+    "_note": ""
+  },
+  "liftEmptyBlock (and thus Enter when in an empty block) will now rejoin a split list item if the block is right after the split.": {
+    "_translate": "<code>liftEmptyBlock</code>（因此在空块中按 Enter 键）现在会在块位于拆分之后时重新连接已拆分的列表项。",
+    "_note": ""
+  },
+  "deleteUnit, when at the start of a wrapped textblock with direction \"backward\", will now first try to unwrap the textblock, before joining it to a previous one.": {
+    "_translate": "<code>deleteUnit</code> 在位于方向为 <code>\"backward\"</code> 的换行文本块开头时，现在将首先尝试取消换行该文本块，然后再将其与前面的文本块合并。",
+    "_note": ""
+  },
+  "Fix an issue where Decoration.Point.shape would drop the wrappers or attributes added by marks.": {
+    "_translate": "修复了一个问题，该问题会导致 <code>Decoration.Point.shape</code> 丢失由标记添加的包装器或属性。",
+    "_note": ""
+  },
+  "Fix a bug that caused DOM updates to consider attribute sets equal that aren't.": {
+    "_translate": "修复了一个导致 DOM 更新将不相等的属性集视为相等的错误。",
+    "_note": ""
+  },
+  "Fix an issue that caused widgets in the middle of a spanning node to be drawn after it.": {
+    "_translate": "修复了一个导致跨节点中间的部件在其之后绘制的问题。",
+    "_note": ""
+  },
+  "Fix an issue where updates that started or ended inside atomic nodes could emit spurious widgets.": {
+    "_translate": "修复了一个问题，该问题会导致在原子节点内开始或结束的更新发出虚假的组件。",
+    "_note": ""
+  },
+  "Fix a bug with partially updated atom nodes corrupting the view tile tree.": {
+    "_translate": "修复部分更新的原子节点损坏视图瓦片树的错误。",
+    "_note": ""
+  },
+  "Fix an issue in RangeSet.map where it would duplicate ranges with changes in their middle.": {
+    "_translate": "修复了 `RangeSet.map` 中的一个问题，该问题会导致中间发生变化的范围被重复。",
+    "_note": ""
+  },
+  "Fix an issue where pasting over a custom selection could incorrectly identify the paste as not targeting the selection.": {
+    "_translate": "修复了一个问题：在自定义选区上粘贴时，可能会错误地判定该粘贴操作未针对该选区。",
+    "_note": ""
+  },
+  "Fix invalid syntax in dist/index.js output.": {
+    "_translate": "修复 dist/index.js 输出中的无效语法。",
+    "_note": ""
+  },
+  "Fix Pos.parentAt to not always throw when .": {
+    "_translate": "修复 <code>Pos.parentAt</code>，使其不再总是抛出异常。",
+    "_note": ""
+  },
+  "Fix an issue where reconfiguring the event handlers only took effect when the plugin config also changed.": {
+    "_translate": "修复了一个问题：之前只有在插件配置也发生变化时，重新配置事件处理器才会生效。",
+    "_note": ""
+  },
+  "Fix a bug that prevented set-valued marks from being properly removed by change sets.": {
+    "_translate": "修复了一个导致集合值标记无法通过变更集正确移除的缺陷。",
+    "_note": ""
+  },
+  "Fix an issue where the openSingleQuote/openDoubleQuote input rules would delete the character before the quote.": {
+    "_translate": "修复了一个问题，该问题会导致 `openSingleQuote`/`openDoubleQuote` 输入规则删除引号前的字符。",
+    "_note": ""
+  },
+  "Fix an issue where double clicking between textblocks could create a block cursor there.": {
+    "_translate": "修复了在文本块之间双击时可能在该处创建块光标的问题。",
+    "_note": ""
+  },
+  "Fix a bug in range and point sets where creating a modified copy could mutate the original.": {
+    "_translate": "修复范围集和点集中创建修改副本时可能意外修改原始对象的 bug。",
+    "_note": ""
+  },
+  "Fix broken handling over boundary-overlapping changes in ChangeSet.clip.": {
+    "_translate": "修复 <code>ChangeSet.clip</code> 中对边界重叠变更的错误处理。",
+    "_note": ""
+  },
+  "PointSet.at now supports passing in a predicate to choose between multiple points at a given position.": {
+    "_translate": "<code>PointSet.at</code> 现在支持传入谓词，以便在给定位置选择多个点。",
+    "_note": ""
+  },
+  "wordgard/table now exports the TableMap class, which is used to work with a table's spatial shape.": {
+    "_translate": "wordgard/table 现在导出了 <code>TableMap</code> 类，该类用于处理表格的空间形状。",
+    "_note": ""
+  },
+  "Transaction.annotations (an array of annotations for the transaction) is now public.": {
+    "_translate": "<code>Transaction.annotations</code>（交易注释数组）现在已公开。",
+    "_note": ""
+  },
+  "Wordgard.findFromDOM can now be used to get an editor instance from the editor's DOM node.": {
+    "_translate": "<code>Wordgard.findFromDOM</code> 现在可用于从编辑器的 DOM 节点获取编辑器实例。",
+    "_note": ""
   }
 }

@@ -132,6 +132,7 @@ function joinRanges(ranges) {
     }
 }
 
+var Mark_ = Mark;
 class Widget {
     value;
     constructor(type, 
@@ -198,6 +199,7 @@ class Widget {
         render() {
             let img = document.createElement("img");
             img.className = "wg-buffer";
+            img.alt = "";
             return img;
         },
         editable: true
@@ -206,6 +208,7 @@ class Widget {
         render() {
             let img = document.createElement("img");
             img.className = "wg-blockBuffer";
+            img.alt = "";
             return img;
         },
         editable: true
@@ -286,15 +289,15 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         }
         Tag.attribute = attribute;
     })(Decoration.Tag || (Decoration.Tag = {}));
-    (function (Mark$1) {
+    (function (Mark) {
         function shape(type, shape) {
-            if (type instanceof Mark)
+            if (type instanceof Mark_)
                 type = type.type;
             if (type.spanning && !("element" in shape))
                 throw new Error("Spanning marks must have an element shape");
-            return markShape.of({ type, modified: Mark.Type.define(type.name, { ...type.spec, shape }) });
+            return markShape.of({ type, modified: Mark_.Type.define(type.name, { ...type.spec, shape }) });
         }
-        Mark$1.shape = shape;
+        Mark.shape = shape;
     })(Decoration.Mark || (Decoration.Mark = {}));
     class Point {
         constructor() { }
@@ -313,6 +316,7 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
             return new WrapperDecoration(wrapper, spec?.target ? Elt.Selector.parse(spec.target) : null);
         }
         static source = GardState.Facet.define({
+            name: "pointDecorations",
             combine: sources => sources.concat(nodeSelection)
         });
         static set(source) { return PointSet.create(source); }
@@ -337,19 +341,21 @@ const Decoration = /*@__PURE__*/(function (Decoration) {
         static attribute(attr, value, options = {}) {
             return new AttributeRangeDecoration(attr, value, options);
         }
-        static source = GardState.Facet.define();
+        static source = GardState.Facet.define({ name: "rangeDecorations" });
         static set(source) { return RangeSet.create(source); }
         static none = RangeSet.empty;
     }
     Decoration.Range = Range;
 ;return Decoration})({});
 const tagShape = /*@__PURE__*/GardState.Facet.define({
+    name: "tagShape",
     combine: shapes => new Map(shapes.map(s => [s.type, s.shape]).reverse())
 });
-const tagWrapper = /*@__PURE__*/GardState.Facet.define();
-const tagWidget = /*@__PURE__*/GardState.Facet.define();
-const tagAttribute = /*@__PURE__*/GardState.Facet.define();
+const tagWrapper = /*@__PURE__*/GardState.Facet.define({ name: "tagWrapper" });
+const tagWidget = /*@__PURE__*/GardState.Facet.define({ name: "tagWidget" });
+const tagAttribute = /*@__PURE__*/GardState.Facet.define({ name: "tagAttribute" });
 const markShape = /*@__PURE__*/GardState.Facet.define({
+    name: "markShape",
     combine: shapes => new Map(shapes.map(s => [s.type, s.modified]).reverse())
 });
 function memo(f) {
@@ -743,7 +749,7 @@ class DecoIterator {
                 else
                     started = true;
                 let hasPending = pendingPos == pos && !node.isText;
-                let shape = hasPending && pendingShape ? pendingShape.shape : this.tagShape(node.tag, iter.active);
+                let shape = this.tagShape(node.tag, iter.active, hasPending ? pendingShape : null);
                 if (hasPending)
                     for (let deco of pendingDeco)
                         shape = applyDeco(shape, deco, node.tag);
@@ -757,22 +763,23 @@ class DecoIterator {
                     this.widgets(node.tag, 0, walker);
                 else
                     started = true;
-                let shape = pendingShape && pendingPos == pos ? pendingShape.shape
-                    : this.tagShape(node.tag, iter.active);
+                let shape = this.tagShape(node.tag, iter.active, pendingShape && pendingPos == pos ? pendingShape : null);
                 if (pendingPos == pos)
                     for (let deco of pendingDeco)
                         shape = applyDeco(shape, deco, node.tag);
                 let wrappers = this.nodeWrappers(node.tag, iter.active, !shape.hasContent);
                 let atom = !shape.hasContent;
-                if (atom)
+                if (atom) {
                     walker.node(node, shape, wrappers, pos + node.length > to ? to - pos : undefined);
-                else
+                }
+                else {
                     walker.enter(node, shape, wrappers);
-                this.widgets(node.tag, 2, walker);
+                    this.widgets(node.tag, 2, walker);
+                }
                 return !atom;
             },
             leavePlot: tag => {
-                if (started)
+                if (started && !atomParent)
                     this.widgets(tag, 3, walker);
                 else
                     started = true;
@@ -780,7 +787,7 @@ class DecoIterator {
                 this.widgets(tag, 1, walker);
             }
         };
-        if (inclusiveStart) {
+        if (inclusiveStart && !atomParent) {
             let before = pos.nodeBefore;
             if (before)
                 this.widgets(before.tag, 1, walker);
@@ -792,9 +799,10 @@ class DecoIterator {
                 let end = Math.min(to, atomParent.after), done = atomParent.after <= to;
                 walker.nodePart(atomParent.node, end - pos.pos, done);
                 pos = pos.advance(end - pos.pos);
-                if (done)
+                if (done) {
                     this.widgets(atomParent.node.tag, 1, walker);
-                atomParent = undefined;
+                    atomParent = undefined;
+                }
                 while (iter.point && iter.from < end)
                     iter.next();
             }
@@ -837,9 +845,8 @@ class DecoIterator {
         }
         this.pos = pos;
     }
-    tagShape(tag, active) {
-        let override = this.tagShapes.get(tag.type);
-        let shape = override ? override(tag) : baseTagShape(tag);
+    tagShape(tag, active, fromPoint) {
+        let shape = fromPoint ? fromPoint.shape : this.tagShapes.get(tag.type)?.(tag) ?? baseTagShape(tag);
         if (tag.marks.length)
             shape = addMarkAttributes(this.markShapes, shape, tag);
         let add;
@@ -901,7 +908,7 @@ function eqArray(a, b) {
             return false;
     return true;
 }
-const exceptionSink = /*@__PURE__*/GardState.Facet.define();
+const exceptionSink = /*@__PURE__*/GardState.Facet.define({ name: "exceptionSink" });
 function logException(state, exception, context) {
     let handler = state.facet(exceptionSink);
     if (handler.length)
@@ -914,6 +921,8 @@ function logException(state, exception, context) {
         console.error(exception);
 }
 
+function isElt(node) { return node.nodeType == 1; }
+function isText(node) { return node.nodeType == 3; }
 function getSelection(root) {
     let target;
     if (root.nodeType == 11) {        target = root.getSelection ? root : root.ownerDocument;
@@ -953,13 +962,13 @@ function isBlockElement(node) {
     let tile = node.wgTile;
     if (tile?.tag)
         return tile.tag.type.isBlock;
-    return node.nodeType == 1 && /^(DIV|P|LI|UL|OL|BLOCKQUOTE|DD|DT|H\d|SECTION|PRE)$/.test(node.nodeName);
+    return isElt(node) && /^(DIV|P|LI|UL|OL|BLOCKQUOTE|DD|DT|H\d|SECTION|PRE)$/.test(node.nodeName);
 }
 function isBlocking(node) {
     let tile = node.wgTile;
     if (tile)
         return !tile.isText && (tile.isNodeOuter || (tile.isPoint && (tile.flags & 96)));
-    return node.nodeType == 1 && node.contentEditable == "false";
+    return isElt(node) && node.contentEditable == "false";
 }
 function scanFor(node, off, targetNode, targetOff, dir) {
     for (;;) {
@@ -969,12 +978,12 @@ function scanFor(node, off, targetNode, targetOff, dir) {
             if (isBlockElement(node))
                 return false;
             let parent = node.parentNode;
-            if (!parent || parent.nodeType != 1)
+            if (!parent || !isElt(parent))
                 return false;
             off = domIndex(node) + (dir < 0 ? 0 : 1);
             node = parent;
         }
-        else if (node.nodeType == 1) {
+        else if (isElt(node)) {
             node = node.childNodes[off + (dir < 0 ? -1 : 0)];
             if (isBlocking(node))
                 return false;
@@ -986,7 +995,7 @@ function scanFor(node, off, targetNode, targetOff, dir) {
     }
 }
 function maxOffset(node) {
-    return node.nodeType == 3 ? node.nodeValue.length : node.childNodes.length;
+    return isText(node) ? node.nodeValue.length : node.childNodes.length;
 }
 function windowRect(win) {
     let vp = win.visualViewport;
@@ -1004,7 +1013,7 @@ function getScale(elt, rect) {
 function scrollRectIntoView(dom, rect, side, x, y, xMargin, yMargin, ltr) {
     let doc = dom.ownerDocument, win = doc.defaultView || window;
     for (let cur = dom, stop = false; cur && !stop;) {
-        if (cur.nodeType == 1) {            let bounding, top = cur == doc.body;
+        if (isElt(cur)) {            let bounding, top = cur == doc.body;
             let scaleX = 1, scaleY = 1;
             if (top) {
                 bounding = windowRect(win);
@@ -1099,7 +1108,7 @@ function scrollableParents(dom) {
         if (cur == doc.body || (x && y)) {
             break;
         }
-        else if (cur.nodeType == 1) {
+        else if (isElt(cur)) {
             if (!y && cur.scrollHeight > cur.clientHeight)
                 y = cur;
             if (!x && cur.scrollWidth > cur.clientWidth)
@@ -1153,7 +1162,7 @@ function nonZero(rect) {
     return rect.top < rect.bottom || rect.left < rect.right;
 }
 function singleRect(target, bias, preferWide = false) {
-    if (target.nodeType == 3)
+    if ("nodeType" in target && isText(target))
         target = textRange(target, 0, target.nodeValue.length);
     let rects = target.getClientRects();
     for (let i = bias < 0 ? 0 : rects.length - 1; bias < 0 ? i < rects.length : i >= 0; i -= bias) {
@@ -1173,10 +1182,10 @@ function getRoot(node) {
 }
 function textNodeBefore(startNode, startOffset) {
     for (let node = startNode, offset = startOffset;;) {
-        if (node.nodeType == 3 && offset > 0) {
+        if (offset > 0 && isText(node)) {
             return node;
         }
-        else if (node.nodeType == 1 && offset > 0) {
+        else if (offset > 0 && isElt(node)) {
             if (node.contentEditable == "false")
                 return null;
             node = node.childNodes[offset - 1];
@@ -1193,10 +1202,10 @@ function textNodeBefore(startNode, startOffset) {
 }
 function textNodeAfter(startNode, startOffset) {
     for (let node = startNode, offset = startOffset;;) {
-        if (node.nodeType == 3 && offset < node.nodeValue.length) {
+        if (isText(node) && offset < node.nodeValue.length) {
             return node;
         }
-        else if (node.nodeType == 1 && offset < node.childNodes.length) {
+        else if (isElt(node) && offset < node.childNodes.length) {
             if (node.contentEditable == "false")
                 return null;
             node = node.childNodes[offset];
@@ -1208,6 +1217,31 @@ function textNodeAfter(startNode, startOffset) {
         }
         else {
             return null;
+        }
+    }
+}
+function atElementStart(doc, selection) {
+    let node = selection.focusNode, offset = selection.focusOffset;
+    if (!node || selection.anchorNode != node || selection.anchorOffset != offset)
+        return false;
+    for (;;) {
+        if (offset) {
+            if (!isElt(node))
+                return false;
+            let prev = node.childNodes[offset - 1];
+            if (!prev || prev.contentEditable == "false")
+                offset--;
+            else {
+                node = prev;
+                offset = maxOffset(node);
+            }
+        }
+        else if (node == doc) {
+            return true;
+        }
+        else {
+            offset = domIndex(node);
+            node = node.parentNode;
         }
     }
 }
@@ -1406,9 +1440,9 @@ class CompositeTile extends Tile {
                 if (child instanceof WidgetTile && !child.widget.type.inFlow)
                     continue;
                 let rects, { dom } = child;
-                if (dom.nodeType == 1)
+                if (isElt(dom))
                     rects = dom.getClientRects();
-                else if (dom.nodeType == 3)
+                else if (isText(dom))
                     rects = textRange(dom, 0, dom.nodeValue.length).getClientRects();
                 else
                     continue;
@@ -1441,7 +1475,7 @@ class CompositeTile extends Tile {
     posAtCoordsCol(start, state, x, y, textblock) {
         let lastBot = -1;
         for (let child of this.children) {
-            if (child.isPoint || child.dom.nodeType != 1)
+            if (child.isPoint || !isElt(child.dom))
                 continue;
             let rect = child.dom.getBoundingClientRect();
             if (rect.top > y)
@@ -1790,7 +1824,7 @@ class EltTile extends CompositeTile {
     }
 }
 function setUneditable(dom) {
-    if (dom.nodeType != 1) {
+    if (!isElt(dom)) {
         let span = document.createElement("span");
         span.appendChild(dom);
         dom = span;
@@ -1833,7 +1867,7 @@ class WidgetTile extends Tile {
     posAtCoordsInner(start, state, x, y, textblock, orientation) {
         if (!this.tag)
             return CoordPos.create(start, 1);
-        let rect = this.dom.nodeType == 1 ? this.dom.getBoundingClientRect()
+        let rect = isElt(this.dom) ? this.dom.getBoundingClientRect()
             : textRange(this.dom, 0, this.length).getBoundingClientRect();
         let after = orientation == 1 ? y > (rect.top + rect.bottom) / 2
             : (x < (rect.left + rect.right) / 2) == ltrAt(state, start, 1, textblock);
@@ -2084,6 +2118,9 @@ class ContentUpdate {
                             this.partialNode = null;
                             this.new.addChild(this.buildNodeShape(tag, length + (to - from), shape, reuse));
                         }
+                        else {
+                            this.partialNode.length += to - from;
+                        }
                     }
                 }
                 else if (this.new.lastChild instanceof TextTile && !this.new.lastChild.isComposition) {
@@ -2297,6 +2334,9 @@ class ContentUpdate {
                     for (let i = 0; i < wrappers; i++)
                         this.up();
                 }
+                else {
+                    this.partialNode.length += length;
+                }
             },
             widget: (widget, side) => {
                 let sideFlag = side < 0 ? 32 : side > 0 ? 64 : 0;
@@ -2401,11 +2441,16 @@ class ContentUpdate {
     copyEltStructure(tile) {
         this.reused.set(tile, 2);
         let copy = EltTile.of(tile.elt, tile.tag, tile.flags, tile.boundary * 2, tile.dom);
-        if (tile.isNodeOuter)
-            for (let child of tile.children)
-                if (child.isNodeInner) {
-                    copy.addChild((child.flags & 2048) ? this.copyEltStructure(child) : child);
+        for (let child of tile.children)
+            if (child.isNodeInner) {
+                if (child.flags & 2048) {
+                    copy.addChild(this.copyEltStructure(child));
                 }
+                else {
+                    this.reused.set(child, 1);
+                    copy.addChild(child);
+                }
+            }
         return copy;
     }
     ensureHackNodes() {
@@ -2532,8 +2577,10 @@ class ContentUpdate {
                 prev = copy;
                 prev.parent = cur;
             }
-            for (let j = i + 1; j < cur.children.length; j++)
+            for (let j = i + 1; j < cur.children.length; j++) {
                 prev.addChild(cur.children[j]);
+                cur.children.splice(j, 1);
+            }
             return prev;
         }
         return null;
@@ -2697,14 +2744,28 @@ var browser = /*@__PURE__*/(() => ({
     safari,
     safari_version: safari ? +(/\bVersion\/(\d+(\.\d+)?)/.exec(nav.userAgent) || [0, 0])[1] : 0}))();
 
-const clipboardOutputFilter = /*@__PURE__*/GardState.Facet.define();
-const clipboardOutputHTMLFilter = /*@__PURE__*/GardState.Facet.define();
-const clipboardTextSerializer = /*@__PURE__*/GardState.Facet.define();
-const clipboardOutputTextFilter = /*@__PURE__*/GardState.Facet.define();
-const clipboardInputFilter = /*@__PURE__*/GardState.Facet.define();
-const clipboardInputHTMLFilter = /*@__PURE__*/GardState.Facet.define();
-const clipboardTextParser = /*@__PURE__*/GardState.Facet.define();
-const clipboardInputTextFilter = /*@__PURE__*/GardState.Facet.define();
+const clipboardOutputFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardOutputFilter"
+});
+const clipboardOutputHTMLFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardOutputHTMLFilter"
+});
+const clipboardTextSerializer = /*@__PURE__*/GardState.Facet.define({ name: "clipboardTextSerializer" });
+const clipboardOutputTextFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardOutputTextFilter"
+});
+const clipboardInputFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardInputFilter"
+});
+const clipboardInputHTMLFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardInputHTMLFilter"
+});
+const clipboardTextParser = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardTextParser"
+});
+const clipboardInputTextFilter = /*@__PURE__*/GardState.Facet.define({
+    name: "clipboardInputTextFilter"
+});
 function writeClipboard(state, slice, data) {
     for (let filter of state.facet(clipboardOutputFilter))
         slice = filter(slice, state);
@@ -2721,7 +2782,7 @@ function writeClipboard(state, slice, data) {
         openAttr: "wg-open"
     }).toDOM();
     let needsWrap;
-    while (dom.firstChild && dom.firstChild.nodeType == 1 && (needsWrap = wrapMap[dom.firstChild.nodeName.toLowerCase()])) {
+    while (dom.firstChild && isElt(dom.firstChild) && (needsWrap = wrapMap[dom.firstChild.nodeName.toLowerCase()])) {
         for (let i = needsWrap.length - 1; i >= 0; i--) {
             let wrapper = doc.createElement(needsWrap[i]);
             wrapper.setAttribute("wg-wrap", "true");
@@ -2730,7 +2791,7 @@ function writeClipboard(state, slice, data) {
             dom.appendChild(wrapper);
         }
     }
-    if (dom.firstChild && dom.firstChild.nodeType == 1)
+    if (dom.firstChild && isElt(dom.firstChild))
         dom.firstChild.setAttribute("wg-content", "true");
     let wrap = doc.createElement("div");
     wrap.appendChild(dom);
@@ -2752,9 +2813,7 @@ function writeClipboard(state, slice, data) {
 function isOpen(elt) {
     return (elt.getAttribute("wg-open") || null);
 }
-function readClipboard(state, data, targetContext, plain) {
-    let html = data.getData("text/html");
-    let text = data.getData("text/plain") || data.getData("Text") || data.getData("text/uri-list").replace(/\r?\n/g, " ");
+function readClipboard(state, html, text, targetContext, plain) {
     let slice;
     if (text && (targetContext.parent.node.type.hasRole(Node.Role.Code) || !html || plain)) {
         for (let filter of state.facet(clipboardInputTextFilter))
@@ -2852,8 +2911,12 @@ function restoreReplacedSpaces(dom) {
     }
 }
 
-const theme$1 = /*@__PURE__*/GardState.Facet.define({ combine: strs => strs.join(" ") });
+const theme$1 = /*@__PURE__*/GardState.Facet.define({
+    name: "theme",
+    combine: strs => strs.join(" ")
+});
 const colorScheme = /*@__PURE__*/GardState.Facet.define({
+    name: "colorScheme",
     combine: values => values.length ? values[0] : "light"
 });
 const styleID = /*@__PURE__*/StyleModule.newName(), baseLightID = /*@__PURE__*/StyleModule.newName(), baseDarkID = /*@__PURE__*/StyleModule.newName();
@@ -2881,7 +2944,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         flexDirection: "column",
         border: "1px solid var(--wg-border-color)"
     },
-    "&:has(> wg-scroller > wg-content:focus)": {
+    "&.wg-focused": {
         outline: "1px solid var(--wg-highlight-color)",
         "& > wg-scroller > wg-cursor-layer": {
             animation: "steps(1) wg-blink 1.2s infinite"
@@ -2925,7 +2988,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
             position: "absolute"
         },
         pointerEvents: "none",
-        zIndex: 150,
+        zIndex: 100,
     },
     "@keyframes wg-blink": { "0%": {}, "50%": { opacity: 0 }, "100%": {} },
     "@keyframes wg-blink2": { "0%": {}, "50%": { opacity: 0 }, "100%": {} },
@@ -2957,6 +3020,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
     ".wg-buffer": {
         verticalAlign: "bottom",
         height: "1em",
+        display: "inline"
     },
     ".wg-blockBuffer": {
         position: "absolute"
@@ -2992,7 +3056,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         position: "sticky",
         left: 0,
         right: 0,
-        zIndex: 300,
+        zIndex: 200,
         backgroundColor: "var(--wg-panel-color)",
         font: "var(--wg-dialog-font)",
     },
@@ -3111,15 +3175,15 @@ function rangeForClick(wg, pos, type) {
         if (target && target.type.isSelectable && wg.state.isAtom(target.type))
             return GardSelection.node(pos.target, target);
     }
-    if (type == 1) {        return GardSelection.near(wg.state, pos.pos, pos.side || -1);
+    if (type == 1) {        return GardSelection.near(wg.state, pos.pos, pos.side);
     }
-    else if (type == 2) {        return wg.state.wordAt(pos.pos, pos.side || 1);
+    else if (type == 2) {        return wg.state.wordAt(pos.pos, pos.side) || GardSelection.near(wg.state, pos.pos, pos.side);
     }
     else {        let cx = wg.state.doc.resolve(pos.pos), block = cx.textblockParent;
         if (block)
             return GardSelection.undirectionalRange(block.start, block.end);
         else
-            return GardSelection.near(wg.state, pos.pos, pos.side || -1);
+            return GardSelection.near(wg.state, pos.pos, pos.side);
     }
 }
 const Y_STEP = 2;
@@ -3297,7 +3361,7 @@ class DOMObserver {
         this.observer.observe(this.dom, observeOptions);
         this.resizeScroll?.observe(this.dom);
         for (let dom = this.dom; dom;) {
-            if (dom.nodeType == 1) {
+            if (isElt(dom)) {
                 this.scrollTargets.push(dom);
                 dom.addEventListener("scroll", this.onScroll);
                 dom = dom.assignedSlot || dom.parentNode;
@@ -3358,6 +3422,11 @@ class DOMObserver {
         let { wg } = this;
         if (this.selectionChanged &&
             (wg.hasFocus || !wg.focusable) && hasSelection(wg.contentDOM, this.selectionRange)) {
+            if (wg.inputState.lastFocus > Date.now() - 200 &&                wg.inputState.lastTouchTime < Date.now() - 300 &&
+                atElementStart(this.wg.contentDOM, this.selectionRange)) {
+                wg.inputState.lastFocus = 0;
+                return;
+            }
             this.selectionChanged = false;
             let fromTouch = wg.inputState.lastTouchTime > Date.now() - 100;
             let sel = readDOMSelection(wg, this.selectionRange);
@@ -3387,7 +3456,7 @@ class DOMObserver {
         if (!range || !range.focusNode || this.selectionRange.eq(range))
             return false;
         let context = range.anchorNode && wg.docTile.nearest(range.anchorNode);
-        if (context instanceof WidgetTile)
+        if (context instanceof WidgetTile || !context)
             return false;
         this.selectionRange.setRange(range);
         return this.selectionChanged = true;
@@ -3404,6 +3473,7 @@ class DOMObserver {
     clear() {
         this.takeRecords();
         this.readSelectionRange();
+        this.selectionChanged = false;
     }
     takeRecords() {
         for (let mut of this.observer.takeRecords())
@@ -3494,6 +3564,7 @@ class KeyBinding {
         this.extension = KeyBinding.source.of(this);
     }
     static of(spec) { return new KeyBinding(spec); }
+    toString() { return `KeyBinding:${this.spec.key || this.spec.char || "??"}`; }
 }
 ;KeyBinding = /*@__PURE__*/(function (KeyBinding) {
     function handle(wg, event) {
@@ -3506,9 +3577,11 @@ class KeyBinding {
         return s.facet(KeyBinding.useDefaultKeymap) ? bindings.concat(KeyBinding.defaultKeymap) : bindings;
     });
     KeyBinding.source = GardState.Facet.define({
+        name: "keyBinding",
         enables: KeyBinding.keymap
     });
     KeyBinding.useDefaultKeymap = GardState.Facet.define({
+        name: "useDefaultKeymap",
         combine: input => input.length ? input[0] : true
     });
     class Group {
@@ -3665,7 +3738,7 @@ class NormalizedBinding {
 }
 const keymapCache = /*@__PURE__*/(() => new WeakMap())();
 function getKeymap(state) {
-    let bindings = state.field(KeyBinding.keymap);
+    let bindings = state.field(KeyBinding.keymap, false);
     let found = keymapCache.get(bindings);
     if (!found)
         keymapCache.set(bindings, found = buildKeymap(bindings, currentPlatform));
@@ -3673,7 +3746,7 @@ function getKeymap(state) {
 }
 const lookupCache = /*@__PURE__*/(() => new WeakMap())();
 function getDescMap(state) {
-    let bindings = state.field(KeyBinding.keymap);
+    let bindings = state.field(KeyBinding.keymap, false);
     let map = lookupCache.get(bindings);
     if (!map) {
         lookupCache.set(bindings, map = new Map);
@@ -3754,6 +3827,7 @@ function buildCharKeyCodes() {
 const charKeyCodes = /*@__PURE__*/buildCharKeyCodes();
 
 const eventHandler = /*@__PURE__*/GardState.Facet.define({
+    name: "eventHandler",
     combine: handlers => {
         let result = Object.create(null);
         for (let { event, handler } of handlers)
@@ -3762,6 +3836,7 @@ const eventHandler = /*@__PURE__*/GardState.Facet.define({
     }
 });
 const eventObserver = /*@__PURE__*/GardState.Facet.define({
+    name: "eventObserver",
     combine: observers => {
         let result = Object.create(null);
         for (let { event, observer } of observers)
@@ -3783,6 +3858,7 @@ class InputState {
     lastTouchEvent = null;
     lastScrollTop = 0;
     lastScrollLeft = 0;
+    lastFocus = 0;
     lastContextMenu = 0;
     scrollHandlers = [];
     handlers = Object.create(null);
@@ -3856,6 +3932,8 @@ class InputState {
         this.lastKeyCode = event.keyCode;
         this.lastKeyTime = Date.now();
         this.shiftKey = event.keyCode == 16 || event.shiftKey;
+        if (this.composing && event.isComposing === false)
+            compositionEnd(this.wg);
         return false;
     }
     ignoreDuringComposition(event) {
@@ -3889,11 +3967,11 @@ class InputState {
     getDOMPos(node, offset) {
         if (!this.domChanges)
             return this.wg.docTile.posFromDOM(node, offset);
-        if (node.nodeType == 1 && offset && node.childNodes[offset - 1].nodeType == 3) {
+        if (isElt(node) && offset && isText(node.childNodes[offset - 1])) {
             node = node.childNodes[offset - 1];
             offset = node.nodeValue.length;
         }
-        let inText = node.nodeType == 3 && !this.wg.docTile.nearest(node)?.isPoint;
+        let inText = isText(node) && !this.wg.docTile.nearest(node)?.isPoint;
         let ref = this.wg.docTile.posFromDOM(node, inText ? 0 : offset);
         let dir = -1;
         let textBefore = node.parentNode && textNodeBefore(node.parentNode, domIndex(node));
@@ -3920,6 +3998,8 @@ class InputState {
         return this.domMapping.mapPos(this.getDOMPos(node, offset), assoc);
     }
     beforeInput(event, data) {
+        if (this.composing && event.isComposing === false)
+            compositionEnd(this.wg);
         let type = event.inputType, range;
         let { wg } = this, sel = wg.state.selection;
         if (data.domRange) {
@@ -3949,22 +4029,12 @@ class InputState {
             Command.dispatch(wg, insertText, { from, to, insert, userEvent: "input.type" });
         }
         else if (type == "insertFromPaste") {
-            let { from, to } = this.unflushedSelection ? wg.state.selection.replacementRange : range;
-            let slice = readClipboard(wg.state, event.dataTransfer, wg.state.doc.resolve(from), wg.inputState.shiftKey);
-            let isSel = from == wg.state.selection.replacementRange.from && to == wg.state.selection.replacementRange.to;
-            if (isSel && wg.state.facet(pasteHandler).some(h => h(wg, event, slice || Slice.empty)))
-                return;
-            if (slice) {
-                wg.dispatch({
-                    changes: { correct: { from, to, insert: slice, fit: true }, local: true },
-                    selection: isSel ? (cx, changes) => GardSelection.near(cx, changes.mapPos(to, 1), -1) : undefined,
-                    userEvent: "input.paste",
-                    scrollIntoView: isSel
-                });
-            }
+            let transfer = event.dataTransfer;
+            doPaste(wg, getHTML(transfer), getText(transfer), this.unflushedSelection ? wg.state.selection : range, null);
         }
         else if ((type == "insertReplacementText" || type == "insertFromYank")) {
-            let read = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, true);
+            let transfer = event.dataTransfer;
+            let read = readClipboard(wg.state, getHTML(transfer), getText(transfer), wg.state.sel.head, true);
             let { from, to } = this.unflushedSelection ? wg.state.selection : range;
             let sel = wg.state.selection, touchesSel = from <= sel.to && to >= sel.from;
             if (read)
@@ -4065,6 +4135,8 @@ class InputState {
     }
     clearComposition() {
         let comp = this.composing;
+        if (!comp)
+            return false;
         this.composing = null;
         this.compositionPendingKey = true;
         this.compositionEndedAt = Date.now();
@@ -4104,6 +4176,12 @@ class InputState {
             this.mouseSelection.disconnect();
     }
 }
+function getHTML(data) {
+    return data.getData("text/html");
+}
+function getText(data) {
+    return data.getData("text/plain") || data.getData("Text") || data.getData("text/uri-list").replace(/\r?\n/g, " ");
+}
 function isSingleChar(doc, from, to) {
     if (to > from + 10)
         return false;
@@ -4142,8 +4220,29 @@ function computeHandlers(state) {
         record(type).observers.push(baseObservers[type]);
     return result;
 }
+function doPaste(wg, html, text, targetRange, event) {
+    let { from, to } = targetRange || wg.state.selection.replacementRange;
+    let slice = readClipboard(wg.state, html, text, wg.state.doc.resolve(from), wg.inputState.shiftKey);
+    if (!targetRange) {
+        if (!event) {
+            event = new ClipboardEvent("paste", { clipboardData: new DataTransfer });
+            event.clipboardData.setData("text/html", html);
+            event.clipboardData.setData("text/plain", text);
+        }
+        if (wg.state.facet(pasteHandler).some(h => h(wg, event, slice || Slice.empty, text, html)))
+            return;
+    }
+    if (slice) {
+        wg.dispatch({
+            changes: { correct: { from, to, insert: slice, fit: true }, local: true },
+            selection: targetRange ? undefined : (cx, changes) => GardSelection.near(cx, changes.mapPos(to, 1), -1),
+            userEvent: "input.paste",
+            scrollIntoView: !targetRange
+        });
+    }
+}
 const dragScrollMargin = 6;
-const mouseSelectionStyle = /*@__PURE__*/GardState.Facet.define();
+const mouseSelectionStyle = /*@__PURE__*/GardState.Facet.define({ name: "mouseSelectionStyle" });
 function dragScrollSpeed(dist) {
     return Math.max(0, dist) * 0.7 + 8;
 }
@@ -4257,7 +4356,7 @@ class MouseSelection {
             setTimeout(() => this.select(this.lastEvent), 20);
     }
 }
-const dragBehavior = /*@__PURE__*/GardState.Facet.define();
+const dragBehavior = /*@__PURE__*/GardState.Facet.define({ name: "dragBehavior" });
 function dragMovesSelection(wg, event) {
     let facet = wg.state.facet(dragBehavior);
     return facet.length ? facet[0](event) : browser.mac ? !event.altKey : !event.ctrlKey;
@@ -4333,8 +4432,8 @@ function basicMouseSelection(wg, event) {
         }
     };
 }
-const dropHandler = /*@__PURE__*/GardState.Facet.define();
-const pasteHandler = /*@__PURE__*/GardState.Facet.define();
+const dropHandler = /*@__PURE__*/GardState.Facet.define({ name: "dropHandler" });
+const pasteHandler = /*@__PURE__*/GardState.Facet.define({ name: "pasteHandler" });
 function copy(wg, event) {
     let { state } = wg;
     if (!state.selection.empty && event.clipboardData) {
@@ -4350,7 +4449,7 @@ function copy(wg, event) {
     }
     return true;
 }
-const isFocusChange = /*@__PURE__*/Transaction.Annotation.define();
+const isFocusChange = /*@__PURE__*/Transaction.Annotation.define("focusChange");
 function updateForFocusChange(wg) {
     setTimeout(() => {
         let focus = wg.hasFocus;
@@ -4483,10 +4582,18 @@ const baseHandlers = {
     },
     copy,
     cut: copy,
+    paste(wg, event) {
+        let data = event.clipboardData;
+        if (!data)
+            return false;
+        doPaste(wg, getHTML(data), getText(data), null, event);
+        return true;
+    },
     drop(wg, event) {
-        if (!event.dataTransfer || wg.state.readOnly)
+        let data = event.dataTransfer;
+        if (!data || wg.state.readOnly)
             return true;
-        let slice = readClipboard(wg.state, event.dataTransfer, wg.state.sel.head, false);
+        let slice = readClipboard(wg.state, getHTML(data), getText(data), wg.state.sel.head, false);
         if (!slice)
             return false;
         let dropPos = wg.posAtCoords({ x: event.clientX, y: event.clientY }).pos;
@@ -4521,7 +4628,7 @@ const baseHandlers = {
         if (ranges.length) {
             let r = ranges[0], empty = r.collapsed;
             let from = wg.inputState.getDOMPos(r.startContainer, r.startOffset);
-            data.domRange = { from, to: empty ? from : wg.inputState.getDOMPos(r.endContainer, r.endOffset) };
+            data.domRange = { from, to: empty ? from : wg.inputState.getDOMPos(r.endContainer, r.endOffset), range: r };
             editable = inEditableDOM(wg, r.startContainer) && (empty || inEditableDOM(wg, r.endContainer));
         }
         wg.inputState.beforeInput(event, wg.inputState.pendingInputEvent = data);
@@ -4563,6 +4670,7 @@ const baseObservers = {
             wg.scrollDOM.scrollTop = wg.inputState.lastScrollTop;
             wg.scrollDOM.scrollLeft = wg.inputState.lastScrollLeft;
         }
+        wg.inputState.lastFocus = Date.now();
         updateForFocusChange(wg);
     },
     blur(wg) {
@@ -4578,7 +4686,10 @@ const baseObservers = {
     }
 };
 
-const scrollIntoView = /*@__PURE__*/Transaction.Effect.define({ map: (t, ch) => t.map(ch) });
+const scrollIntoView = /*@__PURE__*/Transaction.Effect.define({
+    name: "scrollIntoView",
+    map: (t, ch) => t.map(ch)
+});
 const selectionScrollSpec = {
     x: "nearest",
     y: "nearest",
@@ -4680,6 +4791,7 @@ class ViewState {
 }
 
 const cursorBlinkRate = /*@__PURE__*/GardState.Facet.define({
+    name: "cursorBlinkRate",
     combine: inputs => inputs.length ? Math.min(...inputs) : 1200
 });
 class CursorStyle {
@@ -4697,7 +4809,7 @@ class CursorStyle {
     }
     static read(node, height) {
         let win = node.ownerDocument.defaultView || window;
-        let elt = node.nodeType == 1 ? node : node.parentNode;
+        let elt = isElt(node) ? node : node.parentNode;
         let style = win.getComputedStyle(elt);
         return new CursorStyle(height, style.verticalAlign, style.color, +style.fontWeight > 400, style.fontStyle == "italic");
     }
@@ -4807,7 +4919,7 @@ function getCursorInfo(wg, plugin, cont) {
         }
         else {
             let win = ref.dom.ownerDocument.defaultView || window;
-            let refAlign = win.getComputedStyle((ref.dom.nodeType == 1 ? ref.dom : ref.dom.parentNode)).verticalAlign;
+            let refAlign = win.getComputedStyle(isElt(ref.dom) ? ref.dom : ref.dom.parentNode).verticalAlign;
             if (style && refAlign != style.align) {
                 bot += alignOffset(refAlign, rect.height) - alignOffset(style.align, style.height);
             }
@@ -4866,7 +4978,7 @@ function setBlinkRate(state, dom) {
     dom.style.animationDuration = state.facet(cursorBlinkRate) + "ms";
 }
 
-const dirCompartment = /*@__PURE__*/GardState.Compartment.define();
+const dirCompartment = /*@__PURE__*/GardState.Compartment.define("direction");
 class Wordgard {
     static create(spec) { return new Wordgard(spec); }
     get state() { return this.viewState.state; }
@@ -5066,7 +5178,8 @@ class Wordgard {
             this.updateAttrs();
         }
         this.docTile = prevDocTile.update(update.state, changes, this, composition);
-        if ((composition?.wrapCursor || !composition && (prevDocTile != this.docTile || update.selectionSet)) && this.hasFocus)
+        if ((composition?.wrapCursor || !composition && (prevDocTile != this.docTile ||
+            update.selectionSet || this.observer.selectionChanged)) && this.hasFocus)
             setDOMSelection(this);
         this.observer.clear();
         if (this.docTile != prevDocTile)
@@ -5104,12 +5217,12 @@ class Wordgard {
         }
         for (let i = 0; i < this.plugins.length; i++)
             this.plugins[i].update(this);
-        if (configChange)
+        if (update.state.facet(eventHandler) != update.startState.facet(eventHandler))
             this.inputState.ensureHandlers(update.state);
     }
     updateAttrs() {
         let editorAttrs = attrsFromFacet(this, Wordgard.editorAttributes, [
-            "class", this.themeClasses
+            "class", this.themeClasses + (this.inputState.notifiedFocused ? " wg-focused" : "")
         ]);
         let contentAttrs = attrsFromFacet(this, Wordgard.contentAttributes, [
             "aria-multiline", "true",
@@ -5194,7 +5307,7 @@ class Wordgard {
     nodeDOM(pos) {
         this.ensureFlushed();
         let tile = this.docTile.nodeTile(pos);
-        if (!tile || tile.dom.nodeType != 1)
+        if (!tile || !isElt(tile.dom))
             return null;
         return tile.dom;
     }
@@ -5265,18 +5378,21 @@ class Wordgard {
     static clipboardTextParser = clipboardTextParser;
     static clipboardInputTextFilter = clipboardInputTextFilter;
     static pasteHandler = pasteHandler;
+    paste(html, text) { doPaste(this, html, text || "", null, null); }
     static dropHandler = dropHandler;
     static isFocusChange = isFocusChange;
-    static styleModule = /*@__PURE__*/GardState.Facet.define();
+    static styleModule = /*@__PURE__*/GardState.Facet.define({ name: "styleModule" });
     static domEventHandler(event, handler) {
         return eventHandler.of({ event, handler: handler });
     }
     static domEventObserver(event, observer) {
         return eventObserver.of({ event, observer: observer });
     }
-    static scrollHandler = /*@__PURE__*/GardState.Facet.define();
+    static scrollHandler = /*@__PURE__*/GardState.Facet.define({ name: "scrollHandler" });
     static exceptionSink = exceptionSink;
-    static transactionListener = /*@__PURE__*/GardState.Facet.define();
+    static transactionListener = /*@__PURE__*/GardState.Facet.define({
+        name: "transactionListener"
+    });
     runTransactionListeners(trs) {
         for (let l of this.state.facet(Wordgard.transactionListener)) {
             let has = this.pendingTransactionListeners.get(l);
@@ -5291,8 +5407,11 @@ class Wordgard {
             next.value(trs, this);
         }
     }
-    static updateListener = /*@__PURE__*/GardState.Facet.define();
-    static editable = /*@__PURE__*/GardState.Facet.define({ combine: values => values.length ? values[0] : true });
+    static updateListener = /*@__PURE__*/GardState.Facet.define({ name: "updateListener" });
+    static editable = /*@__PURE__*/GardState.Facet.define({
+        name: "editable",
+        combine: values => values.length ? values[0] : true
+    });
     static cursorBlinkRate = cursorBlinkRate;
     static mouseSelectionStyle = mouseSelectionStyle;
     static dragMovesSelection = dragBehavior;
@@ -5340,12 +5459,19 @@ class Wordgard {
             }
         });
     }
-    static cspNonce = /*@__PURE__*/GardState.Facet.define({ combine: values => values.length ? values[0] : "" });
-    static contentAttributes = /*@__PURE__*/GardState.Facet.define();
-    static editorAttributes = /*@__PURE__*/GardState.Facet.define();
-    static announce = /*@__PURE__*/Transaction.Effect.define();
+    static cspNonce = /*@__PURE__*/GardState.Facet.define({
+        name: "cspNonce",
+        combine: values => values.length ? values[0] : ""
+    });
+    static contentAttributes = /*@__PURE__*/GardState.Facet.define({ name: "contentAttributes" });
+    static editorAttributes = /*@__PURE__*/GardState.Facet.define({ name: "editorAttributes" });
+    static announce = /*@__PURE__*/Transaction.Effect.define({ name: "announce" });
     static DocTile = DocTile;
-    static coveredMargins = /*@__PURE__*/GardState.Facet.define();
+    static coveredMargins = /*@__PURE__*/GardState.Facet.define({ name: "coveredMargins" });
+    static findFromDOM(elt) {
+        let wg = elt.wg;
+        return wg instanceof Wordgard ? wg : null;
+    }
 }
 let _wrapElement = null;
 function wrapElementConstructor() {
@@ -5419,6 +5545,7 @@ function attrsFromFacet(wg, facet, base) {
                         observer(event, wg, value);
                 } });
         }
+        toString() { return "Plugin"; }
     }
     Wordgard.Plugin = Plugin;
     class Update {
@@ -5467,7 +5594,7 @@ function attrsFromFacet(wg, facet, base) {
     }
     Wordgard.Update = Update;
 ;return Wordgard})(Wordgard);
-const editorPlugin = /*@__PURE__*/GardState.Facet.define();
+const editorPlugin = /*@__PURE__*/GardState.Facet.define({ name: "editorPlugin" });
 const cursorPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(CursorLayer);
 class PluginInstance {
     spec;
@@ -5630,6 +5757,7 @@ class TooltipViewManager {
     }
 }
 const tooltipConfig = /*@__PURE__*/GardState.Facet.define({
+    name: "tooltipConfig",
     combine: values => ({
         position: browser.ios ? "absolute" : values.find(conf => conf.position)?.position || "fixed",
         parent: values.find(conf => conf.parent)?.parent || null,
@@ -5895,7 +6023,7 @@ function setLeftStyle(elt, value) {
 }
 const styles = /*@__PURE__*/Wordgard.styles({
     ".wg-tooltip": {
-        zIndex: 500,
+        zIndex: 300,
         boxSizing: "border-box",
         backgroundColor: "var(--wg-panel-color)",
         boxShadow: "0 0 8px 0 rgba(128, 128, 128, 0.2)",
@@ -5941,13 +6069,14 @@ const styles = /*@__PURE__*/Wordgard.styles({
         },
     },
 });
-const closeHoverTooltipEffect = /*@__PURE__*/Transaction.Effect.define();
+const closeHoverTooltipEffect = /*@__PURE__*/Transaction.Effect.define({ name: "closeHover" });
 const Tooltip = /*@__PURE__*/(function (Tooltip) {
     function configure(config = {}) {
         return tooltipConfig.of(config);
     }
     Tooltip.configure = configure;
     Tooltip.show = GardState.Facet.define({
+        name: "tooltip",
         enables: [tooltipPlugin, styles]
     });
     function get(wg, tooltip) {
@@ -6019,6 +6148,7 @@ const Tooltip = /*@__PURE__*/(function (Tooltip) {
 ;return Tooltip})({});
 const noOffset = { x: 0, y: 0 };
 const showHoverTooltip = /*@__PURE__*/GardState.Facet.define({
+    name: "showHoverTooltip",
     combine: inputs => inputs.reduce((a, i) => a.concat(i), [])
 });
 class HoverTooltipHost {
@@ -6371,9 +6501,10 @@ class OpenDialog {
         this.offset = offset;
     }
 }
-const openDialog = /*@__PURE__*/Transaction.Effect.define();
-const closeDialog = /*@__PURE__*/Transaction.Effect.define();
+const openDialog = /*@__PURE__*/Transaction.Effect.define({ name: "openDialog" });
+const closeDialog = /*@__PURE__*/Transaction.Effect.define({ name: "closeDialog" });
 const dialogs = /*@__PURE__*/GardState.Field.define({
+    name: "dialogs",
     create: () => [],
     update: (value, tr) => {
         for (let e of tr.effects) {
@@ -6441,7 +6572,7 @@ const renderDialogs = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
                 connect();
                 panel = dom;
             }
-            panel.style.zIndex = String(400 + i);
+            panel.style.zIndex = String(500 + i);
             return panel;
         });
         this.active = active;
@@ -6664,6 +6795,7 @@ function decoratePlots(config) {
 }
 
 const panelConfig = /*@__PURE__*/GardState.Facet.define({
+    name: "panelConfig",
     combine(configs) {
         let topContainer, bottomContainer;
         for (let c of configs) {
@@ -6755,6 +6887,7 @@ const panelPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
 }));
 const Panel = /*@__PURE__*/(function (Panel) {
     Panel.show = GardState.Facet.define({
+        name: "panel",
         enables: panelPlugin
     });
     function get(wg, constructor) {
@@ -7329,6 +7462,7 @@ const theme = /*@__PURE__*/Wordgard.styles({
         fill: "currentColor",
         width: "var(--wg-menu-item-size)",
         height: "var(--wg-menu-item-size)",
+        display: "inline-block"
     },
     "wg-menu-spacer": {
         display: "block",
@@ -7349,7 +7483,7 @@ const theme = /*@__PURE__*/Wordgard.styles({
         borderRadius: "4px",
         backgroundColor: "var(--wg-panel-color)",
         position: "absolute",
-        zIndex: "10",
+        zIndex: "400",
         top: "100%",
         boxShadow: "0 2px 8px 0 rgba(128, 128, 128, 0.2)",
         "& wg-menu-list": {
@@ -7369,6 +7503,7 @@ const theme = /*@__PURE__*/Wordgard.styles({
     },
 });
 const barTemplate = /*@__PURE__*/GardState.Facet.define({
+    name: "menuBarTemplate",
     combine: inputs => inputs.length ? inputs[0] : [Menu.Group.top.template()]
 });
 function menuBar(config = {}) {
@@ -7378,7 +7513,7 @@ function menuBar(config = {}) {
     return extensions;
 }
 
-const inputRule = /*@__PURE__*/GardState.Facet.define();
+const inputRule = /*@__PURE__*/GardState.Facet.define({ name: "inputRule" });
 const appender = /*@__PURE__*/Transaction.appender.of(applyInputRules);
 class InputRule {
     expr;
@@ -7434,13 +7569,14 @@ class InputRule {
             lookahead: empty ? /^$/ : undefined
         });
     }
+    toString() { return `InputRule(${this.expr})`; }
 }
 ;InputRule = /*@__PURE__*/(function (InputRule) {
     InputRule.emDash = InputRule.define({ expr: /--$/, apply: "—" });
     InputRule.ellipsis = InputRule.define({ expr: /\.\.\.$/, apply: "…" });
-    InputRule.openDoubleQuote = InputRule.define({ expr: /(?:^|[\s\{\[\(\<'"\u2018\u201C])(")$/, apply: "“" });
+    InputRule.openDoubleQuote = InputRule.define({ expr: /(?<=^|[\s\{\[\(\<'"\u2018\u201C])"$/, apply: "“" });
     InputRule.closeDoubleQuote = InputRule.define({ expr: /"$/, apply: "”" });
-    InputRule.openSingleQuote = InputRule.define({ expr: /(?:^|[\s\{\[\(\<'"\u2018\u201C])(')$/, apply: "‘" });
+    InputRule.openSingleQuote = InputRule.define({ expr: /(?<=^|[\s\{\[\(\<'"\u2018\u201C])'$/, apply: "‘" });
     InputRule.closeSingleQuote = InputRule.define({ expr: /'$/, apply: "’" });
     InputRule.smartQuotes = [InputRule.openDoubleQuote, InputRule.closeDoubleQuote, InputRule.openSingleQuote, InputRule.closeSingleQuote];
 ;return InputRule})(InputRule);
@@ -7524,7 +7660,7 @@ const placeholderWidget = /*@__PURE__*/Widget.define({
         return elt;
     }
 });
-const placeholderShape = /*@__PURE__*/GardState.Facet.define();
+const placeholderShape = /*@__PURE__*/GardState.Facet.define({ name: "placeholderShape" });
 function showPlaceholder(state) {
     let pos = -1;
     if (state.doc.length == 0)
@@ -7539,6 +7675,7 @@ function showPlaceholder(state) {
     return Decoration.Point.set([[Decoration.Point.widget(placeholderWidget.of(shape[0]), { side: 1 }), pos]]);
 }
 const placeholderField = /*@__PURE__*/GardState.Field.define({
+    name: "placeholder",
     create(state) {
         return showPlaceholder(state);
     },
@@ -7555,9 +7692,11 @@ function placeholder(content) {
 }
 
 const setDropCursorPos = /*@__PURE__*/Transaction.Effect.define({
+    name: "setDropCursorPos",
     map(pos, mapping) { return pos == null ? null : { pos: mapping.mapPos(pos.pos), side: pos.side }; }
 });
 const dropCursorPos = /*@__PURE__*/GardState.Field.define({
+    name: "dropCursorPos",
     create() { return null; },
     update(pos, tr) {
         if (pos != null)

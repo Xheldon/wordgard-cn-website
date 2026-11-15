@@ -1,6 +1,7 @@
 import { GardState } from 'wordgard/state';
 
 const phraseOverride = /*@__PURE__*/GardState.Facet.define({
+    name: "phraseOverride",
     combine(records) {
         let map = new Map();
         for (let i = records.length - 1; i >= 0; i--) {

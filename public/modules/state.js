@@ -1,4 +1,4 @@
-import { Leaf, ValidationError, Slice, Pos, ChangeSet, Plot, SchemaError, parse, Schema } from 'wordgard/doc';
+import { Leaf, ValidationError, Slice, Pos, ChangeSet, Plot, SchemaError, parse, Schema, Node } from 'wordgard/doc';
 import { findClusterBreak } from '@marijn/find-cluster-break';
 
 function dec(str) {
@@ -910,7 +910,7 @@ function skipWord(cx, start, side, forward) {
 function wordAt(state, pos, bias) {
     let res = state.doc.resolve(pos);
     if (!res.parent.node.inlineContent)
-        return GardSelection.cursor(pos, bias);
+        return null;
     let start = pos, end = pos, text = "";
     scanBack: for (let i = res.index - (res.inText ? 0 : 1), cur = res.nodeBefore; cur;) {
         if (!cur.is(Leaf.Text))
@@ -951,8 +951,18 @@ function wordAt(state, pos, bias) {
         if (segment.isWordLike && segment.index <= local && segment.index + segment.segment.length >= local && (!best || bias > 0))
             best = segment;
     }
-    return best ? GardSelection.undirectionalRange(start + best.index, start + best.index + best.segment.length)
-        : GardSelection.cursor(pos, bias);
+    return best ? GardSelection.undirectionalRange(start + best.index, start + best.index + best.segment.length) : null;
+}
+
+function debugString(value) {
+    let tp = typeof value;
+    if (tp == "string")
+        return JSON.stringify(value);
+    if (tp == "function")
+        return /.*?\)/.exec(value.toString())?.[0] || value;
+    if (Array.isArray(value))
+        return `[${value.map(debugString)}]`;
+    return value;
 }
 
 class Transaction {
@@ -1045,20 +1055,28 @@ class Transaction {
             this.type = type;
             this.value = value;
         }
-        static define() { return new Transaction.Annotation.Type(); }
+        static define(name) { return Transaction.Annotation.Type.new(name || null); }
+        toString() { return `${this.type}(${debugString(this.value)})`; }
     }
     Transaction.Annotation = Annotation;
     (function (Annotation) {
         class Type {
+            name;
+            constructor(
+            name) {
+                this.name = name;
+            }
+            static new(name) { return new Type(name); }
             of(value) { return new Transaction.Annotation(this, value); }
+            toString() { return "Annotation" + (this.name ? ":" + this.name : ""); }
         }
         Annotation.Type = Type;
     })(Annotation = Transaction.Annotation || (Transaction.Annotation = {}));
-    Transaction.time = Transaction.Annotation.define();
-    Transaction.userEvent = Annotation.define();
-    Transaction.addToHistory = Annotation.define();
-    Transaction.remote = Annotation.define();
-    Transaction.appended = Annotation.define();
+    Transaction.time = Transaction.Annotation.define("time");
+    Transaction.userEvent = Annotation.define("userEvent");
+    Transaction.addToHistory = Annotation.define("addToHistory");
+    Transaction.remote = Annotation.define("remote");
+    Transaction.appended = Annotation.define("appended");
     class Effect {
         type;
         value;
@@ -1074,8 +1092,9 @@ class Transaction {
         }
         is(type) { return this.type == type; }
         static define(spec = {}) {
-            return new Transaction.Effect.Type(spec.map || (v => v));
+            return Effect.Type.new(spec.map || (v => v), spec.name || null);
         }
+        toString() { return `${this.type}(${debugString(this.value)})`; }
     }
     Transaction.Effect = Effect;
     (function (Effect) {
@@ -1093,11 +1112,18 @@ class Transaction {
         Effect.mapEffects = mapEffects;
         class Type {
             map;
+            name;
             constructor(
-            map) {
+            map, 
+            name) {
                 this.map = map;
+                this.name = name;
+            }
+            static new(map, name) {
+                return new Type(map, name);
             }
             of(value) { return new Transaction.Effect(this, value); }
+            toString() { return "Effect" + (this.name ? ":" + this.name : ""); }
         }
         Effect.Type = Type;
     })(Effect = Transaction.Effect || (Transaction.Effect = {}));
@@ -1366,8 +1392,8 @@ class GardState {
     wordAt(pos, bias = 1) {
         return wordAt(this, pos, bias);
     }
-    static reconfigure = /*@__PURE__*/Transaction.Effect.define();
-    static appendConfig = /*@__PURE__*/Transaction.Effect.define();
+    static reconfigure = /*@__PURE__*/Transaction.Effect.define({ name: "reconfigure" });
+    static appendConfig = /*@__PURE__*/Transaction.Effect.define({ name: "appendConfig" });
 }
 ;GardState = /*@__PURE__*/(function (GardState) {
     class Field {
@@ -1385,13 +1411,15 @@ class GardState {
             this.updateF = updateF;
             this.compareF = compareF;
             this.spec = spec;
+            this.name = spec.name || null;
         }
         static define(config) {
-            let field = new GardState.Field(nextID++, config.create, config.update, config.compare || ((a, b) => a === b), config);
+            let field = new Field(nextID++, config.create, config.update, config.compare || ((a, b) => a === b), config);
             if (config.provide)
                 field.provides = config.provide(field);
             return field;
         }
+        name;
         create(state) {
             let init = state.facet(initField).find(i => i.field == this);
             return (init?.create || this.createF)(state);
@@ -1425,21 +1453,25 @@ class GardState {
         init(create) {
             return [this, initField.of({ field: this, create })];
         }
+        toString() { return "Field" + (this.name ? ":" + this.name : ""); }
     }
     GardState.Field = Field;
     (function (Field) {
         class Derived {
             value;
             compareF;
+            name;
             id = nextID++;
             dependencies = [];
             constructor(
-            value, compareF) {
+            value, compareF, 
+            name) {
                 this.value = value;
                 this.compareF = compareF;
+                this.name = name;
             }
             static define(compute, spec = {}) {
-                return new Derived(compute, spec.compare || ((a, b) => a === b));
+                return new Derived(compute, spec.compare || ((a, b) => a === b), spec.name || null);
             }
             get extension() { return this; }
             slot(addresses) {
@@ -1483,6 +1515,7 @@ class GardState {
                     }
                 };
             }
+            toString() { return "Field.Derived" + (this.name ? ":" + this.name : ""); }
         }
         Field.Derived = Derived;
     })(Field = GardState.Field || (GardState.Field = {}));
@@ -1491,6 +1524,7 @@ class GardState {
         compareInput;
         compare;
         isStatic;
+        name;
         id = nextID++;
         default;
         extensions;
@@ -1498,17 +1532,19 @@ class GardState {
         combine, 
         compareInput, 
         compare, 
-        isStatic, enables) {
+        isStatic, enables, 
+        name) {
             this.combine = combine;
             this.compareInput = compareInput;
             this.compare = compare;
             this.isStatic = isStatic;
+            this.name = name;
             this.default = combine(none);
             this.extensions = typeof enables == "function" ? enables(this) : enables;
         }
         get reader() { return this; }
         static define(config = {}) {
-            return new GardState.Facet(config.combine || ((a) => a), config.compareInput || ((a, b) => a === b), config.compare || (!config.combine ? sameArray : (a, b) => a === b), !!config.static, config.enables);
+            return new GardState.Facet(config.combine || ((a) => a), config.compareInput || ((a, b) => a === b), config.compare || (!config.combine ? sameArray : (a, b) => a === b), !!config.static, config.enables, config.name || null);
         }
         of(value) {
             return new FacetProvider(this, nextID++, 1, value);
@@ -1533,6 +1569,7 @@ class GardState {
             return this.derive(s => get(s.field(field)));
         }
         tag;
+        toString() { return "Facet" + (this.name ? ":" + this.name : ""); }
     }
     GardState.Facet = Facet;
     (function (Facet) {
@@ -1707,15 +1744,19 @@ class GardState {
         return result.reduce((a, b) => a.concat(b));
     }
     GardState.prec = {
-        highest: mkPrec(0),
-        high: mkPrec(1),
-        default: mkPrec(2),
-        low: mkPrec(3),
-        lowest: mkPrec(4)
+        highest: mkPrec(0, "Highest"),
+        high: mkPrec(1, "High"),
+        default: mkPrec(2, "Default"),
+        low: mkPrec(3, "Low"),
+        lowest: mkPrec(4, "Lowest")
     };
     class Compartment {
-        constructor() { }
-        static define() { return new Compartment; }
+        name;
+        constructor(
+        name) {
+            this.name = name;
+        }
+        static define(name) { return new Compartment(name || null); }
         of(ext) { return new CompartmentInstance(this, ext); }
         reconfigure(content) {
             return GardState.Compartment.reconfigureCompartment.of({ compartment: this, extension: content });
@@ -1723,28 +1764,35 @@ class GardState {
         get(state) {
             return state.config.compartments.get(this);
         }
-        static reconfigureCompartment = Transaction.Effect.define();
+        static reconfigureCompartment = Transaction.Effect.define({ name: "reconfigureCompartment" });
+        toString() { return "Compartment" + (this.name ? ":" + this.name : ""); }
     }
     GardState.Compartment = Compartment;
     GardState.schemaElement = GardState.Facet.define({
+        name: "schemaElement",
         combine: values => values.reduce((set, elt) => set.concat(elt), none),
         static: true
     });
     GardState.readOnly = GardState.Facet.define({
+        name: "readOnly",
         combine: values => values.length ? values[0] : false
     });
     GardState.textLTR = GardState.Facet.define({
+        name: "textLTR",
         combine: values => values.length ? values[0] : true,
         static: true
     });
     GardState.textblockLTR = GardState.Facet.define({
+        name: "textblockLTR",
         static: true
     });
     GardState.visualCursorMotion = GardState.Facet.define({
+        name: "visualCursorMotion",
         combine(values) { return !values.length ? true : values[0]; },
         static: true
     });
     GardState.isAtom = GardState.Facet.define({
+        name: "isAtom",
         static: true,
         combine(inputs) {
             let map = new Map();
@@ -1754,22 +1802,28 @@ class GardState {
         }
     });
 ;return GardState})(GardState);
-const initField = /*@__PURE__*/GardState.Facet.define({ static: true });
+const initField = /*@__PURE__*/GardState.Facet.define({
+    name: "init",
+    static: true
+});
 function addValue(set, value) {
     if (set.indexOf(value) < 0)
         set.push(value);
 }
-function mkPrec(value) {
-    return (ext) => new PrecExtension(ext, value);
+function mkPrec(value, name) {
+    return (ext) => new PrecExtension(ext, value, name);
 }
 class PrecExtension {
     inner;
     prec;
-    constructor(inner, prec) {
+    name;
+    constructor(inner, prec, name) {
         this.inner = inner;
         this.prec = prec;
+        this.name = name;
     }
     extension;
+    toString() { return `Prec.${this.name}(${this.inner})`; }
 }
 function sameArray(a, b) {
     return a == b || a.length == b.length && a.every((e, i) => e === b[i]);
@@ -1807,6 +1861,7 @@ class FacetProvider {
         this.flags = flags;
         this.value = value;
     }
+    toString() { return `${this.facet}(${this.flags & 1 ? debugString(this.value) : "dynamic"})`; }
 }
 function compareArray(a, b, compare) {
     if (a.length != b.length)
@@ -1896,8 +1951,10 @@ class CompartmentInstance {
         this.inner = inner;
     }
     extension;
+    toString() { return `${this.compartment}(${this.inner})`; }
 }
 GardSelection = /*@__PURE__*/(GardSelection => {GardSelection.selectionType = GardState.Facet.define({
+    name: "selectionType",
     combine(values) {
         let types = [GardSelection.Text.type, GardSelection.Node.type, ...values];
         for (let i = 0; i < types.length; i++)
@@ -1909,8 +1966,8 @@ GardSelection = /*@__PURE__*/(GardSelection => {GardSelection.selectionType = Ga
     },
     static: true
 }); return GardSelection})(GardSelection);
-Transaction = /*@__PURE__*/(Transaction => {Transaction.extender = GardState.Facet.define(); return Transaction})(Transaction);
-Transaction = /*@__PURE__*/(Transaction => {Transaction.appender = GardState.Facet.define(); return Transaction})(Transaction);
+Transaction = /*@__PURE__*/(Transaction => {Transaction.extender = GardState.Facet.define({ name: "extender" }); return Transaction})(Transaction);
+Transaction = /*@__PURE__*/(Transaction => {Transaction.appender = GardState.Facet.define({ name: "appender" }); return Transaction})(Transaction);
 
 function scanChanges(changes, doc, corrections) {
     let buckets = [[], [], []], [childList, content, marks] = buckets;
@@ -2003,7 +2060,7 @@ function scanChanges(changes, doc, corrections) {
     }
     return plan;
 }
-const corrections = /*@__PURE__*/GardState.Facet.define();
+const corrections = /*@__PURE__*/GardState.Facet.define({ name: "corrections" });
 const planCache = /*@__PURE__*/(() => new WeakMap())();
 class Correction {
     event;
@@ -2072,6 +2129,7 @@ class Correction {
                 }
         return changed.length ? ChangeSet.create(doc, changed) : null;
     }
+    toString() { return `Correction(${Node.queryToString(this.query)})`; }
 }
 
 export { BidiSpan, Correction, GardSelection, GardState, TextblockMap, Transaction };

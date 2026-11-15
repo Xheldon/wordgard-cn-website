@@ -137,6 +137,7 @@ let SetBuilder$1 = class SetBuilder {
     spilled = null;
     lastTo = -1;
     lastFrom = -1;
+    closed = false;
     get next() {
         return this.spilled || (this.spilled = new SetBuilder());
     }
@@ -147,6 +148,7 @@ let SetBuilder$1 = class SetBuilder {
         else {
             this.chunks.push(chunk);
             this.lastTo = chunk.end;
+            this.closed = true;
         }
     }
     add(source, pre) {
@@ -164,17 +166,22 @@ let SetBuilder$1 = class SetBuilder {
     addRange(value, from, to) {
         if (from >= to)
             throw new Error("Ranges cannot be empty");
-        (this.lastTo <= from ? this : this.next).addInner(value, from, to);
+        for (let target = this;; target = target.next)
+            if (target.lastTo <= from) {
+                target.addInner(value, from, to);
+                break;
+            }
     }
     addInner(value, from, to) {
         let chunk;
-        if (this.chunks.length) {
+        if (this.chunks.length && !this.closed) {
             chunk = this.chunks[this.chunks.length - 1];
             if (chunk.value.length >= 512)
                 chunk = undefined;
         }
         if (!chunk) {
             this.chunks.push(chunk = new Chunk$1(from, [], [], []));
+            this.closed = false;
         }
         chunk.from.push(from - chunk.start);
         chunk.to.push(to - chunk.start);
@@ -246,13 +253,14 @@ class RangeSet extends Set {
         let replI = 0, posA = 0, posB = 0;
         let build = new SetBuilder$1();
         for (let i = 0; i < sections.length;) {
-            let len = sections[i++], ins = sections[i++];
+            let len = sections[i++], ins = sections[i++], endA = posA + len;
             if (ins < 0) {
                 while (i < sections.length && sections[i + 1] < 0) {
                     len += sections[i];
+                    endA = posA + len;
                     i += 2;
                 }
-                let upto = i == sections.length ? 1e9 : posA + len, off = posB - posA;
+                let upto = i == sections.length ? 1e9 : endA, off = posB - posA;
                 while (cursor.cur) {
                     let chunk = cursor.cur;
                     if (cursor.i == 0 && chunk.end < upto) {
@@ -277,12 +285,12 @@ class RangeSet extends Set {
                     if (repl.add)
                         build.add(repl.add);
                 }
-                if (len)
-                    cursor.goto(posA + len - 1);
-                copyMappedUpto$1(cursor, posA + len, map, build, replace, replStartI);
+                if (len && cursor.to < endA)
+                    cursor.goto(endA - 1);
+                copyMappedUpto$1(cursor, endA, map, build, replace, replStartI);
                 posB = endB;
             }
-            posA += len;
+            posA = endA;
         }
         return build.finish(this.next && this.next.mapInner(sections, map, replace));
     }
@@ -466,10 +474,12 @@ class SetBuilder {
     chunks = [];
     lastPos = -1;
     lastSide = -1;
+    closed = 0;
     addChunk(chunk) {
         this.chunks.push(chunk);
         this.lastPos = chunk.end;
         this.lastSide = chunk.endSide;
+        this.closed = this.chunks.length;
     }
     add(source, pre) {
         if (typeof source != "function") {
@@ -487,14 +497,13 @@ class SetBuilder {
     }
     addPoint(value, pos) {
         let chunk;
-        if (this.chunks.length) {
+        if (this.closed < this.chunks.length) {
             chunk = this.chunks[this.chunks.length - 1];
             if (chunk.value.length >= 512)
                 chunk = undefined;
         }
-        if (!chunk) {
+        if (!chunk)
             this.chunks.push(chunk = new Chunk(pos, [], []));
-        }
         chunk.pos.push(pos - chunk.start);
         chunk.value.push(value);
         if ((pos - this.lastPos || value.side || this.lastSide) >= 0) {
@@ -508,6 +517,8 @@ class SetBuilder {
                     if (!chunkI)
                         break;
                     nextChunk = this.chunks[--chunkI];
+                    if (this.closed > chunkI)
+                        nextChunk = this.chunks[chunkI] = new Chunk(nextChunk.start, nextChunk.pos.slice(), nextChunk.value.slice());
                     nextI = nextChunk.value.length - 1;
                 }
                 if ((pos - nextChunk.pos[nextI] || value.side - nextChunk.value[nextI].side) >= 0)
@@ -715,18 +726,18 @@ class PointCursor {
     get side() { return this.value ? this.value.side : 1e9; }
     goto(pos, side) {
         let diff = pos - this.from || side - this.side;
-        if (diff < 0) {
-            this.chunkI = this.i = 0;
-        }
-        else if (diff == 0 && this.cur) {
+        if (diff == 0 && this.cur) {
             for (;; this.i--) {
                 if (!this.i) {
                     this.chunkI = 0;
                     break;
                 }
-                if ((pos - this.cur.pos[this.i - 1] || side - this.cur.value[this.i - 1].side) < 0)
+                if ((pos - this.cur.pos[this.i - 1] || side - this.cur.value[this.i - 1].side) <= 0)
                     break;
             }
+        }
+        else if (diff <= 0) {
+            this.chunkI = this.i = 0;
         }
         for (let first = true;;) {
             if (this.chunkI == this.set.chunks.length) {

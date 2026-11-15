@@ -412,7 +412,7 @@ const Attributes = /*@__PURE__*/(function (Attributes) {
                 score--;
                 iA += 2;
             }
-            else if (iB < b.length && iA == a.length) {
+            else if (iB < b.length) {
                 score--;
                 iB += 2;
             }
@@ -867,8 +867,8 @@ class Pos {
         let d = this.depth;
         if (depth > d)
             throw new RangeError("Asking for parent deeper than position depth");
-        for (let d = this.depth, p = this.parent;; p = p.parent)
-            if (d == depth)
+        for (let p = this.parent;; p = p.parent)
+            if (d-- == depth)
                 return p;
     }
     isAtStart(parent) {
@@ -1093,6 +1093,7 @@ class BaseType {
     get isBlock() { return (this.flags & 1) == 0; }
     get isAtom() { return (this.flags & 4) > 0; }
     get isSelectable() { return (this.flags & 32) > 0; }
+    toString() { return this.name; }
 }
 class BaseTag {
     param;
@@ -1131,29 +1132,48 @@ const Node = /*@__PURE__*/(function (Node) {
     })(Node.Type || (Node.Type = {}));
     class Group {
         parent;
+        name;
         constructor(
-        parent) {
+        parent, 
+        name) {
             this.parent = parent;
+            this.name = name;
         }
-        static define(parent) { return new Group(parent); }
-        static All = Group.define();
-        static Inline = Group.define();
-        static Block = Group.define();
-        static Leaf = Group.define();
-        static Plot = Group.define();
-        static Textblock = Group.define();
-        static Content = Group.define();
-        static TableCell = Group.define();
-        static ListItem = Group.define();
+        static define(spec = {}) {
+            return new Group(spec.parent, spec.name || null);
+        }
+        static All = Group.define({ name: "All" });
+        static Inline = Group.define({ name: "Inline" });
+        static Block = Group.define({ name: "Block" });
+        static Leaf = Group.define({ name: "Leaf" });
+        static Plot = Group.define({ name: "Plot" });
+        static Textblock = Group.define({ name: "Textblock" });
+        static Content = Group.define({ name: "Content" });
+        static TableCell = Group.define({ name: "TableCell" });
+        static ListItem = Group.define({ name: "ListItem" });
         static builtin = [Group.All, Group.Inline, Group.Block, Group.Leaf, Group.Plot, Group.Textblock];
+        toString() { return "Node.Group" + (this.name ? ":" + this.name : ""); }
     }
     Node.Group = Group;
+    function queryToString(q) {
+        if ("and" in q)
+            return `and(${q.and.map(queryToString)})`;
+        if (Array.isArray(q))
+            return `or(q.map(queryToString))`;
+        return String(q);
+    }
+    Node.queryToString = queryToString;
     class Role {
-        constructor() { }
-        static define() { return new Role; }
-        static Code = Role.define();
-        static List = Role.define();
-        static LineBreak = Role.define();
+        name;
+        constructor(
+        name) {
+            this.name = name;
+        }
+        static define(name) { return new Role(name || null); }
+        static Code = Role.define("Code");
+        static List = Role.define("List");
+        static LineBreak = Role.define("LineBreak");
+        toString() { return "Node.Role" + (this.name ? ":" + this.name : ""); }
     }
     Node.Role = Role;
 ;return Node})({});
@@ -1392,6 +1412,8 @@ class Plot {
         constructor(type, param, marks) {
             super(param, marks);
             this.type = type;
+            if (this.type.isDoc && marks.length)
+                throw new Error("Document nodes cannot have marks");
         }
         static new(type, param, marks) {
             return new Tag(type, param, marks);
@@ -1997,11 +2019,9 @@ class Builder {
         return this.schema.doc(this.stack.children);
     }
 }
-function isAdd(m) { return !!m.add; }
-function isRemove(m) { return !!m.remove; }
 function applyModifications(modifications, marks, type) {
     for (const m of modifications) {
-        if (isAdd(m)) {
+        if ("add" in m) {
             marks = m.add.addToSet(marks);
         }
         else {
@@ -2011,7 +2031,7 @@ function applyModifications(modifications, marks, type) {
     return marks;
 }
 function modificationToJSON(m) {
-    return isAdd(m) ? { add: m.add.name, value: m.add.value } : { remove: m.remove.name, value: m.remove.value };
+    return "add" in m ? { add: m.add.name, value: m.add.value } : { remove: m.remove.name, value: m.remove.value };
 }
 function modificationFromJSON(schema, json) {
     let { add, remove } = json;
@@ -2036,7 +2056,7 @@ function compareModifications(a, b) {
     return true;
 }
 function compareModification(a, b) {
-    return isAdd(a) ? isAdd(b) && a.add.eq(b.add) : isRemove(b) && a.remove.eq(b.remove);
+    return "add" in a ? "add" in b && a.add.eq(b.add) : "remove" in b && a.remove.eq(b.remove);
 }
 function isNatNum(value) {
     return typeof value == "number" && Math.floor(value) == value && value >= 0;
@@ -2344,13 +2364,12 @@ class ChangeSet {
         for (let i = 0, pos = 0; i < this.sections.length && pos <= to;) {
             let value = this.data[i >> 1], len = this.sections[i++], ins = this.sections[i++];
             let end = pos + len;
-            if (ins > 0) {
-                if (pos >= from && end <= to)
-                    addSection(sections, data, end - pos, ins, value);
-                else if (end > from && pos < from)
-                    return null;
+            if (pos >= from && end <= to) {
+                addSection(sections, data, len, ins, value);
             }
-            else if (pos < to && end > from) {
+            else if (end > from && pos < to) {
+                if (ins >= 0)
+                    return null;
                 addSection(sections, data, Math.min(end, to) - Math.max(pos, from), ins, value);
             }
             pos = end;
@@ -2373,7 +2392,7 @@ class ChangeSet {
             }
             else if (data) {
                 text += `[${data.map(mod => {
-                    return `${isAdd(mod) ? "+" + mod.add : "-" + mod.remove}`;
+                    return `${"add" in mod ? "+" + mod.add : "-" + mod.remove}`;
                 })}]`;
             }
             if (text)
@@ -2399,6 +2418,36 @@ class ChangeSetBuilder {
     sections = [];
     data = [];
     pos = 0;
+    addSection(from, to, ins, value) {
+        if (from >= this.pos) {
+            addSection(this.sections, this.data, from - this.pos, -1, null);
+            addSection(this.sections, this.data, to - from, ins, value);
+            this.pos = to;
+            return true;
+        }
+        if (this.sections.length && this.sections[0] > to && this.sections[1] == -1) {
+            this.spliceSection(0, from, to, ins, value);
+            return true;
+        }
+        for (let pos = this.pos, i = this.sections.length; i > 2 && pos > to;) {
+            let nextIns = this.sections[--i], nextLen = this.sections[--i];
+            let start = pos - nextLen;
+            if (nextIns == -1 && start < from) {
+                this.spliceSection(i, from - start, to - start, ins, value);
+                return true;
+            }
+            pos = start;
+        }
+        return false;
+    }
+    spliceSection(i, from, to, ins, value) {
+        let sections = [], data = [];
+        addSection(sections, data, from, -1, null);
+        addSection(sections, data, to - from, ins, value);
+        addSection(sections, data, this.sections[i] - to, -1, null);
+        this.sections.splice(i, 2, ...sections);
+        this.data.splice(i >> 1, 1, ...data);
+    }
 }
 function sliceLen(tokens) {
     return tokens.reduce((l, e) => l + (e.tokenType == Token.Type.Node ? e.length : 1), 0);
@@ -2419,14 +2468,11 @@ function createChangeSet(doc, spec, mayCorrect = true) {
         accum = accum ? accum.compose(transform(set, accum, doc, false, false).set) : set;
     };
     let section = (from, to, ins, value) => {
-        if (!cur || from < cur.pos) {
+        if (!cur?.addSection(from, to, ins, value)) {
             flush();
             cur = new ChangeSetBuilder(doc.length);
+            cur.addSection(from, to, ins, value);
         }
-        if (from > cur.pos)
-            addSection(cur.sections, cur.data, from - cur.pos, -1, null);
-        addSection(cur.sections, cur.data, to - from, ins, value);
-        cur.pos = to;
     };
     let build = (spec) => {
         if (Array.isArray(spec)) {
@@ -2476,17 +2522,20 @@ function createChangeSet(doc, spec, mayCorrect = true) {
                 if (remove) {
                     let mods = [{ remove }];
                     markableSections(doc, from, to, remove.type.spanning, (node, from, to) => {
-                        const has = remove.isInSet(node.tag.marks);
-                        if (!has || !doc.schema.markAllowed(remove.type, node.type))
-                            return false;
-                        let modsHere = mods;
                         if (remove.type.set) {
-                            let left = subtractSet(remove.value, has.value, remove.type.set);
+                            let has = remove.type.isInSet(node.tag.marks);
+                            if (!has)
+                                return false;
+                            let left = remove.value.filter(a => has.value.some(b => remove.type.set(a, b) == 0));
                             if (!left.length)
                                 return false;
-                            modsHere = [{ remove: remove.type.of(left) }];
+                            section(from, to, -2, left.length == remove.value.length ? mods : [{ remove: remove.type.of(left) }]);
                         }
-                        section(from, to, -2, modsHere);
+                        else {
+                            if (!remove.isInSet(node.tag.marks))
+                                return false;
+                            section(from, to, -2, mods);
+                        }
                         return true;
                     });
                 }
@@ -2633,16 +2682,16 @@ function filterMods(mods, against) {
     return mods.filter(m => !against.some(a => modCancels(a, m)));
 }
 function modCancels(mod, other) {
-    if (isAdd(other)) {
-        return isAdd(mod) ? mod.add.type == other.add.type && !mod.add.type.set : mod.remove.eq(other.add);
+    if ("add" in other) {
+        return "add" in mod ? mod.add.type == other.add.type && !mod.add.type.set : mod.remove.eq(other.add);
     }
     else {
-        return isAdd(mod) && mod.add.eq(isAdd(other) ? other.add : other.remove);
+        return "add" in mod && mod.add.eq(other.remove);
     }
 }
 function invertMods(mods, target) {
     return mods.map(mod => {
-        if (isRemove(mod))
+        if ("remove" in mod)
             return { add: mod.remove };
         if (!mod.add.type.set) {
             let existed = mod.add.type.isInSet(target.marks);
