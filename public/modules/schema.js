@@ -238,7 +238,7 @@ function horizontalRule() {
                 return null;
             return {
                 changes,
-                selection: cx => GardSelection.near(cx, hr + 1, 1),
+                selection: cx => GardSelection.near(cx, hr + 1, -1),
                 annotations: history.isolate.of(true),
                 userEvent: "insert.horizontalrule"
             };

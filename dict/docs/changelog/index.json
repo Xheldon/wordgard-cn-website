@@ -730,5 +730,13 @@
   "Wordgard.findFromDOM can now be used to get an editor instance from the editor's DOM node.": {
     "_translate": "<code>Wordgard.findFromDOM</code> 现在可用于从编辑器的 DOM 节点获取编辑器实例。",
     "_note": ""
+  },
+  "State fields, facets, compartments, effects, and annotations can now be tagged with a debug string and have more meaningful toString representations.": {
+    "_translate": "现在，状态字段、面、隔间、效果和注解都可以标记调试字符串，并拥有更有意义的 <code>toString</code> 表示形式。",
+    "_note": ""
+  },
+  "The new Wordgard.paste method can be used to initiate a paste into the editor.": {
+    "_translate": "新的 <code>Wordgard.paste</code> 方法可用于在编辑器中启动粘贴操作。",
+    "_note": ""
   }
 }

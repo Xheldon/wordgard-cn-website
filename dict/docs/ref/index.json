@@ -6290,5 +6290,37 @@
   "The end row. Non-inclusive. Always higher than startRow.": {
     "_translate": "结束行。不包含。始终大于 <code>startRow</code>。",
     "_note": ""
+  },
+  "Used by Plot.Tag.split to determine whether to keep this mark in the split-off tag. atEnd will be true if the split happens at the end of the node's content. Defaults to true.": {
+    "_translate": "由 <a href=\"#doc.Plot.Tag.split\"><code>Plot.Tag.split</code></a> 使用，用于确定是否将此标记保留在拆分出的标签中。如果拆分发生在节点内容的末尾，则 <code>atEnd</code> 为 true。默认为 true。",
+    "_note": ""
+  },
+  "Find a normal cursor near the given position. bias gives the direction in which to scan first. If there's no normal position in that direction, the other side will also be tried.": {
+    "_translate": "在给定位置附近查找一个普通光标。<code>bias</code> 指定了首先扫描的方向。如果该方向上没有普通位置，则将尝试另一侧。",
+    "_note": ""
+  },
+  "Return a change set that replaces the selection with the given content, inserting it at the position of the selection's main range, and deleting any other ranges.": {
+    "_translate": "返回一个变更集，该变更集将选区替换为给定内容，将其插入到选区主范围的位置，并删除任何其他范围。",
+    "_note": ""
+  },
+  "Ctrl-AllowRight (Alt-ArrowRight on MacOS) to moveByWord ({dir: \"right\"})": {
+    "_translate": "<code>Ctrl-AllowRight</code>（MacOS 上为 <code>Alt-ArrowRight</code>）用于 <a href=\"#command.moveByWord\"><code>moveByWord</code></a>（<code>{dir: \"right\"}</code>）",
+    "_note": ""
+  },
+  "An optional function that causes the decorations to be recreated on matching transaction.": {
+    "_translate": "一个可选函数，用于在匹配的事务上重新创建装饰。",
+    "_note": ""
+  },
+  "Ctrl-AllowLeft (Alt-ArrowLeft on MacOS) to moveByWord ({dir: \"left\"})": {
+    "_translate": "<code>Ctrl-AllowLeft</code>（MacOS 上为 <code>Alt-ArrowLeft</code>）用于 <a href=\"#command.moveByWord\"><code>moveByWord</code></a>（<code>{dir: \"left\"}</code>）",
+    "_note": ""
+  },
+  "Decorations can only be added inside the plot's content. If the matched type of plot can nest, decorations for an outer plot may not occur inside an inner plot's content range.": {
+    "_translate": "装饰元素只能添加到图表内容的<em>内部</em>。如果匹配的图表类型支持嵌套，则外部图表的装饰元素不得出现在内部图表的内容范围内。",
+    "_note": ""
+  },
+  "Create a cell selection between the cells at the two given positions. If the positions don't point in front of cells or the cells are not in the same table, this will return null.": {
+    "_translate": "在两个给定位置的单元格之间创建一个单元格选择。如果这些位置未指向单元格前方，或者单元格不在同一表格中，则返回 <code>null</code>。",
+    "_note": ""
   }
 }

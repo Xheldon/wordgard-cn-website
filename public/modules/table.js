@@ -1,6 +1,6 @@
 import { Decoration, Wordgard } from 'wordgard/editor';
 import { GardState, Transaction, GardSelection, Correction } from 'wordgard/state';
-import { Table, ColSpan, RowSpan, TableRow, Cell, BlockCell, HeaderCell, BlockHeaderCell } from 'wordgard/types';
+import { Table, ColSpan, RowSpan, Cell, BlockCell, HeaderCell, BlockHeaderCell, TableRow } from 'wordgard/types';
 import { Node, Slice, ValidationError, Token, ChangeSet } from 'wordgard/doc';
 import { Command, moveByUnit, moveByWord, moveByLine, moveToLineSide, Menu } from 'wordgard/command';
 import { tablePhrases } from 'wordgard/phrases';
@@ -68,11 +68,10 @@ class TableMap {
             }
         }
         if (before > -1) {
-            let beforeEnd = cellEnds.get(before);
-            if (beforeEnd > localPos || after < 0 || bias < 0)
-                return { from: before + this.start, to: beforeEnd + this.start };
+            if (cellEnds.get(before) > localPos || after < 0 || bias < 0)
+                return before + this.start;
         }
-        return { from: after + this.start, to: cellEnds.get(after) + this.start };
+        return after + this.start;
     }
     cellEnd(pos) {
         let end = this.data.cellEnds.get(pos - this.start);
@@ -244,14 +243,26 @@ const cellSelectionDeco = /*@__PURE__*/GardState.Field.define({
     provide: f => Decoration.Point.source.of(s => s.field(f))
 });
 const selectedCell = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-cell" });
+const selectedTable = /*@__PURE__*/Decoration.Point.attributes({ class: "wg-selected-table" });
 function getCellDeco(state) {
-    if (!(state.selection instanceof CellSelection))
+    let { selection } = state;
+    if (selection instanceof CellSelection)
+        return Decoration.Point.set(selection.ranges.map(({ from }) => [selectedCell, from - 1]));
+    if (selection.empty)
         return Decoration.Point.none;
-    return Decoration.Point.set(state.selection.ranges.map(({ from }) => [selectedCell, from - 1]));
+    return Decoration.Point.set(add => {
+        state.doc.iterate(selection.from, selection.to, (node, pos) => {
+            if (node.type == Table.type && pos >= selection.from && pos + node.length <= selection.to) {
+                add(selectedTable, pos);
+                return false;
+            }
+            return node.type.isPlot && !node.type.inlineContent;
+        });
+    });
 }
 const tableSelectionFilter = /*@__PURE__*/(() => GardState.prec.low(Transaction.extender.of(tr => {
     let normalized = CellSelection.normalize(tr.newSelection, tr.newDoc);
-    return normalized ? { selection: normalized } : null;
+    return normalized ? { selection: normalized, sequential: true } : null;
 })))();
 function resolveDir(dir, state) {
     let block = state.sel.head.textblockParent;
@@ -264,16 +275,16 @@ function cursorCommand(wg, { dir, extend }) {
         return false;
     let newSel;
     if (!extend) {
-        newSel = GardSelection.near(state, selection.replacementRange.from, 1);
+        newSel = GardSelection.near(state, selection.from, -1);
     }
     else {
         if (dir == "left" || dir == "right")
             dir = resolveDir(dir, state);
         newSel = selection.moveHead(state.doc, dir);
         if (!newSel) {
-            let forward = dir == "forward" || dir == "down";
-            let table = state.sel.from.parent.parent;
-            let next = GardSelection.near(state, forward ? table.after : table.before, forward ? 1 : -1);
+            let forward = dir == "forward" || dir == "down", dirSig = forward ? 1 : -1;
+            let table = state.doc.resolve(selection.anchorCell).parent.parent;
+            let next = GardSelection.near(state, forward ? table.after : table.before, -dirSig, dirSig);
             newSel = GardSelection.range(forward ? table.before : table.after, next.head, next.headSide);
         }
     }
@@ -311,7 +322,7 @@ const cellSelectionTripleClick = /*@__PURE__*/Wordgard.mouseSelectionStyle.of((w
         if (cell) {
             let from = cell.before, to = cell.after;
             return {
-                get(event) { return CellSelection.between(wg.state.doc, from, to) || GardSelection.near(wg.state, from, 1); },
+                get(event) { return CellSelection.create(wg.state.doc, cell.before) || GardSelection.near(wg.state, from, 1); },
                 update(update) { from = update.changes.mapPos(from, 1); to = Math.max(from, update.changes.mapPos(to, -1)); }
             };
         }
@@ -322,24 +333,18 @@ class CellSelection extends GardSelection {
     anchorCell;
     headCell;
     _ranges;
-    anchorRange;
-    constructor(anchor, head, 
+    constructor(
     anchorCell, 
     headCell, 
     _ranges, 
-    anchorRange) {
-        super(anchor, head);
+    headRange) {
+        let { from, to } = _ranges[headRange];
+        super(from, to);
         this.anchorCell = anchorCell;
         this.headCell = headCell;
         this._ranges = _ranges;
-        this.anchorRange = anchorRange;
     }
     get ranges() { return this._ranges; }
-    get replacementRange() { return this._ranges[this.anchorRange]; }
-    get domSelection() {
-        let { from, to } = this.replacementRange;
-        return { anchor: from, anchorSide: 1, head: to, headSide: -1 };
-    }
     toSlice(doc) {
         let base = doc.resolve(this.anchorCell), table = base.parent.parent;
         let map = TableMap.get(table.node, table.start);
@@ -359,28 +364,21 @@ class CellSelection extends GardSelection {
         return Slice.of(rows, [table.node.tag]);
     }
     eq(other) {
-        return other instanceof CellSelection && other.anchor == this.anchor && other.head == this.head;
+        return other instanceof CellSelection && other.anchorCell == this.anchorCell && other.headCell == this.headCell;
     }
     map(changes, cx, assoc = -1) {
-        let fromPos = changes.mapPos(this.from, 1), toPos = changes.mapPos(this.to, -1);
-        let from = cx.doc.resolve(fromPos), to = cx.doc.resolve(toPos);
-        let after = from.nodeAfter, before = to.nodeBefore;
-        if (after && after.type == Table.type)
-            fromPos += 2;
-        else if (after && after.type == TableRow.type)
-            fromPos++;
-        if (before && before.type == Table.type)
-            toPos -= 2;
-        else if (before && before.type == TableRow.type)
-            toPos--;
-        return (this.from == this.anchor ? CellSelection.between(cx.doc, fromPos, toPos) : CellSelection.between(cx.doc, toPos, fromPos))
-            || GardSelection.near(cx, changes.mapPos(this.head), assoc);
+        let anchor = mapCellPos(this.anchorCell, changes, cx, this.anchorCell < this.headCell);
+        let head = mapCellPos(this.headCell, changes, cx, this.anchorCell >= this.headCell);
+        if (head && anchor) {
+            let found = CellSelection.create(cx.doc, anchor.pos, head.pos);
+            if (found)
+                return found;
+        }
+        return GardSelection.near(cx, changes.mapPos(this.anchor), -1, assoc);
     }
     moveHead(doc, dir) {
-        let head = doc.resolve(this.head), inv = this.head < this.anchor;
-        let headPos = this.head - (inv ? 0 : head.nodeBefore.length);
-        let table = head.parent.parent, map = TableMap.get(table.node, table.start), rect = map.cellRect(headPos);
-        let anchorPos = inv ? map.nearestCell(this.anchor, -1).from : this.anchor;
+        let anchor = doc.resolve(this.anchorCell), table = anchor.parent.parent;
+        let map = TableMap.get(table.node, table.start), rect = map.cellRect(this.headCell);
         let col = dir == "backward" ? rect.startCol - 1 : dir == "forward" ? rect.endCol : rect.startCol;
         let row = dir == "up" ? rect.startRow - 1 : dir == "down" ? rect.endRow : rect.startRow;
         if (col < 0 || col >= map.width || row < 0 || row >= map.height)
@@ -388,32 +386,26 @@ class CellSelection extends GardSelection {
         let newHead = map.cellAt(col, row);
         if (newHead == null)
             return null;
-        return newHead >= anchorPos ? CellSelection.between(doc, anchorPos, map.cellEnd(newHead))
-            : CellSelection.between(doc, newHead, map.cellEnd(anchorPos));
+        return CellSelection.create(doc, this.anchorCell, newHead);
     }
-    static between(doc, anchor, head) {
-        let from = doc.resolve(Math.min(anchor, head)), to = doc.resolve(Math.max(anchor, head));
-        let fromCell = from.nodeAfter, toCell = to.nodeBefore, table = from.parent?.parent;
-        if (anchor == head ||
-            !fromCell || !doc.schema.matchNode(fromCell.type, Node.Group.TableCell) ||
-            !toCell || !doc.schema.matchNode(toCell.type, Node.Group.TableCell) ||
-            !table || table.start > to.pos || table.end < to.pos)
+    static create(doc, anchorCell, headCell = anchorCell) {
+        let anchor = doc.resolve(anchorCell), head = doc.resolve(headCell);
+        let anchorNode = anchor.nodeAfter, headNode = head.nodeAfter;
+        if (!anchorNode || !doc.schema.matchNode(anchorNode.type, Node.Group.TableCell) ||
+            !headNode || !doc.schema.matchNode(headNode.type, Node.Group.TableCell))
             return null;
-        let toPos = to.pos - toCell.length;
+        let table = anchor.parent.parent;
+        if (head.parent.parent.start != table.start)
+            return null;
         let map = TableMap.get(table.node, table.start);
-        let cells = map.cellsInRect(map.rectBetween(from.pos, toPos));
-        let anchorCell = anchor, headCell = head;
-        if (anchor > head)
-            anchorCell -= toCell.length;
-        else
-            headCell -= toCell.length;
-        return new CellSelection(anchor, head, anchorCell, headCell, cells.map(pos => ({ from: pos + 1, to: map.cellEnd(pos) - 1 })), cells.indexOf(head - (head < anchor ? 0 : toCell.length)));
+        let cells = map.cellsInRect(map.rectBetween(anchorCell, headCell));
+        return new CellSelection(anchorCell, headCell, cells.map(pos => ({ from: pos + 1, to: map.cellEnd(pos) - 1 })), cells.indexOf(headCell));
     }
     static normalize(sel, doc) {
         if (sel instanceof CellSelection)
             return null;
         let { from, to } = sel, modified = false;
-        for (let parent = doc.resolve(sel.from).parent, cell = null; parent; parent = parent.parent) {
+        for (let parent = doc.resolve(from).parent, cell = null; parent; parent = parent.parent) {
             if (doc.schema.matchNode(parent.node.type, Node.Group.TableCell))
                 cell = parent;
             if (parent.node.type == Table.type) {
@@ -424,11 +416,11 @@ class CellSelection extends GardSelection {
                 else if (!cell || to > cell.end) {
                     let map = TableMap.get(parent.node, parent.start);
                     let start = map.nearestCell(from, 1), end = map.nearestCell(to, -1);
-                    if (start.from > end.from)
+                    if (start > end)
                         end = start;
                     return sel.anchor < sel.head
-                        ? CellSelection.between(doc, start.from, end.to)
-                        : CellSelection.between(doc, end.to, start.from);
+                        ? CellSelection.create(doc, start, end)
+                        : CellSelection.create(doc, end, start);
                 }
             }
         }
@@ -441,10 +433,10 @@ class CellSelection extends GardSelection {
         return !modified ? null : sel.anchor < sel.head ? GardSelection.range(from, to) : GardSelection.range(to, from);
     }
     static extension = /*@__PURE__*/(() => [
-        GardSelection.define("cell", CellSelection, sel => ({ anchor: sel.anchor, head: sel.head }), (doc, json) => {
+        GardSelection.define("cell", CellSelection, sel => ({ anchor: sel.anchorCell, head: sel.headCell }), (doc, json) => {
             if (!json || typeof json.anchor != "number" || typeof json.head != "number")
                 throw new ValidationError("Invalid JSON data for CellSelection");
-            let sel = CellSelection.between(doc, json.anchor, json.head);
+            let sel = CellSelection.create(doc, json.anchor, json.head);
             if (!sel)
                 throw new ValidationError("Cell selection from JSON doesn't span actual cells");
             return sel;
@@ -457,6 +449,17 @@ class CellSelection extends GardSelection {
         Command.handler(moveToLineSide, moveToRowSide),
         cellSelectionTripleClick
     ])();
+}
+function mapCellPos(pos, changes, cx, forward) {
+    let cellPos = changes.mapPos(pos, 1, "after");
+    if (cellPos == null) {        let newPos = cx.doc.resolve(changes.mapPos(pos, -1));
+        let next = forward ? newPos.nodeAfter : newPos.nodeBefore;
+        return next && cx.doc.schema.matchNode(next.type, Node.Group.TableCell)
+            ? cx.doc.resolve(newPos.pos - (forward ? 0 : next.length)) : null;
+    }
+    let newPos = cx.doc.resolve(cellPos), after = newPos.nodeAfter;
+    return after && cx.doc.schema.matchNode(after.type, Node.Group.TableCell)
+        ? newPos : null;
 }
 
 const tableCorrection = /*@__PURE__*/Correction.onContent(Table, pos => {
@@ -533,7 +536,7 @@ function tableContext(state, pos) {
         }
     }
     else {
-        table = state.sel.anchor.parent.parent;
+        table = state.sel.anchor.parent.parent.parent;
         cells = state.selection.ranges.map(r => r.from - 1);
     }
     return cells ? { cells, map: TableMap.get(table.node, table.start) } : null;
@@ -612,7 +615,7 @@ const deleteColumn = ({ state }) => {
     if (rect.startCol == 0 && rect.endCol == map.width) {
         return {
             changes: { from: map.tablePos, to: map.tablePos + map.table.length, fit: true },
-            selection: cx => GardSelection.near(cx, map.tablePos, -1),
+            selection: cx => GardSelection.near(cx, map.tablePos, 1, -1),
             userevent: "delete.table"
         };
     }
@@ -654,7 +657,7 @@ const deleteColumn = ({ state }) => {
     }
     return {
         changes,
-        selection: cx => GardSelection.near(cx, delPos, -1),
+        selection: cx => GardSelection.near(cx, delPos, -1, -1),
         userEvent: "delete.column"
     };
 };
@@ -696,7 +699,7 @@ const deleteRow = ({ state }) => {
     if (rect.startRow == 0 && rect.endRow == map.height) {
         return {
             changes: { from: map.tablePos, to: map.tablePos + map.table.length, fit: true },
-            selection: cx => GardSelection.near(cx, map.tablePos, -1),
+            selection: cx => GardSelection.near(cx, map.tablePos, 1, -1),
             userEvent: "delete.table"
         };
     }
@@ -733,7 +736,7 @@ const deleteRow = ({ state }) => {
     }
     return {
         changes,
-        selection: cx => GardSelection.near(cx, delPos, -1),
+        selection: cx => GardSelection.near(cx, delPos, 1, -1),
         userEvent: "delete.row"
     };
 };
@@ -761,7 +764,7 @@ const mergeCells = ({ state }) => {
         changes.push({ from: map.cellEnd(pos) - 1, insert: movedContent });
     return {
         changes,
-        selection: cx => CellSelection.between(cx.doc, pos, pos + cx.doc.nodeAt(pos).length),
+        selection: cx => CellSelection.create(cx.doc, pos),
         userEvent: "join.cell"
     };
 };
@@ -791,7 +794,11 @@ const splitCell = ({ state }) => {
         changes.push({ from: pos, remove: rowSpan });
     return {
         changes,
-        selection: (cx, changes) => CellSelection.between(cx.doc, pos, changes.mapPos(lastInsert, 1)),
+        selection: (cx, changes) => {
+            let end = cx.doc.resolve(changes.mapPos(lastInsert, 1));
+            let before = end.nodeBefore;
+            return before && CellSelection.create(cx.doc, pos, end.pos - before.length);
+        },
         userEvent: "split.cell"
     };
 };
@@ -981,7 +988,7 @@ function insertCells(state, map, startCol, startRow, cells, event) {
     let startCell = map.cellAt(startCol, startRow);
     let endCell = map.cellAt(endCol - 1, endRow - 1);
     let selection = startCell == null || endCell == null ? undefined
-        : CellSelection.between(doc, startCell, endCell + map.getCell(endCell).length);
+        : CellSelection.create(doc, startCell, endCell);
     return {
         changes: changeSet,
         selection,
@@ -1000,7 +1007,8 @@ function handleTablePaste(state, slice, drop) {
                 return false;
             cells = { width: 1, height: 1, rows: [[single]] };
         }
-        let table = state.sel.from.parent.parent, map = TableMap.get(table.node, table.start);
+        let anchor = state.doc.resolve(state.selection.anchorCell);
+        let table = anchor.parent.parent, map = TableMap.get(table.node, table.start);
         let rect = map.rectBetween(state.selection.anchorCell, state.selection.headCell);
         return insertCells(state, map, rect.startCol, rect.startRow, clipCells(cells, rect.endCol - rect.startCol, rect.endRow - rect.startRow), "paste");
     }
@@ -1135,12 +1143,13 @@ function insertTable(wg, width, height) {
     let row = TableRow.create(cells), rows = [];
     for (let i = 0; i < height; i++)
         rows.push(row);
-    let table = Table.create(rows), { from, to } = state.selection.replacementRange;
-    let changes = ChangeSet.create(state.doc, { from, to, insert: [table], fit: true });
-    let tablePos = changes.findInserted(tag => tag.type == Table.type);
+    let table = Table.create(rows);
     wg.dispatch({
-        changes,
-        selection: cx => GardSelection.near(cx, tablePos == null ? from : tablePos + 3, 1),
+        changes: state.selection.replaceWith(table),
+        selection: (cx, changes) => {
+            let tablePos = changes.findInserted(tag => tag.type == Table.type);
+            return GardSelection.near(cx, tablePos == null ? changes.mapPos(state.selection.from, 1) : tablePos + 3, -1);
+        },
         userEvent: "insert.table"
     });
 }
@@ -1278,7 +1287,7 @@ const tableTheme = /*@__PURE__*/Wordgard.styles({
         padding: "3px 6px",
         textAlign: "left"
     },
-    ".wg-selected-cell": {
+    ".wg-selected-cell, .wg-selected-table": {
         background: "#ddf",
         "&::selection, & ::selection": { backgroundColor: "transparent" },
         "& :focus ::selection, & :focus::selection": { backgroundColor: "Highlight" }

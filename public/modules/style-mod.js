@@ -22,10 +22,6 @@ export class StyleModule {
     this.rules = []
     let {finish} = options || {}
 
-    function splitSelector(selector) {
-      return /^@/.test(selector) ? [selector] : selector.split(/,\s*/)
-    }
-
     function render(selectors, spec, target, isKeyframes) {
       let local = [], isAt = /^@(\w+)\b/.exec(selectors[0]), keyframes = isAt && isAt[1] == "keyframes"
       if (isAt && spec == null) return target.push(selectors[0] + ";")
@@ -38,7 +34,8 @@ export class StyleModule {
           if (!isAt) throw new RangeError("The value of a property (" + prop + ") should be a primitive value.")
           render(splitSelector(prop), value, local, keyframes)
         } else if (value != null) {
-          local.push(prop.replace(/_.*/, "").replace(/[A-Z]/g, l => "-" + l.toLowerCase()) + ": " + value + ";")
+          if (!/^--/.test(prop)) prop = prop.replace(/_.*/, "").replace(/[A-Z]/g, l => "-" + l.toLowerCase())
+          local.push(prop + ": " + value + ";")
         }
       }
       if (local.length || keyframes) {
@@ -84,6 +81,34 @@ export class StyleModule {
     else if (nonce) set.setNonce(nonce)
     set.mount(Array.isArray(modules) ? modules : [modules], root)
   }
+}
+
+function splitSelector(selector) {
+  if (/^@/.test(selector)) return [selector]
+  // Superficially tokenize the selector to find top-level commas
+  let result = [], depth = 0, inStr = null, lastNonSpace = 0, cut = 0
+  for (let i = 0; i < selector.length; i++) {
+    let next = selector[i]
+    if (next == "\\") {
+      i++
+    } else if (next == '"' || next == "'") {
+      if (next == inStr) inStr = false
+      else if (!inStr) inStr = next
+    } else if ((next == "[" || next == "(") && !inStr) {
+      depth++
+    } else if ((next == "]" || next == ")") && !inStr) {
+      depth--
+    } else if (next == "," && !depth && !inStr) {
+      result.push(selector.slice(cut, lastNonSpace))
+      cut = i + 1
+    }
+
+    if (/\S/.test(next)) lastNonSpace = i + 1
+    else if (i == cut) cut++
+  }
+  result.push(selector.slice(cut, lastNonSpace))
+
+  return result
 }
 
 let adoptedSet = new Map //<Document, StyleSet>

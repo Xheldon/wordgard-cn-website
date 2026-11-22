@@ -1,2 +1,0 @@
-[undefined-/home/runner/work/wordgard-cn-website/wordgard-cn-website/wordgard/website/output/docs/changelog/index.html]: The new <code>Wordgard.paste</code> method can be used to initiate a paste into the editor. -> 接口 HTTP 503
-[undefined-/home/runner/work/wordgard-cn-website/wordgard-cn-website/wordgard/website/output/docs/changelog/index.html]: State fields, facets, compartments, effects, and annotations can now be tagged with a debug string and have more meaningful <code>toString</code> representations. -> 接口 HTTP 503

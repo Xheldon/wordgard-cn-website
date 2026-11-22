@@ -152,7 +152,7 @@ const tablePhrases = /*@__PURE__*/PhraseSet.define({
     add_row_below: "Add row below",
     delete_row: "Delete row",
     add_col_before: "Add column before",
-    add_col_after: "Add column before",
+    add_col_after: "Add column after",
     delete_col: "Delete column",
     merge_cells: "Merge cells",
     split_cell: "Split cell"

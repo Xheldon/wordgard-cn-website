@@ -170,5 +170,9 @@
   "Further parameters given to the transaction are scrollIntoView, which tells the editor that it should make sure the cursor is visible after the change, and userEvent, which provides a rough, if somewhat fuzzy, category for the change. The latter isn't necessary, but can help other code recognize some types of transactions, and treat them specially.": {
     "_translate": "传递给事务的其他参数包括 <a href=\"../../docs/ref/#state.Transaction.Spec.scrollIntoView\"><code>scrollIntoView</code></a>，它指示编辑器在更改后确保光标可见；以及 <a href=\"../../docs/ref/#state.Transaction.Spec.userEvent\"><code>userEvent</code></a>，它为更改提供一个粗略（尽管有些模糊）的分类。后者并非必需，但可以帮助其他代码 <a href=\"../../docs/ref/#state.Transaction.isUserEvent\">识别</a> 某些类型的事务，并对它们进行特殊处理。",
     "_note": ""
+  },
+  "Selections have a GardSelection.replacementRange getter which tells you what range should be replaced when inserting over that selection. This exists because some custom selections might want to do something special there—for regular selections it will just return the selection's full range.": {
+    "_translate": "选择项具有一个 <code>GardSelection.replacementRange</code> 获取器，用于指示在覆盖该选择项插入内容时应替换的范围。此属性存在的原因是，某些 <a href=\"../../docs/ref/#state.GardSelection.define\">自定义</a> 选择项可能希望在此处执行特殊操作；对于常规选择项，它将直接返回选择项的完整范围。",
+    "_note": ""
   }
 }

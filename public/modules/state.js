@@ -554,8 +554,6 @@ class GardSelection {
     get empty() { return this.anchor == this.head; }
     get isCursor() { return this.empty && this instanceof GardSelection.Text; }
     get ranges() { return [this]; }
-    get replacementRange() { return this; }
-    get domSelection() { return this; }
     toSlice(doc) {
         let slice;
         for (let range of this.ranges) {
@@ -572,9 +570,8 @@ class GardSelection {
     check(config, doc) {
         if (!config.staticFacet(GardSelection.selectionType).some(t => this instanceof t.cls))
             throw new RangeError("Unsupported selection type");
-        for (let { from, to } of this.ranges)
-            if (from < 0 || to > doc.length)
-                throw new RangeError(`Selection out of document range`);
+        if (this.from < 0 || this.to > doc.length)
+            throw new RangeError(`Selection out of document range`);
     }
     resolve(doc) { return GardSelection.Resolved.create(doc, this); }
     toJSON(state) {
@@ -596,9 +593,9 @@ class GardSelection {
     static cursor(pos, side, goalColumn) {
         return GardSelection.Text.createInner(pos, pos, side, true, goalColumn);
     }
-    static near(cx, pos, side = 1, goalColumn) {
-        let norm = findNormalAt(cx, pos, side);
-        return GardSelection.cursor(norm.pos, norm.side, goalColumn);
+    static near(cx, pos, side = 1, bias = 1) {
+        let norm = findNormalAt(cx, pos, bias ?? side, side);
+        return GardSelection.cursor(norm.pos, norm.side);
     }
     static range(anchor, head, headSide, goalColumn) {
         return GardSelection.Text.createInner(anchor, head ?? anchor, headSide, true, goalColumn);
@@ -617,13 +614,25 @@ class GardSelection {
         let found = skipWord(cx, this.head, this.headSide, forward);
         return found && GardSelection.cursor(found.pos, found.side);
     }
+    replaceWith(content) {
+        if (!(content instanceof Slice) && !Array.isArray(content))
+            content = [content];
+        let changes = [];
+        for (let { from, to } of this.ranges) {
+            if (from == this.from && to == this.to)
+                changes.push({ from, to, insert: content, fit: true });
+            else if (from != to)
+                changes.push({ from, to });
+        }
+        return { correct: changes };
+    }
     static atStart(cx, block) {
         return cursorAtStart(cx, block);
     }
     static atEnd(cx, block) {
         let found = block ? { pos: block.end, side: 1 }
             : cx.doc.inlineContent ? { pos: cx.doc.length, side: 1 }
-                : findNormalAt(cx, cx.doc.length, -1);
+                : findNormalAt(cx, cx.doc.length, -1, -1);
         return GardSelection.cursor(found.pos, found.side);
     }
 }
@@ -748,15 +757,8 @@ class GardSelection {
         resolveRanges() {
             return this.selection.ranges.map(({ from, to }) => ({ from: this.doc.resolve(from), to: this.doc.resolve(to) }));
         }
-        get replacementRange() {
-            let repl = this.selection.replacementRange;
-            if (repl.from == this.selection.from && repl.to == this.selection.to)
-                return this;
-            return { from: this.doc.resolve(repl.from), to: this.doc.resolve(repl.to) };
-        }
         get activeMarks() {
-            let repl = this.replacementRange;
-            return (this.selection instanceof GardSelection.Text && this.selection.marks) || repl.from.marks(repl.to);
+            return (this.selection instanceof GardSelection.Text && this.selection.marks) || this.from.marks(this.to);
         }
     }
     GardSelection.Resolved = Resolved;
@@ -765,7 +767,7 @@ function cursorAtStart(cx, block) {
     let found = block
         ? { pos: block.start, side: -1 }
         : cx.doc.inlineContent ? { pos: 0, side: -1 }
-            : findNormalAt(cx, 0, 1);
+            : findNormalAt(cx, 0, 1, 1);
     return GardSelection.cursor(found.pos, found.side);
 }
 function isBarrier(cx, node) {
@@ -847,21 +849,21 @@ function scanNormalFrom(cx, from, side, forward) {
         }
     }
 }
-function findNormalAt(cx, pos, bias) {
+function findNormalAt(cx, pos, bias, defaultSide) {
     let res = cx.doc.resolve(pos), lowest = pos;
     if (res.inText) {
         let text = res.parent.node.content[res.index].tag.param;
         let off = bias > 0 ? findClusterBreak(text, res.inText - 1) : findClusterBreak(text, res.inText + 1, false);
         pos += off - res.inText;
         if (off > 0 && off < text.length)
-            return { pos, side: bias };
+            return { pos, side: defaultSide };
         res = Pos.create(res.parent, pos, res.index + (off ? 1 : 0), 0);
     }
     for (let pass = 0; pass < 2; pass++) {
         let dir = !pass ? bias : -bias, { parent, index } = res, curPos = pos;
         for (;;) {
             if (parent.node.inlineContent)
-                return { pos: curPos, side: bias };
+                return { pos: curPos, side: defaultSide };
             if (index == (dir > 0 ? parent.node.content.length : 0)) {
                 if (isBarrier(cx, parent.node) || !parent.parent)
                     break;
@@ -881,7 +883,7 @@ function findNormalAt(cx, pos, bias) {
             }
         }
     }
-    return { pos: lowest, side: bias };
+    return { pos: lowest, side: defaultSide };
 }
 function skipWord(cx, start, side, forward) {
     let last = null;

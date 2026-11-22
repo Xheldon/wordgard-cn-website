@@ -195,7 +195,6 @@ const ImageSize = /*@__PURE__*/Mark.Type.define("ImageSize", {
 });
 const Alignment = /*@__PURE__*/(() => Mark.Type.define("Alignment", {
     target: [G.Textblock, Figure],
-    keepOnSplit: true,
     keepOnTypeChange: true,
     shape: { attribute: "style", value: align => `text-align: ${align}` },
     parseRules: [
@@ -204,7 +203,6 @@ const Alignment = /*@__PURE__*/(() => Mark.Type.define("Alignment", {
 }))();
 const Direction = /*@__PURE__*/(() => Mark.Type.define("Direction", {
     target: G.Textblock,
-    keepOnSplit: true,
     keepOnTypeChange: true,
     validate: val => {
         if (val != "ltr" && val != "rtl" && val != "auto")

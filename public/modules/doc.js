@@ -604,8 +604,10 @@ function addSet(a, b, compare) {
         }
         else {
             let cmp = compare(a[i], b[j]);
-            if (cmp == 0)
-                i++;
+            if (cmp == 0) {
+                result.push(a[i++]);
+                j++;
+            }
             else if (cmp < 0)
                 result.push(a[i++]);
             else
@@ -623,8 +625,10 @@ function subtractSet(a, b, compare) {
         }
         else {
             let cmp = compare(a[i], b[j]);
-            if (cmp == 0)
+            if (cmp == 0) {
                 i++;
+                j++;
+            }
             else if (cmp < 0)
                 result.push(a[i++]);
             else
@@ -1433,7 +1437,7 @@ class Plot {
         split(atEnd) {
             return this.marks.length ? this.withMarks(this.marks.filter(p => {
                 let { keepOnSplit } = p.type.spec;
-                return keepOnSplit && (keepOnSplit === true || keepOnSplit(this, atEnd));
+                return !(keepOnSplit === false || typeof keepOnSplit == "function" && !keepOnSplit(this, atEnd));
             })) : this;
         }
         get tokenType() { return Token.Type.Open; }
@@ -2019,44 +2023,159 @@ class Builder {
         return this.schema.doc(this.stack.children);
     }
 }
+class SetMark {
+    mark;
+    constructor(mark) {
+        this.mark = mark;
+    }
+    get type() { return this.mark.type; }
+    get tag() { return 0; }
+    eq(other) { return other.tag == 0 && other.mark.eq(this.mark); }
+    apply(marks) { return this.mark.addToSet(marks); }
+    toString() { return "+" + this.mark; }
+}
+class RemoveMark {
+    type;
+    constructor(type) {
+        this.type = type;
+    }
+    get tag() { return 1; }
+    eq(other) { return other.tag == 1 && other.type == this.type; }
+    apply(marks) { return this.type.removeFromSet(marks); }
+    toString() { return "-" + this.type.name; }
+}
+class UpdateMark {
+    type;
+    plus;
+    minus;
+    constructor(type, 
+    plus, minus) {
+        this.type = type;
+        this.plus = plus;
+        this.minus = minus;
+    }
+    get tag() { return 2; }
+    eq(other) {
+        return other.tag == 2 && other.type == this.type &&
+            compareDeep(this.plus, other.plus) && compareDeep(this.minus, other.minus);
+    }
+    apply(marks) {
+        if (this.minus.length)
+            marks = this.type.of(this.minus).removeFromSet(marks);
+        if (this.plus.length)
+            marks = this.type.of(this.plus).addToSet(marks);
+        return marks;
+    }
+    toString() { return (this.plus.length ? `+${this.plus}` : "") + (this.minus.length ? `-${this.minus}` : ""); }
+}
 function applyModifications(modifications, marks, type) {
-    for (const m of modifications) {
-        if ("add" in m) {
-            marks = m.add.addToSet(marks);
+    return modifications.reduce((marks, mod) => mod.apply(marks), marks);
+}
+function invertModifications(mods, marks) {
+    return mods.map(mod => {
+        if (mod.tag == 2)
+            return new UpdateMark(mod.type, mod.minus, mod.plus);
+        let known = mod.type.isInSet(marks);
+        return known ? new SetMark(known) : new RemoveMark(mod.type);
+    });
+}
+function combineModifications(a, b) {
+    if (!a)
+        return b;
+    if (!b)
+        return a;
+    let result = a.slice();
+    for (let mod of b) {
+        let match = result.findIndex(m => m.type == mod.type);
+        if (match < 0) {
+            result.push(mod);
+        }
+        else if (mod.tag == 2) {
+            let other = result[match], set = mod.type.set;
+            let plus = addSet(mod.plus, other.plus, set);
+            let minus = addSet(mod.minus, other.minus, set);
+            let shared = plus.filter(p => minus.some(m => set(p, m) == 0));
+            if (shared.length) {
+                plus = subtractSet(plus, shared, set);
+                minus = subtractSet(minus, shared, set);
+            }
+            if (plus.length || minus.length)
+                result[match] = new UpdateMark(mod.type, plus, minus);
+            else
+                result.splice(match, 1);
         }
         else {
-            marks = m.remove.removeFromSet(marks);
+            result[match] = mod;
         }
     }
-    return marks;
+    return result.length ? result : null;
+}
+function transformModifications(mods, over) {
+    if (!mods || !over)
+        return mods;
+    let result = [];
+    for (let mod of mods) {
+        let match = over.find(m => m.type == mod.type);
+        if (!match) {
+            result.push(mod);
+        }
+        else if (mod.tag == 2 && match.tag == 2) {
+            let plus = subtractSet(subtractSet(mod.plus, match.plus, mod.type.set), match.minus, mod.type.set);
+            let minus = subtractSet(subtractSet(mod.minus, match.plus, mod.type.set), match.minus, mod.type.set);
+            if (plus.length || minus.length)
+                result.push(new UpdateMark(mod.type, plus, minus));
+        }
+    }
+    return result.length ? result : null;
+}
+function applyModsToSlice(tokens, mods) {
+    if (!mods)
+        return tokens;
+    let content = [];
+    for (let tok of tokens) {
+        if (tok.tokenType == Token.Type.Open) {
+            content.push(tok.withMarks(applyModifications(mods, tok.marks, tok.type)));
+        }
+        else if (tok.tokenType == Token.Type.Node) {
+            let node = tok.withMarks(applyModifications(mods, tok.marks, tok.type));
+            if (content.length && content[content.length - 1].tokenType == Token.Type.Node)
+                node.pushTo(content);
+            else
+                content.push(node);
+        }
+        else {
+            content.push(tok);
+        }
+    }
+    return content;
 }
 function modificationToJSON(m) {
-    return "add" in m ? { add: m.add.name, value: m.add.value } : { remove: m.remove.name, value: m.remove.value };
+    if (m.tag == 0)
+        return { set: m.type.name, value: m.mark.value };
+    if (m.tag == 1)
+        return { remove: m.type.name };
+    let result = { modify: m.type.name };
+    if (m.plus.length)
+        result.plus = m.plus;
+    if (m.minus.length)
+        result.minus = m.minus;
+    return result;
 }
 function modificationFromJSON(schema, json) {
-    let { add, remove } = json;
-    if (typeof add == "string" || typeof remove == "string") {
-        let mark = schema.getMark((add || remove));
-        if (!mark)
-            throw new ValidationError(`Unknown mark ${add || remove}`);
-        let value = mark.of(validate(mark.spec.validate, json.value));
-        if (mark)
-            return add ? { add: value } : { remove: value };
-    }
-    throw new ValidationError("Invalid modification JSON");
-}
-function compareModifications(a, b) {
-    if (a == b)
-        return true;
-    if (a.length != b.length)
-        return false;
-    for (let i = 0; i < a.length; i++)
-        if (!compareModification(a[i], b[i]))
-            return false;
-    return true;
-}
-function compareModification(a, b) {
-    return "add" in a ? "add" in b && a.add.eq(b.add) : "remove" in b && a.remove.eq(b.remove);
+    let { set, remove, modify } = json, markName = set || remove || modify;
+    if (typeof markName != "string")
+        throw new ValidationError("Invalid modification JSON");
+    let mark = schema.getMark(markName);
+    if (!mark)
+        throw new ValidationError(`Unknown mark ${mark}`);
+    if (set)
+        return new SetMark(mark.of(validate(mark.spec.validate, json.value)));
+    if (remove)
+        return new RemoveMark(mark);
+    let { plus, minus } = json;
+    if (!mark.set || plus && !Array.isArray(plus) || minus && !Array.isArray(minus))
+        throw new ValidationError("Invalid modification JSON");
+    return new UpdateMark(mark, plus ? validate(mark.spec.validate, plus) : [], minus ? validate(mark.spec.validate, minus) : []);
 }
 function isNatNum(value) {
     return typeof value == "number" && Math.floor(value) == value && value >= 0;
@@ -2101,7 +2220,7 @@ class ChangeSet {
                 return false;
         for (let i = 0; i < this.data.length; i++) {
             let a = this.data[i], b = other.data[i];
-            if (a && !(this.sections[(i << 1) + 1] < 0 ? compareModifications(a, b) : Slice.eq(a, b)))
+            if (a && !(this.sections[(i << 1) + 1] < 0 ? eqArray(a, b) : Slice.eq(a, b)))
                 return false;
         }
         return true;
@@ -2160,7 +2279,7 @@ class ChangeSet {
                 if (!Array.isArray(elt) || elt.length != 2 || !isNatNum(elt[0]) || !Array.isArray(elt[1]))
                     throw new ValidationError("Invalid ChangeSet JSON");
                 let [len, val] = elt;
-                if (val.length && typeof val[0] == "object" && ("add" in val[0] || "remove" in val[0])) {
+                if (val.length && typeof val[0] == "object" && ("set" in val[0] || "remove" in val[0] || "modify" in val[0])) {
                     sections.push(len, -2);
                     data.push(val.map(m => modificationFromJSON(schema, m)));
                 }
@@ -2201,7 +2320,7 @@ class ChangeSet {
                                 : [nodePos, nodePos + 1];
                             if (at < from)
                                 addSection(sections, data, from - at, -1, null);
-                            addSection(sections, data, to - from, -2, invertMods(mods, node.tag));
+                            addSection(sections, data, to - from, -2, invertModifications(mods, node.tag.marks));
                             at = to;
                         }
                     });
@@ -2387,14 +2506,10 @@ class ChangeSet {
         for (let i = 0, iS = 0, pos = 0; i < this.data.length; i++) {
             let len = this.sections[iS++], ins = this.sections[iS++], data = this.data[i];
             let text = "";
-            if (ins >= 0) {
+            if (ins >= 0)
                 text += data;
-            }
-            else if (data) {
-                text += `[${data.map(mod => {
-                    return `${"add" in mod ? "+" + mod.add : "-" + mod.remove}`;
-                })}]`;
-            }
+            else if (data)
+                text += `[${data}]`;
             if (text)
                 result += `${result ? "," : ""}${pos}${len ? `-${pos + len}` : ""}${text}`;
             pos += len;
@@ -2498,29 +2613,26 @@ function createChangeSet(doc, spec, mayCorrect = true) {
                 if (to == null)
                     to = from + 1;
                 if (add) {
-                    let mods = [{ add }];
                     markableSections(doc, from, to, add.type.spanning, (node, from, to) => {
                         if (!doc.schema.markAllowed(add.type, node.type))
                             return false;
                         let has = add.type.isInSet(node.tag.marks);
                         if (add.type.set) {
-                            let modsHere = mods;
+                            let plus = add.value;
                             if (has) {
-                                let left = subtractSet(add.value, has.value, add.type.set);
-                                if (!left.length)
+                                plus = subtractSet(add.value, has.value, add.type.set);
+                                if (!plus.length)
                                     return false;
-                                modsHere = [{ add: add.type.of(left) }];
                             }
-                            section(from, to, -2, modsHere);
+                            section(from, to, -2, [new UpdateMark(add.type, plus, none)]);
                         }
                         else if (!has || !has.eq(add)) {
-                            section(from, to, -2, mods);
+                            section(from, to, -2, [new SetMark(add)]);
                         }
                         return true;
                     });
                 }
                 if (remove) {
-                    let mods = [{ remove }];
                     markableSections(doc, from, to, remove.type.spanning, (node, from, to) => {
                         if (remove.type.set) {
                             let has = remove.type.isInSet(node.tag.marks);
@@ -2529,12 +2641,12 @@ function createChangeSet(doc, spec, mayCorrect = true) {
                             let left = remove.value.filter(a => has.value.some(b => remove.type.set(a, b) == 0));
                             if (!left.length)
                                 return false;
-                            section(from, to, -2, left.length == remove.value.length ? mods : [{ remove: remove.type.of(left) }]);
+                            section(from, to, -2, [new UpdateMark(remove.type, none, left)]);
                         }
                         else {
                             if (!remove.isInSet(node.tag.marks))
                                 return false;
-                            section(from, to, -2, mods);
+                            section(from, to, -2, [new RemoveMark(remove.type)]);
                         }
                         return true;
                     });
@@ -2570,7 +2682,7 @@ function transform(setA, setB, doc, before, fit) {
     for (let inserted = -1;;) {
         if (a.keep && b.keep) {
             let len = Math.min(a.len, b.len);
-            let mods = before ? a.mods : filterMods(a.mods, b.mods);
+            let mods = before ? transformModifications(a.mods, b.mods) : a.mods;
             addSection(sections, data, len, mods ? -2 : -1, mods);
             a.forward(len);
             b.forward(len);
@@ -2655,7 +2767,7 @@ function compose(sectionsA, sectionsB, dataA, dataB) {
         else {
             let len = Math.min(a.len2, b.len), sectionLen = sections.length;
             if (a.keep && b.keep) {
-                let mods = combineMods(a.mods, b.mods);
+                let mods = combineModifications(a.mods, b.mods);
                 addSection(sections, data, len, (data ? mods : a.ins == -2 || b.ins == -2) ? -2 : -1, mods, open);
             }
             else if (a.keep) {
@@ -2672,55 +2784,6 @@ function compose(sectionsA, sectionsB, dataA, dataB) {
             b.forward(len);
         }
     }
-}
-function combineMods(a, b) {
-    return !a ? b : !b ? a : a.concat(b);
-}
-function filterMods(mods, against) {
-    if (!mods || !against)
-        return mods;
-    return mods.filter(m => !against.some(a => modCancels(a, m)));
-}
-function modCancels(mod, other) {
-    if ("add" in other) {
-        return "add" in mod ? mod.add.type == other.add.type && !mod.add.type.set : mod.remove.eq(other.add);
-    }
-    else {
-        return "add" in mod && mod.add.eq(other.remove);
-    }
-}
-function invertMods(mods, target) {
-    return mods.map(mod => {
-        if ("remove" in mod)
-            return { add: mod.remove };
-        if (!mod.add.type.set) {
-            let existed = mod.add.type.isInSet(target.marks);
-            if (existed)
-                return { add: existed };
-        }
-        return { remove: mod.add };
-    });
-}
-function applyModsToSlice(tokens, mods) {
-    if (!mods)
-        return tokens;
-    let content = [];
-    for (let tok of tokens) {
-        if (tok.tokenType == Token.Type.Open) {
-            content.push(tok.withMarks(applyModifications(mods, tok.marks, tok.type)));
-        }
-        else if (tok.tokenType == Token.Type.Node) {
-            let node = tok.withMarks(applyModifications(mods, tok.marks, tok.type));
-            if (content.length && content[content.length - 1].tokenType == Token.Type.Node)
-                node.pushTo(content);
-            else
-                content.push(node);
-        }
-        else {
-            content.push(tok);
-        }
-    }
-    return content;
 }
 class FitLevel {
     tag;
@@ -3065,7 +3128,7 @@ function addSection(sections, data, len, ins, value, forceJoin = false) {
     if (last >= 0 && ins <= 0 && ins == sections[last + 1]) {
         let lastValue = data ? data[data.length - 1] : null;
         let match = ins == 0 ? true
-            : value ? lastValue && compareModifications(lastValue, value)
+            : value ? lastValue && eqArray(lastValue, value)
                 : !lastValue;
         if (match) {
             sections[last] += len;
@@ -3592,16 +3655,14 @@ class ParseContext {
             tag = tag.withMarks(p.addToSet(tag.marks));
             return false;
         });
-        let test, open = (this.top.children.length ? 0 : this.top.flags & 1) |
+        let open = (this.top.children.length ? 0 : this.top.flags & 1) |
             (endOfSlice ? this.top.flags & 2 : 0);
-        if ((open && element && this.options.isOpen) && (test = this.options.isOpen(element))) {
-            open &= -4;
-            if (test == "start")
-                open |= 1;
-            else if (test == "end")
-                open |= 2;
-            else if (test == "start end")
-                open |= 1 | 2;
+        if (open && element && this.options.isOpen) {
+            let test = this.options.isOpen(element, tag);
+            if (!test || test == "end")
+                open &= -2;
+            if (!test || test == "start")
+                open &= -3;
         }
         this.top = new NodeContext(tag, (element ? 4 : 0) | open, this.top);
         return marks;

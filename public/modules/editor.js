@@ -1832,7 +1832,7 @@ function setUneditable(dom) {
     let cur = dom.contentEditable;
     if (cur == "false")
         return true;
-    if (cur != "inherit" || !/^(br|hr|img|input|wbr)$/i.test(dom.nodeName))
+    if (cur != "inherit" || /^(br|hr|img|input|wbr)$/i.test(dom.nodeName))
         return false;
     dom.contentEditable = "false";
     return true;
@@ -2811,7 +2811,7 @@ function writeClipboard(state, slice, data) {
     data.setData("text/plain", text);
 }
 function isOpen(elt) {
-    return (elt.getAttribute("wg-open") || null);
+    return (elt.getAttribute("wg-open") || "");
 }
 function readClipboard(state, html, text, targetContext, plain) {
     let slice;
@@ -2832,7 +2832,7 @@ function readClipboard(state, html, text, targetContext, plain) {
         let fromWordgard = dom.querySelector("[wg-content=true]");
         slice = parse.slice(state.schema, dom, {
             collapseWhiteSpace: !fromWordgard,
-            isOpen: fromWordgard ? isOpen : undefined
+            isOpen: fromWordgard ? isOpen : (e, tag) => tag.type.isolating ? "" : "start end"
         });
     }
     for (let filter of state.facet(clipboardInputFilter))
@@ -2962,7 +2962,8 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         "--wg-border-color": "#444"
     },
     "wg-scroller": {
-        display: "block",
+        display: "flex",
+        alignItems: "stretch",
         height: "100%",
         overflowX: "auto",
         position: "relative",
@@ -2970,6 +2971,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
     },
     "wg-content": {
         display: "block",
+        flex: "auto",
         margin: 0,
         whiteSpace: "pre-wrap",
         overflowWrap: "anywhere",
@@ -3060,6 +3062,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
         backgroundColor: "var(--wg-panel-color)",
         font: "var(--wg-dialog-font)",
     },
+    ".wg-panels-raised": { zIndex: 450 },
     ".wg-panels-top": { top: "0" },
     ".wg-panels-bottom": { bottom: "0" },
     dialog: {
@@ -3132,7 +3135,7 @@ const baseStyles = /*@__PURE__*/buildTheme("." + styleID, {
 }, lightDarkIDs);
 
 function setDOMSelection(wg) {
-    let { anchor, head, anchorSide, headSide } = wg.state.selection.domSelection;
+    let { anchor, head, anchorSide, headSide } = wg.state.selection;
     let anchorDOM = wg.docTile.resolve(anchor, anchorSide);
     let headDOM = head == anchor ? anchorDOM : wg.docTile.resolve(head, headSide);
     let domSel = getSelection(wg.root);
@@ -3193,7 +3196,7 @@ function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
     let baseLTR = wg.state.textLTR;
     let goalColumn = start.goalColumn ?? (baseLTR ? coords.left - editorRect.left : editorRect.right - coords.left);
     let x = baseLTR ? editorRect.left + goalColumn : editorRect.right - goalColumn;
-    let y = forward ? coords.bottom + distance : coords.top - distance;
+    let y = forward ? coords.bottom + distance : coords.top - distance, startY = y;
     for (let scan = start.head;;) {
         let pos = wg.state.doc.resolve(scan), block = pos.textblockParent;
         if (block) {
@@ -3209,7 +3212,7 @@ function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
             }
             if (!block.parent)
                 return null;
-            scan = forward ? block.after : block.before;
+            scan = forward ? block.after - 1 : block.before + 1;
         }
         let nextCursor = GardSelection.cursor(scan).nextNormalCursor(wg.state, forward);
         if (!nextCursor)
@@ -3218,7 +3221,7 @@ function moveVertically(wg, start, forward, distance = 0, selectNode = false) {
         if (!nextNode || ((forward ? nextCursor.head <= nextNode.before : nextCursor.head >= nextNode.after) &&
             wg.state.doc.resolve(nextCursor.head).depth < nextNode.depth)) {
             let coords = wg.coordsAtPos(nextCursor.head, nextCursor.headSide);
-            if (forward ? coords.bottom > y : coords.top < y)
+            if (forward ? coords.bottom >= startY : coords.top <= startY)
                 return GardSelection.cursor(nextCursor.head, nextCursor.headSide, goalColumn);
             if (!nextNode)
                 return null;
@@ -3623,9 +3626,9 @@ class KeyBinding {
             shift: Command.bind(moveByLine, { dir: "down", extend: true }) },
         { key: "ArrowUp", run: Command.bind(moveByLine, { dir: "up" }),
             shift: Command.bind(moveByLine, { dir: "up", extend: true }) },
-        { key: "Mod-ArrowLeft", run: Command.bind(moveByWord, { dir: "left" }),
+        { key: "Ctrl-ArrowLeft", mac: "Alt-ArrowLeft", run: Command.bind(moveByWord, { dir: "left" }),
             shift: Command.bind(moveByWord, { dir: "left", extend: true }) },
-        { key: "Mod-ArrowRight", run: Command.bind(moveByWord, { dir: "right" }),
+        { key: "Ctrl-ArrowRight", mac: "Alt-ArrowRight", run: Command.bind(moveByWord, { dir: "right" }),
             shift: Command.bind(moveByWord, { dir: "right", extend: true }) },
         { mac: "Cmd-ArrowLeft", run: Command.bind(moveToLineSide, { dir: "left" }),
             shift: Command.bind(moveToLineSide, { dir: "left", extend: true }) },
@@ -4221,7 +4224,7 @@ function computeHandlers(state) {
     return result;
 }
 function doPaste(wg, html, text, targetRange, event) {
-    let { from, to } = targetRange || wg.state.selection.replacementRange;
+    let { from, to } = targetRange || wg.state.selection;
     let slice = readClipboard(wg.state, html, text, wg.state.doc.resolve(from), wg.inputState.shiftKey);
     if (!targetRange) {
         if (!event) {
@@ -4442,7 +4445,7 @@ function copy(wg, event) {
         if (event.type == "cut" && !state.readOnly)
             wg.dispatch({
                 changes: state.selection.ranges.map(r => ({ from: r.from, to: r.to, fit: true })),
-                selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(state.selection.from, -1), 1),
+                selection: (cx, changes) => GardSelection.near(cx, changes.mapPos(state.selection.from, -1)),
                 scrollIntoView: true,
                 userEvent: "delete.cut"
             });
@@ -4807,11 +4810,11 @@ class CursorStyle {
         this.bold = bold;
         this.italic = italic;
     }
-    static read(node, height) {
+    static read(node, height, readAlign = true) {
         let win = node.ownerDocument.defaultView || window;
         let elt = isElt(node) ? node : node.parentNode;
         let style = win.getComputedStyle(elt);
-        return new CursorStyle(height, style.verticalAlign, style.color, +style.fontWeight > 400, style.fontStyle == "italic");
+        return new CursorStyle(height, readAlign ? style.verticalAlign : "", style.color, +style.fontWeight > 400, style.fontStyle == "italic");
     }
     eq(other) {
         return other && this.height == other.height && this.align == other.align &&
@@ -4849,6 +4852,7 @@ class CursorLayer {
             if (!info ? cur : !cur || cur.left != info.left || cur.top != info.top || cur.size != info.size ||
                 (cur.style ? !cur.style.eq(info.style) : info.style)) {
                 this.info = info;
+                let scale = getScale(wg.scrollDOM, wg.scrollDOM.getBoundingClientRect());
                 wg.scheduleDOMWrite(() => {
                     let cursor = this.layer.firstChild;
                     if (!info) {
@@ -4859,10 +4863,10 @@ class CursorLayer {
                         if (!cursor)
                             cursor = this.layer.appendChild(document.createElement("wg-cursor"));
                         cursor.className = "wg-cursor-" + (info.horiz ? "h" : "v");
-                        cursor.style.top = info.top + "px";
-                        cursor.style.left = info.left + "px";
-                        cursor.style.width = info.horiz ? info.size + "px" : "";
-                        cursor.style.height = info.horiz ? "" : info.size + "px";
+                        cursor.style.top = (info.top / scale.scaleY) + "px";
+                        cursor.style.left = (info.left / scale.scaleX) + "px";
+                        cursor.style.width = info.horiz ? (info.size / scale.scaleX) + "px" : "";
+                        cursor.style.height = info.horiz ? "" : (info.size / scale.scaleY) + "px";
                         cursor.style.borderLeftColor = info.style ? info.style.color : "";
                         cursor.classList.toggle("wg-cursor-bold", info.style?.bold ?? false);
                         cursor.classList.toggle("wg-cursor-italic", info.style?.italic ?? false);
@@ -4910,17 +4914,17 @@ function getCursorInfo(wg, plugin, cont) {
         });
     }
     let finish = (style, vertRect) => {
-        if (style && (!plugin.cached || plugin.cached.style != style))
+        if (style && style.height != null && (!plugin.cached || plugin.cached.style != style))
             plugin.cached = { style, marks, parent: sel.head.parent.node.tag };
-        let height = style ? style.height : rect.height;
+        let height = style.height ?? rect.height;
         let bot = rect.bottom;
         if (vertRect && vertOverlap(vertRect, rect)) {
             bot = vertRect.bottom;
         }
-        else {
+        else if (style.height != null) {
             let win = ref.dom.ownerDocument.defaultView || window;
             let refAlign = win.getComputedStyle(isElt(ref.dom) ? ref.dom : ref.dom.parentNode).verticalAlign;
-            if (style && refAlign != style.align) {
+            if (refAlign != style.align) {
                 bot += alignOffset(refAlign, rect.height) - alignOffset(style.align, style.height);
             }
         }
@@ -4955,10 +4959,12 @@ function getCursorInfo(wg, plugin, cont) {
     }
     if (foundNode)
         return finish(CursorStyle.read(foundNode, foundRect.height), foundRect);
+    if (!marks.length) {
+        let parent = wg.docTile.resolve(pos, -1);
+        return finish(CursorStyle.read(parent.dom, null, false));
+    }
     if (plugin.cached && Mark.sameSet(plugin.cached.marks, marks) && plugin.cached.parent.eq(sel.head.parent.node.tag))
         return finish(plugin.cached.style);
-    if (!marks.length)
-        return finish(null);
     let target = sel.head.parent.node.isDoc ? wg.contentDOM : wg.nodeDOM(sel.head.parent.before);
     wg.scheduleDOMWrite(() => {
         let temp = renderMarks(wg.state, marks, "M");
@@ -5908,7 +5914,7 @@ const tooltipPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
         this.wg.scheduleDOMWrite(() => this.writeMeasure(measure));
     }
     readMeasure() {
-        let scaleX = 1, scaleY = 1, makeAbsolute = false;
+        let makeAbsolute = false;
         if (this.position == "fixed" && this.manager.tooltipViews.length) {
             let { dom } = this.manager.tooltipViews[0];
             if (browser.safari) {
@@ -5919,25 +5925,20 @@ const tooltipPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
                 makeAbsolute = !!dom.offsetParent && dom.offsetParent != this.container.ownerDocument.body;
             }
         }
-        if (makeAbsolute || this.position == "absolute") {
-            let measure = this.parent || this.container, rect = measure.getBoundingClientRect();
-            if (rect.width && rect.height) {
-                scaleX = rect.width / measure.offsetWidth;
-                scaleY = rect.height / measure.offsetHeight;
-            }
-        }
+        let wrapper = this.parent || this.container, wrapperRect = wrapper.getBoundingClientRect();
+        let scale = getScale(wrapper, wrapperRect);
         let visible = this.wg.scrollDOM.getBoundingClientRect(), margins = this.wg.getScrollMargins();
         let visLeft = visible.left + margins.left, visTop = visible.top + margins.top;
         return {
             visible: new DOMRect(visLeft, visTop, visible.right - margins.right - visLeft, visible.bottom - margins.bottom - visTop),
-            parent: this.parent ? this.container.getBoundingClientRect() : this.wg.dom.getBoundingClientRect(),
+            parent: wrapperRect,
             pos: this.manager.tooltips.map((t, i) => {
                 let tv = this.manager.tooltipViews[i];
                 return tv.getCoords ? tv.getCoords(t.pos) : this.wg.coordsAtPos(t.pos);
             }),
             size: this.manager.tooltipViews.map(({ dom }) => dom.getBoundingClientRect()),
             space: this.wg.state.facet(tooltipConfig).tooltipSpace(this.wg),
-            scaleX, scaleY, makeAbsolute
+            scale, makeAbsolute
         };
     }
     writeMeasure(measured) {
@@ -5947,7 +5948,7 @@ const tooltipPlugin = /*@__PURE__*/Wordgard.Plugin.fromClass(class {
             for (let t of this.manager.tooltipViews)
                 t.dom.style.position = "absolute";
         }
-        let { visible, space, scaleX, scaleY } = measured;
+        let { visible, space, scale: { scaleX, scaleY } } = measured;
         let others = [];
         for (let i = 0; i < this.manager.tooltips.length; i++) {
             let tooltip = this.manager.tooltips[i], tView = this.manager.tooltipViews[i], { dom } = tView;
@@ -6714,80 +6715,90 @@ function keyBindingHelp() {
     ];
 ;return keyBindingHelp})(keyBindingHelp);
 
-function offset(add, offset) {
-    return (v, from, to) => add(v, from + offset, to == null ? undefined : to + offset);
+function planFor(query, doc, from, to) {
+    let plan = [];
+    doc.iterate(from, to, (node, pos) => {
+        if (doc.schema.matchNode(node.type, query)) {
+            let parent = plan;
+            for (;;) {
+                if (!parent.length)
+                    break;
+                let last = parent[parent.length - 1];
+                if (last.pos + last.plot.length <= pos)
+                    break;
+                parent = last.children;
+            }
+            parent.push({ pos, plot: node, children: [] });
+        }
+    });
+    return plan;
 }
-function init(type, create, source, doc) {
-    return create(add => {
-        doc.iterate((node, pos) => {
-            if (node.isPlot && doc.schema.matchNode(node.type, type))
-                source(node, pos + 1, add);
+function runPlan(plan, source, add) {
+    let runPlot = ({ plot, pos, children }) => {
+        let i = 0, next = children.length ? children[0] : null;
+        let off = pos + 1;
+        source(plot, (deco, from, to = from) => {
+            from += off;
+            to += off;
+            while (next && to > next.pos) {
+                if (from < next.pos + next.plot.length)
+                    throw new Error("plotDecoration sources must not create decorations inside matching descendent nodes");
+                runPlot(next);
+                next = ++i < children.length ? children[i] : null;
+            }
+            add(deco, from, to);
         });
-    });
+        while (i < children.length)
+            runPlot(children[i++]);
+    };
+    plan.forEach(runPlot);
 }
-function refreshByPred(type, source, doc, deco, pred) {
-    let recreate = [];
-    doc.iterate((node, pos) => {
-        if (doc.schema.matchNode(node.type, type) && pred(node))
-            recreate.push({
-                from: pos, to: pos + node.length,
-                add: add => source(node, pos + 1, add)
-            });
-    });
-    return recreate.length ? deco.modify({ replace: recreate }) : deco;
+function init(config, create, source, doc) {
+    let plan = planFor(config.type, doc, 0, doc.length);
+    return create(add => runPlan(plan, source, add));
 }
 function update(config, create, source, deco, tr) {
     let doc = tr.newDoc;
-    let refresh = config.refresh && config.refresh(tr);
-    if (refresh === true)
-        return init(config.type, create, source, doc);
-    if (refresh)
-        deco = refreshByPred(config.type, source, tr.startState.doc, deco, refresh);
-    if (!tr.docChanged && !refresh)
+    if (config.refresh?.(tr))
+        return init(config, create, source, doc);
+    if (!tr.docChanged)
         return deco;
-    let recreate = [];
-    let clear = [];
+    let updateRanges = [];
     tr.changes.iterChangedRanges((fromA, toA, fromB, toB) => {
-        let covered = false;
+        addRange(updateRanges, fromB, toB);
+        for (let scan = tr.startState.doc.resolve(toA).parent; scan; scan = scan.parent) {
+            if (doc.schema.matchNode(scan.node.type, config.type) && scan.before >= fromA)
+                addRange(updateRanges, fromB, tr.changes.mapPos(scan.after, 1));
+        }
         doc.iterate(fromB, toB, (node, pos) => {
-            if (doc.schema.matchNode(node.type, config.type) && !recreate.some(r => r.from == pos)) {
-                recreate.push({
-                    from: pos, to: pos + node.length,
-                    add: add => source(node, pos + 1, add)
-                });
-                if (pos < toB && pos + node.length > toB)
-                    covered = true;
+            if (doc.schema.matchNode(node.type, config.type)) {
+                addRange(updateRanges, pos, pos + node.length);
                 return false;
             }
         });
-        if (!covered) {
-            let end = tr.startState.doc.resolve(toA);
-            let open = end.matchingParent(p => doc.schema.matchNode(p.type, config.type));
-            if (open && open.before >= fromA)
-                clear.push({ from: open.before, to: open.after });
-        }
     });
-    if (clear.length)
-        deco = deco.modify({ replace: clear });
-    deco = deco.map(tr.changes, recreate);
-    return deco;
+    let recreate = [];
+    for (let i = 0; i < updateRanges.length;) {
+        let from = updateRanges[i++], to = updateRanges[i++];
+        let plan = planFor(config.type, doc, from, to);
+        recreate.push({ from, to, add: add => runPlan(plan, source, add) });
+    }
+    return deco.map(tr.changes, recreate);
 }
 function decoratePlots(config) {
     let result = [];
-    let { type, points, ranges } = config;
+    let { points, ranges } = config;
     if (points) {
-        let source = (plot, start, add) => points(plot, offset(add, start));
         let field = GardState.Field.define({
-            create(state) { return init(type, PointSet.create, source, state.doc); },
-            update(value, tr) { return update(config, PointSet.create, source, value, tr); }
+            create(state) { return init(config, PointSet.create, points, state.doc); },
+            update(value, tr) { return update(config, PointSet.create, points, value, tr); }
         });
         result.push(field, Decoration.Point.source.of(s => s.field(field)));
     }
     if (ranges) {
-        let source = (plot, start, add) => ranges(plot, offset(add, start));
         let field = GardState.Field.define({
-            create(state) { return init(type, RangeSet.create, source, state.doc); },
-            update(value, tr) { return update(config, RangeSet.create, source, value, tr); }
+            create(state) { return init(config, RangeSet.create, ranges, state.doc); },
+            update(value, tr) { return update(config, RangeSet.create, ranges, value, tr); }
         });
         result.push(field, Decoration.Range.source.of(s => s.field(field)));
     }
@@ -7264,8 +7275,13 @@ class MenuBar {
     }
     setSelection(selection, focus = true) {
         this.updateElts(false, selection);
-        if (selection.length > 1 && this.selection.length <= 1)
+        if (selection.length > 1 && this.selection.length <= 1) {
             this.dom.ownerDocument.addEventListener("mousedown", this.globalClick);
+            this.dom.closest("wg-panels")?.classList.add("wg-panels-raised");
+        }
+        else if (selection.length <= 1 && this.selection.length > 1) {
+            this.dom.closest("wg-panels")?.classList.remove("wg-panels-raised");
+        }
         this.selection = selection;
         if (focus && selection.length)
             selection[selection.length - 1].focusDOM.focus();
@@ -7405,7 +7421,7 @@ function findNextChild(children, child, dir) {
         if (i == index)
             return null;
         let child = children[i];
-        if (!(child.flags & 32))
+        if (!(child.flags & (32 | 8)))
             return child;
     }
 }

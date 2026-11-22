@@ -310,7 +310,9 @@ class RangeSet extends Set {
                 let { cur } = cursor;
                 if (!cur)
                     return;
-                if (cursor.i == 0 && cur.end <= pos && !filter) {
+                if (cursor.i == 0 && cur.end <= pos && !filter &&
+                    (cur.value.length > (512 >> 1) ||
+                        cursor.chunkI < this.chunks.length - 1 && this.chunks[cursor.chunkI + 1].start <= pos)) {
                     build.addChunk(cur);
                     cursor.next(true);
                 }
@@ -354,6 +356,7 @@ class RangeSet extends Set {
                 curA.next(true);
                 curB.next(true);
                 startA = startB = 1e9;
+                continue;
             }
             else {
                 upto = Math.min(endA, endB);
@@ -506,7 +509,7 @@ class SetBuilder {
             this.chunks.push(chunk = new Chunk(pos, [], []));
         chunk.pos.push(pos - chunk.start);
         chunk.value.push(value);
-        if ((pos - this.lastPos || value.side || this.lastSide) >= 0) {
+        if ((pos - this.lastPos || value.side - this.lastSide) >= 0) {
             this.lastPos = pos;
             this.lastSide = value.side;
         }
@@ -521,11 +524,11 @@ class SetBuilder {
                         nextChunk = this.chunks[chunkI] = new Chunk(nextChunk.start, nextChunk.pos.slice(), nextChunk.value.slice());
                     nextI = nextChunk.value.length - 1;
                 }
-                if ((pos - nextChunk.pos[nextI] || value.side - nextChunk.value[nextI].side) >= 0)
+                if ((pos - (nextChunk.pos[nextI] + nextChunk.start) || value.side - nextChunk.value[nextI].side) >= 0)
                     break;
-                chunk.pos[i] = nextChunk.pos[nextI];
+                chunk.pos[i] = (nextChunk.pos[nextI] + nextChunk.start) - chunk.start;
                 chunk.value[i] = nextChunk.value[nextI];
-                nextChunk.pos[nextI] = pos;
+                nextChunk.pos[nextI] = pos - nextChunk.start;
                 nextChunk.value[nextI] = value;
                 i = nextI;
                 chunk = nextChunk;
@@ -649,7 +652,9 @@ class PointSet {
                 let { cur } = cursor;
                 if (!cur)
                     return;
-                if (cursor.i == 0 && cur.end <= pos && !filter) {
+                if (cursor.i == 0 && cur.end <= pos && !filter &&
+                    (cur.value.length > (512 >> 1) ||
+                        cursor.chunkI < this.chunks.length - 1 && this.chunks[cursor.chunkI + 1].start <= pos)) {
                     build.addChunk(cur);
                     cursor.next(true);
                 }
@@ -732,7 +737,7 @@ class PointCursor {
                     this.chunkI = 0;
                     break;
                 }
-                if ((pos - this.cur.pos[this.i - 1] || side - this.cur.value[this.i - 1].side) <= 0)
+                if ((pos - (this.cur.pos[this.i - 1] + this.cur.start) || side - this.cur.value[this.i - 1].side) <= 0)
                     break;
             }
         }
